@@ -42,7 +42,11 @@
                 <UIcon name="i-heroicons-funnel" class="w-5 h-5 text-blue-300" />
                 <span class="text-blue-200 font-medium">Filter</span>
                 <UBadge v-if="hasActiveFilters" color="blue" variant="soft" size="xs">
-                  {{ Object.values(filters).filter(v => v && v !== '').length }}
+                  {{ [
+                    filters.therapyType !== 'Alle Therapiearten',
+                    filters.maxDistance !== 'Beliebige Entfernung', 
+                    filters.specialization !== ''
+                  ].filter(Boolean).length }}
                 </UBadge>
               </div>
               <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 text-blue-300 transition-transform ui-open:rotate-180" />
@@ -55,7 +59,7 @@
               <!-- Therapy Type -->
               <div>
                 <label class="block text-xs font-medium text-blue-200 mb-2">Therapieart</label>
-                <USelect 
+                <USelectMenu 
                   v-model="filters.therapyType"
                   :options="therapyTypeOptions"
                   size="sm"
@@ -66,7 +70,7 @@
               <!-- Max Distance -->
               <div>
                 <label class="block text-xs font-medium text-blue-200 mb-2">Maximale Entfernung</label>
-                <USelect 
+                <USelectMenu 
                   v-model="filters.maxDistance"
                   :options="distanceOptions"
                   size="sm"
@@ -276,10 +280,10 @@ const onboardingStore = useOnboardingStore()
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
 
-// Filter state
+// Filter state (using display values)
 const filters = ref({
-  therapyType: '',
-  maxDistance: null as number | null,
+  therapyType: 'Alle Therapiearten',
+  maxDistance: 'Beliebige Entfernung',
   specialization: ''
 })
 
@@ -324,8 +328,8 @@ const userPlz = computed(() => {
 const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
   query: computed(() => ({
     plz: userPlz.value,
-    therapyType: filters.value.therapyType || undefined,
-    maxDistance: filters.value.maxDistance || undefined,
+    therapyType: therapyTypeMap[filters.value.therapyType] || undefined,
+    maxDistance: distanceMap[filters.value.maxDistance] || undefined,
     specialization: filters.value.specialization || undefined
   })),
   default: () => null,
@@ -334,36 +338,53 @@ const { data: therapistData, pending, error, refresh } = await useLazyFetch<Ther
 
 // Therapy type options
 const therapyTypeOptions = [
-  { label: 'Alle Therapiearten', value: '' },
-  { label: 'Verhaltenstherapie', value: 'verhaltenstherapie' },
-  { label: 'Tiefenpsychologie', value: 'tiefenpsychologie' },
-  { label: 'Systemische Therapie', value: 'systemisch' },
-  { label: 'Kinder- & Jugendtherapie', value: 'kinder' }
+  'Alle Therapiearten',
+  'Verhaltenstherapie', 
+  'Tiefenpsychologie',
+  'Systemische Therapie',
+  'Kinder- & Jugendtherapie'
 ]
 
-// Distance options
+// Distance options  
 const distanceOptions = [
-  { label: 'Beliebige Entfernung', value: null },
-  { label: 'Bis 5 km', value: 5 },
-  { label: 'Bis 10 km', value: 10 },
-  { label: 'Bis 25 km', value: 25 },
-  { label: 'Bis 50 km', value: 50 }
+  'Beliebige Entfernung',
+  'Bis 5 km',
+  'Bis 10 km', 
+  'Bis 25 km',
+  'Bis 50 km'
 ]
+
+// Map display values to API values
+const therapyTypeMap: Record<string, string> = {
+  'Alle Therapiearten': '',
+  'Verhaltenstherapie': 'verhaltenstherapie',
+  'Tiefenpsychologie': 'tiefenpsychologie', 
+  'Systemische Therapie': 'systemisch',
+  'Kinder- & Jugendtherapie': 'kinder'
+}
+
+const distanceMap: Record<string, number | null> = {
+  'Beliebige Entfernung': null,
+  'Bis 5 km': 5,
+  'Bis 10 km': 10,
+  'Bis 25 km': 25, 
+  'Bis 50 km': 50
+}
 
 // Clear all filters
 const clearFilters = () => {
   filters.value = {
-    therapyType: '',
-    maxDistance: null,
+    therapyType: 'Alle Therapiearten',
+    maxDistance: 'Beliebige Entfernung',
     specialization: ''
   }
 }
 
 // Check if any filters are active
 const hasActiveFilters = computed(() => {
-  return filters.value.therapyType || 
-         filters.value.maxDistance !== null || 
-         filters.value.specialization
+  return filters.value.therapyType !== 'Alle Therapiearten' || 
+         filters.value.maxDistance !== 'Beliebige Entfernung' || 
+         filters.value.specialization !== ''
 })
 
 // Open therapist profile in new tab
