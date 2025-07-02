@@ -32,6 +32,80 @@
         </p>
       </div>
 
+      <!-- Filters -->
+      <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full space-y-4">
+        <!-- Filter Toggle -->
+        <UCollapsible>
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-funnel" class="w-5 h-5 text-blue-300" />
+                <span class="text-blue-200 font-medium">Filter</span>
+                <UBadge v-if="hasActiveFilters" color="blue" variant="soft" size="xs">
+                  {{ Object.values(filters).filter(v => v && v !== '').length }}
+                </UBadge>
+              </div>
+              <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 text-blue-300 transition-transform ui-open:rotate-180" />
+            </div>
+          </template>
+
+          <div class="pt-4 space-y-4">
+            <!-- Filter Grid -->
+            <div class="grid grid-cols-1 gap-4">
+              <!-- Therapy Type -->
+              <div>
+                <label class="block text-xs font-medium text-blue-200 mb-2">Therapieart</label>
+                <USelect 
+                  v-model="filters.therapyType"
+                  :options="therapyTypeOptions"
+                  size="sm"
+                  class="w-full"
+                />
+              </div>
+
+              <!-- Max Distance -->
+              <div>
+                <label class="block text-xs font-medium text-blue-200 mb-2">Maximale Entfernung</label>
+                <USelect 
+                  v-model="filters.maxDistance"
+                  :options="distanceOptions"
+                  size="sm"
+                  class="w-full"
+                />
+              </div>
+
+              <!-- Specialization -->
+              <div>
+                <label class="block text-xs font-medium text-blue-200 mb-2">Spezialisierung</label>
+                <UInput 
+                  v-model="filters.specialization"
+                  placeholder="z.B. Depression, Angst, Trauma..."
+                  size="sm"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <!-- Filter Actions -->
+            <div class="flex items-center gap-2 pt-2">
+              <UButton 
+                v-if="hasActiveFilters"
+                @click="clearFilters"
+                variant="ghost"
+                size="xs"
+                color="gray"
+              >
+                <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                Filter zurücksetzen
+              </UButton>
+              <div class="text-xs text-blue-100/60">
+                Filter werden automatisch angewendet
+              </div>
+            </div>
+          </div>
+        </UCollapsible>
+      </div>
+
       <!-- Loading State -->
       <div v-if="isPiniaLoading || pending" class="w-full space-y-4">
         <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
@@ -202,6 +276,13 @@ const onboardingStore = useOnboardingStore()
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
 
+// Filter state
+const filters = ref({
+  therapyType: '',
+  maxDistance: null as number | null,
+  specialization: ''
+})
+
 // Check if Pinia data is loaded
 onMounted(() => {
   // Simulate loading delay for persisted state
@@ -240,12 +321,49 @@ const userPlz = computed(() => {
 })
 
 // Fetch therapist data
-const { data: therapistData, pending, error } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
+const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
   query: computed(() => ({
-    plz: userPlz.value
+    plz: userPlz.value,
+    therapyType: filters.value.therapyType || undefined,
+    maxDistance: filters.value.maxDistance || undefined,
+    specialization: filters.value.specialization || undefined
   })),
   default: () => null,
   server: false // Only fetch on client side to avoid SSR issues
+})
+
+// Therapy type options
+const therapyTypeOptions = [
+  { label: 'Alle Therapiearten', value: '' },
+  { label: 'Verhaltenstherapie', value: 'verhaltenstherapie' },
+  { label: 'Tiefenpsychologie', value: 'tiefenpsychologie' },
+  { label: 'Systemische Therapie', value: 'systemisch' },
+  { label: 'Kinder- & Jugendtherapie', value: 'kinder' }
+]
+
+// Distance options
+const distanceOptions = [
+  { label: 'Beliebige Entfernung', value: null },
+  { label: 'Bis 5 km', value: 5 },
+  { label: 'Bis 10 km', value: 10 },
+  { label: 'Bis 25 km', value: 25 },
+  { label: 'Bis 50 km', value: 50 }
+]
+
+// Clear all filters
+const clearFilters = () => {
+  filters.value = {
+    therapyType: '',
+    maxDistance: null,
+    specialization: ''
+  }
+}
+
+// Check if any filters are active
+const hasActiveFilters = computed(() => {
+  return filters.value.therapyType || 
+         filters.value.maxDistance !== null || 
+         filters.value.specialization
 })
 
 // Open therapist profile in new tab
