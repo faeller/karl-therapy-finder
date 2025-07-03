@@ -265,7 +265,7 @@ const completeOnboarding = () => {
             
             <div>
               <label class="block text-sm text-blue-100/80 mb-2">Wie weit würdest du fahren?</label>
-              <USelectMenu
+              <USelect
                 :model-value="formData.searchRadius"
                 @update:model-value="(value) => onboardingStore.updateFormData({ searchRadius: value })"
                 :options="[
@@ -318,7 +318,7 @@ const completeOnboarding = () => {
             <!-- Gender preference -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapeut*in Geschlecht</label>
-              <USelectMenu
+              <USelect
                 :model-value="formData.therapistGender"
                 @update:model-value="(value) => onboardingStore.updateFormData({ therapistGender: value })"
                 :options="genderOptions"
@@ -330,7 +330,7 @@ const completeOnboarding = () => {
             <!-- Therapy method -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapie-Verfahren</label>
-              <USelectMenu
+              <USelect
                 :model-value="formData.therapyMethod"
                 @update:model-value="(value) => onboardingStore.updateFormData({ therapyMethod: value })"
                 :options="therapyMethodOptions"
@@ -366,7 +366,7 @@ const completeOnboarding = () => {
             <!-- Payment type -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Kassensitz oder Kostenerstattung?</label>
-              <USelectMenu
+              <USelect
                 :model-value="formData.paymentType"
                 @update:model-value="(value) => onboardingStore.updateFormData({ paymentType: value })"
                 :options="paymentOptions"
@@ -408,14 +408,25 @@ const completeOnboarding = () => {
           </div>
           
 
-          <UButton
-            @click="completeOnboarding"
-            size="xl"
-            color="primary"
-            class="font-semibold"
-          >
-            Therapie-Jagd starten! 🚀
-          </UButton>
+          <div class="flex gap-4 items-center">
+            <UButton
+              @click="prevStep"
+              variant="ghost"
+              color="white"
+              icon="i-heroicons-arrow-left"
+            >
+              Zurück
+            </UButton>
+            
+            <UButton
+              @click="completeOnboarding"
+              size="xl"
+              color="primary"
+              class="font-semibold"
+            >
+              Therapie-Jagd starten! 🚀
+            </UButton>
+          </div>
         </div>
       </template>
     </UStepper>
