@@ -525,8 +525,8 @@ const scrollToCurrentStep = () => {
   
   nextTick(() => {
     const container = stepperContainer.value!
-    const stepWidth = 170 // Adjusted width per step
-    const offset = 20 // Small offset to center better
+    const stepWidth = 150 // Reduced for less scrolling
+    const offset = 30 // Increased offset to scroll less
     const scrollPosition = Math.max(0, (currentStepIndex.value * stepWidth) - offset)
     
     container.scrollTo({
