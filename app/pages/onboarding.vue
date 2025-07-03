@@ -353,7 +353,7 @@ const completeOnboarding = () => {
 
             <!-- Recent therapy -->
             <div>
-              <label class="block text-sm font-medium text-blue-100/90 mb-2">Hattest du in den letzten 2 Jahren eine Psychotherapie?</label>
+              <label class="block text-sm font-medium text-blue-100/90 mb-2">Hattest du in den letzten 2 Jahren eine ambulante Psychotherapie?</label>
               <div class="flex gap-4 justify-center">
                 <UButton
                   :variant="formData.hadRecentTherapy === false ? 'solid' : 'outline'"
@@ -372,7 +372,7 @@ const completeOnboarding = () => {
                   Ja
                 </UButton>
               </div>
-              <p class="text-xs text-blue-200/60 mt-2">Hilfreich zu wissen - die Therapeutin kümmert sich darum</p>
+              <p class="text-xs text-blue-200/60 mt-2">Bei Ja ist noch ein Gutachten nötig, aber darum kümmert sich die Therapeut*in</p>
             </div>
 
             <!-- Payment type -->
