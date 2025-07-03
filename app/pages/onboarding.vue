@@ -372,7 +372,7 @@ const completeOnboarding = () => {
                   Ja
                 </UButton>
               </div>
-              <p class="text-xs text-blue-200/60 mt-2">Wichtig für Kostenerstattung bei der Krankenkasse</p>
+              <p class="text-xs text-blue-200/60 mt-2">Hilfreich zu wissen - die Therapeutin kümmert sich darum</p>
             </div>
 
             <!-- Payment type -->
