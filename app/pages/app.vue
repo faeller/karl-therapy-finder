@@ -113,7 +113,7 @@
       </ClientOnly>
 
       <!-- Horizontal Stepper with Scrolling -->
-      <div class="w-full max-w-7xl">
+      <div class="w-full max-w-7xl min-w-[1200px] xl:min-w-[1400px] 2xl:min-w-[1600px]">
         <ClientOnly>
           <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
             <div class="min-w-max px-4">
