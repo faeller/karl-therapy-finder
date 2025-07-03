@@ -408,12 +408,13 @@ const completeOnboarding = () => {
           </div>
           
 
-          <div class="flex gap-4 items-center">
+          <div class="flex gap-4 items-center justify-center">
             <UButton
               @click="prevStep"
               variant="ghost"
               color="white"
               icon="i-heroicons-arrow-left"
+              size="lg"
             >
               Zurück
             </UButton>
