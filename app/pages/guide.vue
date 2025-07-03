@@ -57,10 +57,12 @@
 
       <!-- Horizontal Stepper with Scrolling -->
       <div class="w-full max-w-7xl">
-        <div class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
+        <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
           <div class="min-w-max px-4">
             <UStepper 
-              v-model="currentStepIndex" 
+              :key="`stepper-${currentStep}`"
+              :model-value="currentStepIndex" 
+              @update:model-value="(value) => currentStepIndex = value"
               :items="visibleStepperItems" 
               class="w-full min-w-[1200px]"
               color="primary"
@@ -508,11 +510,30 @@ const storedState = getStoredGuideState()
 // State with persistence
 const currentStep = ref(storedState.currentStep)
 
+// Template refs
+const stepperContainer = ref<HTMLElement>()
+
 // Computed for 0-based index for UStepper
 const currentStepIndex = computed({
   get: () => currentStep.value - 1,
   set: (value) => currentStep.value = value + 1
 })
+
+// Auto-scroll to current step
+const scrollToCurrentStep = () => {
+  if (!stepperContainer.value) return
+  
+  nextTick(() => {
+    const container = stepperContainer.value!
+    const stepWidth = 200 // Approximate width per step
+    const scrollPosition = currentStepIndex.value * stepWidth
+    
+    container.scrollTo({
+      left: scrollPosition,
+      behavior: 'smooth'
+    })
+  })
+}
 
 // Progress tracking
 const stepProgress = ref(storedState.stepProgress)
@@ -550,12 +571,14 @@ const motivationalMessage = computed(() => {
 const nextStep = () => {
   if (currentStep.value < stepperItems.value.length) {
     currentStep.value++
+    scrollToCurrentStep()
   }
 }
 
 const prevStep = () => {
   if (currentStep.value > 1) {
     currentStep.value--
+    scrollToCurrentStep()
   }
 }
 
@@ -604,6 +627,16 @@ const saveGuideState = () => {
 
 // Watch for state changes and save
 watch([currentStep, stepProgress], saveGuideState, { deep: true })
+
+// Watch for step changes and auto-scroll
+watch(currentStep, () => {
+  scrollToCurrentStep()
+}, { immediate: false })
+
+// Auto-scroll on mount
+onMounted(() => {
+  scrollToCurrentStep()
+})
 
 const resetGuide = () => {
   // Reset all state
