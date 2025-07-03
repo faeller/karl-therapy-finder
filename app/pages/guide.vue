@@ -139,52 +139,54 @@
         </ClientOnly>
         
         <!-- Step Content (Fixed, No Scrolling) -->
-        <div class="w-full">
-          <!-- Step 1: Terminservicestelle Erstgespräch -->
-          <div v-if="currentStep === 1" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
-            </div>
-            
-            <div class="space-y-3 text-sm">
-              <p class="text-blue-100/90">
-                Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
-              </p>
+        <ClientOnly>
+          <div class="w-full">
+            <!-- Step 1: Terminservicestelle Erstgespräch -->
+            <div v-if="currentStep === 1" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+              <div class="flex items-center gap-2 mb-2">
+                <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
+                <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
+              </div>
               
-              <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
-                <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
-                <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+              <div class="space-y-3 text-sm">
+                <p class="text-blue-100/90">
+                  Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
+                </p>
+                
+                <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                  <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
+                  <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+                </div>
+
+                <div class="space-y-2">
+                  <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
+                  <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                    <li>• Behandlungsbedarf muss festgestellt werden</li>
+                    <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
+                    <li>• Nur dann ist später Kostenerstattung möglich</li>
+                  </ul>
+                </div>
               </div>
 
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Behandlungsbedarf muss festgestellt werden</li>
-                  <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
-                  <li>• Nur dann ist später Kostenerstattung möglich</li>
-                </ul>
+              <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                <UButton 
+                  @click="completeStep(1)" 
+                  :color="stepProgress[1] ? 'green' : 'blue'" 
+                  size="sm"
+                  variant="outline"
+                >
+                  {{ stepProgress[1] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+                </UButton>
+                
+                <UButton 
+                  @click="nextStep" 
+                  color="primary"
+                  size="sm"
+                  trailing-icon="i-heroicons-chevron-right"
+                >
+                  Weiter
+                </UButton>
               </div>
-            </div>
-
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
-              <UButton 
-                @click="completeStep(1)" 
-                :color="stepProgress[1] ? 'green' : 'blue'" 
-                size="sm"
-                variant="outline"
-              >
-                {{ stepProgress[1] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
-              </UButton>
-              
-              <UButton 
-                @click="nextStep" 
-                color="primary"
-                size="sm"
-                trailing-icon="i-heroicons-chevron-right"
-              >
-                Weiter
-              </UButton>
             </div>
           </div>
 
@@ -441,7 +443,56 @@
               </div>
             </div>
           </div>
-        </div>
+          <template #fallback>
+            <div class="w-full">
+              <!-- Default Step 1 content for SSR -->
+              <div class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+                <div class="flex items-center gap-2 mb-2">
+                  <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
+                  <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
+                </div>
+                
+                <div class="space-y-3 text-sm">
+                  <p class="text-blue-100/90">
+                    Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
+                  </p>
+                  
+                  <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                    <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
+                    <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+                  </div>
+
+                  <div class="space-y-2">
+                    <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
+                    <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                      <li>• Behandlungsbedarf muss festgestellt werden</li>
+                      <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
+                      <li>• Nur dann ist später Kostenerstattung möglich</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                  <UButton 
+                    color="blue"
+                    size="sm"
+                    variant="outline"
+                  >
+                    Als erledigt markieren
+                  </UButton>
+                  
+                  <UButton 
+                    color="primary"
+                    size="sm"
+                    trailing-icon="i-heroicons-chevron-right"
+                  >
+                    Weiter
+                  </UButton>
+                </div>
+              </div>
+            </div>
+          </template>
+        </ClientOnly>
       </div>
 
       <!-- Action buttons -->
