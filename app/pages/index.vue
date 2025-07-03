@@ -7,9 +7,9 @@ const navigateToApp = () => {
 
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-md flex-col items-center gap-6 text-center">
+    <div class="relative z-10 flex w-full max-w-md lg:max-w-2xl xl:max-w-3xl flex-col items-center gap-6 text-center">
       <!-- KARL Logo/Icon -->
-      <div class="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400 to-blue-600 text-3xl font-bold text-white shadow-2xl backdrop-blur-sm">
+      <div class="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-3xl font-bold text-white shadow-2xl backdrop-blur-sm">
         K
       </div>
       

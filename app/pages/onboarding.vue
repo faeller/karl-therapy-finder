@@ -148,6 +148,7 @@ const completeOnboarding = () => {
 
 <template>
   <PageCard>
+    <div class="relative z-10 flex w-full max-w-4xl flex-col items-center gap-6">
     <!-- Loading Animation -->
     <div v-if="isLoading" class="flex items-center justify-center py-12">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -157,7 +158,7 @@ const completeOnboarding = () => {
     <div v-else>
     <!-- Header -->
     <div class="text-center space-y-2 mb-6">
-      <div class="flex h-16 w-16 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400 to-blue-600 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm mx-auto">
+      <div class="flex h-16 w-16 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm mx-auto">
         K
       </div>
       <h1 class="text-2xl font-bold text-white">Therapie-Jagd startklar machen! 🎯</h1>
@@ -437,6 +438,7 @@ const completeOnboarding = () => {
       >
         {{ currentStep === items.length - 2 ? 'Fertig!' : 'Weiter' }}
       </UButton>
+    </div>
     </div>
     </div>
   </PageCard>

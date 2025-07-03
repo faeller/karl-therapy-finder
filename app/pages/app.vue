@@ -1,9 +1,9 @@
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full flex-col items-center gap-6">
+    <div class="relative z-10 flex w-full max-w-6xl flex-col items-center gap-6">
       <!-- KARL Header -->
       <div class="w-full text-center space-y-3">
-        <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400 to-blue-600 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
+        <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
@@ -33,81 +33,106 @@
       </div>
 
       <!-- Filters -->
-      <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full space-y-4">
-        <!-- Filter Toggle -->
-        <UCollapsible>
-          <template #header>
-            <div class="flex items-center justify-between w-full">
-              <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-funnel" class="w-5 h-5 text-blue-300" />
-                <span class="text-blue-200 font-medium">Filter</span>
-                <UBadge v-if="hasActiveFilters" color="blue" variant="soft" size="xs">
-                  {{ [
-                    filters.therapyType !== 'Alle Therapiearten',
-                    filters.maxDistance !== 'Beliebige Entfernung', 
-                    filters.specialization !== ''
-                  ].filter(Boolean).length }}
-                </UBadge>
-              </div>
-              <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 text-blue-300 transition-transform ui-open:rotate-180" />
-            </div>
-          </template>
+      <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-3">
+            <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-blue-300" />
+            <span class="text-blue-200 font-medium text-sm">Filter</span>
+            <UBadge v-if="hasActiveFilters" color="blue" variant="soft" size="xs">{{ activeFiltersCount }}</UBadge>
+            <button 
+              v-if="hasActiveFilters"
+              @click="clearFilters"
+              class="ml-auto text-xs text-blue-300 hover:text-blue-200 transition-colors"
+            >
+              Zurücksetzen
+            </button>
+          </div>
 
-          <div class="pt-4 space-y-4">
-            <!-- Filter Grid -->
-            <div class="grid grid-cols-1 gap-4">
-              <!-- Therapy Type -->
-              <div>
-                <label class="block text-xs font-medium text-blue-200 mb-2">Therapieart</label>
-                <USelectMenu 
-                  v-model="filters.therapyType"
-                  :options="therapyTypeOptions"
-                  size="sm"
-                  class="w-full"
-                />
-              </div>
+          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2">
+            <!-- Therapy Type -->
+            <select 
+              v-model="filters.therapyType"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Alle Therapiearten" class="text-gray-900">Alle Therapien</option>
+              <option v-for="option in therapyTypeOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option.replace('Kinder- & Jugendtherapie', 'K&J-Therapie') }}
+              </option>
+            </select>
 
-              <!-- Max Distance -->
-              <div>
-                <label class="block text-xs font-medium text-blue-200 mb-2">Maximale Entfernung</label>
-                <USelectMenu 
-                  v-model="filters.maxDistance"
-                  :options="distanceOptions"
-                  size="sm"
-                  class="w-full"
-                />
-              </div>
+            <!-- Problem -->
+            <select 
+              v-model="filters.problem"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Alle Probleme" class="text-gray-900">Alle Probleme</option>
+              <option v-for="option in problemOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option }}
+              </option>
+            </select>
 
-              <!-- Specialization -->
-              <div>
-                <label class="block text-xs font-medium text-blue-200 mb-2">Spezialisierung</label>
-                <UInput 
-                  v-model="filters.specialization"
-                  placeholder="z.B. Depression, Angst, Trauma..."
-                  size="sm"
-                  class="w-full"
-                />
-              </div>
-            </div>
+            <!-- Age Group -->
+            <select 
+              v-model="filters.ageGroup"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Alle Altersgruppen" class="text-gray-900">Alle Altersgruppen</option>
+              <option v-for="option in ageGroupOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option }}
+              </option>
+            </select>
 
-            <!-- Filter Actions -->
-            <div class="flex items-center gap-2 pt-2">
-              <UButton 
-                v-if="hasActiveFilters"
-                @click="clearFilters"
-                variant="ghost"
-                size="xs"
-                color="gray"
+            <!-- Billing -->
+            <select 
+              v-model="filters.billing"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Alle Abrechnungsarten" class="text-gray-900">Alle Abrechnungen</option>
+              <option v-for="option in billingOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option.replace('Gesetzliche Krankenversicherung', 'Gesetzlich').replace('Private Krankenversicherung', 'Privat') }}
+              </option>
+            </select>
+
+            <!-- Gender -->
+            <select 
+              v-model="filters.gender"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Egal" class="text-gray-900">Geschlecht egal</option>
+              <option v-for="option in genderOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option }}
+              </option>
+            </select>
+
+            <!-- Free Places -->
+            <select 
+              v-model="filters.freePlaces"
+              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Egal" class="text-gray-900">Alle Plätze</option>
+              <option v-for="option in freePlacesOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+                {{ option }}
+              </option>
+            </select>
+
+            <!-- Specialization -->
+            <div class="relative">
+              <input 
+                v-model="filters.specialization"
+                type="text"
+                placeholder="Spezialisierung..."
+                class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-full"
+              />
+              <!-- Loading indicator for search -->
+              <div 
+                v-if="filters.specialization !== debouncedSpecialization && filters.specialization"
+                class="absolute right-2 top-1/2 transform -translate-y-1/2"
               >
-                <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
-                Filter zurücksetzen
-              </UButton>
-              <div class="text-xs text-blue-100/60">
-                Filter werden automatisch angewendet
+                <div class="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
               </div>
             </div>
           </div>
-        </UCollapsible>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -280,12 +305,68 @@ const onboardingStore = useOnboardingStore()
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
 
+// Load filters from localStorage or use defaults
+const getStoredFilters = () => {
+  if (process.client) {
+    try {
+      const stored = localStorage.getItem('therapist-filters')
+      if (stored) {
+        return { ...{
+          therapyType: 'Alle Therapiearten',
+          gender: 'Egal',
+          problem: 'Alle Probleme',
+          ageGroup: 'Alle Altersgruppen',
+          billing: 'Alle Abrechnungsarten',
+          freePlaces: 'Egal',
+          specialization: ''
+        }, ...JSON.parse(stored) }
+      }
+    } catch (error) {
+      console.warn('Failed to load stored filters:', error)
+    }
+  }
+  return {
+    therapyType: 'Alle Therapiearten',
+    gender: 'Egal',
+    problem: 'Alle Probleme',
+    ageGroup: 'Alle Altersgruppen',
+    billing: 'Alle Abrechnungsarten',
+    freePlaces: 'Egal',
+    specialization: ''
+  }
+}
+
 // Filter state (using display values)
-const filters = ref({
-  therapyType: 'Alle Therapiearten',
-  maxDistance: 'Beliebige Entfernung',
-  specialization: ''
-})
+const filters = ref(getStoredFilters())
+
+// Debounced specialization for API calls
+const debouncedSpecialization = ref(filters.value.specialization)
+
+// Debounce the specialization field to avoid excessive API calls
+watch(() => filters.value.specialization, (newValue) => {
+  // Clear existing timeout
+  if (process.client && window.specializationTimeout) {
+    clearTimeout(window.specializationTimeout)
+  }
+  
+  // Set new timeout for 500ms delay
+  if (process.client) {
+    window.specializationTimeout = setTimeout(() => {
+      debouncedSpecialization.value = newValue
+    }, 500)
+  }
+}, { immediate: true })
+
+// Save filters to localStorage whenever they change
+watch(filters, (newFilters) => {
+  if (process.client) {
+    try {
+      localStorage.setItem('therapist-filters', JSON.stringify(newFilters))
+    } catch (error) {
+      console.warn('Failed to save filters:', error)
+    }
+  }
+}, { deep: true })
 
 // Check if Pinia data is loaded
 onMounted(() => {
@@ -304,6 +385,13 @@ onMounted(() => {
   }, 500)
 })
 
+// Cleanup timeout on unmount
+onUnmounted(() => {
+  if (process.client && window.specializationTimeout) {
+    clearTimeout(window.specializationTimeout)
+  }
+})
+
 // Extract PLZ from location string (assuming format like "90403 Nürnberg" or "Nürnberg, 90403")
 const extractPlz = (location: string): string | null => {
   const plzMatch = location.match(/\b(\d{5})\b/)
@@ -318,23 +406,54 @@ const greeting = computed(() => {
   return 'Guten Abend'
 })
 
-// Extract PLZ from user's location
-const userPlz = computed(() => {
-  if (!onboardingStore.formData.location) return null
-  return extractPlz(onboardingStore.formData.location)
-})
+// Map display values to API values
+const therapyTypeMap: Record<string, string> = {
+  'Alle Therapiearten': '',
+  'Verhaltenstherapie': 'verhaltenstherapie',
+  'Tiefenpsychologie': 'tiefenpsychologie', 
+  'Systemische Therapie': 'systemisch',
+  'Kinder- & Jugendtherapie': 'kinder'
+}
 
-// Fetch therapist data
-const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
-  query: computed(() => ({
-    plz: userPlz.value,
-    therapyType: therapyTypeMap[filters.value.therapyType] || undefined,
-    maxDistance: distanceMap[filters.value.maxDistance] || undefined,
-    specialization: filters.value.specialization || undefined
-  })),
-  default: () => null,
-  server: false // Only fetch on client side to avoid SSR issues
-})
+
+const genderMap: Record<string, string | null> = {
+  'Egal': null,
+  'Weiblich': '2',
+  'Männlich': '1'
+}
+
+const problemMap: Record<string, string | null> = {
+  'Alle Probleme': null,
+  'Depression': 'depression',
+  'Angst - Phobie': 'angst',
+  'Trauma': 'trauma',
+  'Beziehungsprobleme': 'beziehung',
+  'Burnout': 'burnout',
+  'Essstörungen': 'ess',
+  'Sucht': 'sucht',
+  'ADHS': 'adhs',
+  'Zwangsstörungen': 'zwang'
+}
+
+const ageGroupMap: Record<string, string | null> = {
+  'Alle Altersgruppen': null,
+  'Kinder (0-12)': 'kinder',
+  'Jugendliche (13-17)': 'jugend',
+  'Erwachsene (18-64)': 'erwachsene',
+  'Senioren (65+)': 'senioren'
+}
+
+const billingMap: Record<string, string | null> = {
+  'Alle Abrechnungsarten': null,
+  'Gesetzliche Krankenversicherung': '7',
+  'Private Krankenversicherung': '8',
+  'Selbstzahler': '9'
+}
+
+const freePlacesMap: Record<string, string | null> = {
+  'Egal': null,
+  'Nur freie Plätze': '1'
+}
 
 // Therapy type options
 const therapyTypeOptions = [
@@ -345,46 +464,126 @@ const therapyTypeOptions = [
   'Kinder- & Jugendtherapie'
 ]
 
-// Distance options  
-const distanceOptions = [
-  'Beliebige Entfernung',
-  'Bis 5 km',
-  'Bis 10 km', 
-  'Bis 25 km',
-  'Bis 50 km'
+
+// Gender options
+const genderOptions = [
+  'Egal',
+  'Weiblich',
+  'Männlich'
 ]
 
-// Map display values to API values
-const therapyTypeMap: Record<string, string> = {
-  'Alle Therapiearten': '',
-  'Verhaltenstherapie': 'verhaltenstherapie',
-  'Tiefenpsychologie': 'tiefenpsychologie', 
-  'Systemische Therapie': 'systemisch',
-  'Kinder- & Jugendtherapie': 'kinder'
-}
+// Problem options (Worum geht es?)
+const problemOptions = [
+  'Alle Probleme',
+  'Depression',
+  'Angst - Phobie',
+  'Trauma',
+  'Beziehungsprobleme',
+  'Burnout',
+  'Essstörungen',
+  'Sucht',
+  'ADHS',
+  'Zwangsstörungen'
+]
 
-const distanceMap: Record<string, number | null> = {
-  'Beliebige Entfernung': null,
-  'Bis 5 km': 5,
-  'Bis 10 km': 10,
-  'Bis 25 km': 25, 
-  'Bis 50 km': 50
-}
+// Age group options (Für wen?)
+const ageGroupOptions = [
+  'Alle Altersgruppen',
+  'Kinder (0-12)',
+  'Jugendliche (13-17)',
+  'Erwachsene (18-64)',
+  'Senioren (65+)'
+]
+
+// Billing options (Abrechnung)
+const billingOptions = [
+  'Alle Abrechnungsarten',
+  'Gesetzliche Krankenversicherung',
+  'Private Krankenversicherung',
+  'Selbstzahler'
+]
+
+// Free places options (Freie Plätze)
+const freePlacesOptions = [
+  'Egal',
+  'Nur freie Plätze'
+]
+
+// Extract PLZ from user's location
+const userPlz = computed(() => {
+  if (!onboardingStore.formData.location) return null
+  return extractPlz(onboardingStore.formData.location)
+})
+
+// Fetch therapist data with reactive query (using debounced specialization)
+const queryParams = computed(() => ({
+  plz: userPlz.value,
+  therapyType: therapyTypeMap[filters.value.therapyType] || undefined,
+  gender: genderMap[filters.value.gender] || undefined,
+  problem: problemMap[filters.value.problem] || undefined,
+  ageGroup: ageGroupMap[filters.value.ageGroup] || undefined,
+  billing: billingMap[filters.value.billing] || undefined,
+  freePlaces: freePlacesMap[filters.value.freePlaces] || undefined,
+  specialization: debouncedSpecialization.value || undefined
+}))
+
+const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
+  query: queryParams,
+  default: () => null,
+  server: false, // Only fetch on client side to avoid SSR issues
+  transform: (_data: TherapistSearchResult) => {
+    // Log filter changes for debugging
+    console.log('Applied filters:', filters.value)
+    console.log('Query params:', queryParams.value)
+    console.log('Therapist count:', _data?.therapists?.length || 0)
+    return _data
+  }
+})
 
 // Clear all filters
 const clearFilters = () => {
   filters.value = {
     therapyType: 'Alle Therapiearten',
-    maxDistance: 'Beliebige Entfernung',
+    gender: 'Egal',
+    problem: 'Alle Probleme',
+    ageGroup: 'Alle Altersgruppen',
+    billing: 'Alle Abrechnungsarten',
+    freePlaces: 'Egal',
     specialization: ''
+  }
+  
+  // Also clear from localStorage
+  if (process.client) {
+    try {
+      localStorage.removeItem('therapist-filters')
+    } catch (error) {
+      console.warn('Failed to clear stored filters:', error)
+    }
   }
 }
 
 // Check if any filters are active
 const hasActiveFilters = computed(() => {
   return filters.value.therapyType !== 'Alle Therapiearten' || 
-         filters.value.maxDistance !== 'Beliebige Entfernung' || 
+         filters.value.gender !== 'Egal' ||
+         filters.value.problem !== 'Alle Probleme' ||
+         filters.value.ageGroup !== 'Alle Altersgruppen' ||
+         filters.value.billing !== 'Alle Abrechnungsarten' ||
+         filters.value.freePlaces !== 'Egal' ||
          filters.value.specialization !== ''
+})
+
+// Count active filters
+const activeFiltersCount = computed(() => {
+  return [
+    filters.value.therapyType !== 'Alle Therapiearten',
+    filters.value.gender !== 'Egal',
+    filters.value.problem !== 'Alle Probleme',
+    filters.value.ageGroup !== 'Alle Altersgruppen',
+    filters.value.billing !== 'Alle Abrechnungsarten',
+    filters.value.freePlaces !== 'Egal',
+    filters.value.specialization !== ''
+  ].filter(Boolean).length
 })
 
 // Open therapist profile in new tab
