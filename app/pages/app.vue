@@ -1,288 +1,531 @@
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-6xl flex-col items-center gap-6">
-      <!-- KARL Header -->
+    <div class="relative z-10 flex w-full max-w-5xl flex-col items-center gap-6">
+      <!-- Header -->
       <div class="w-full text-center space-y-3">
         <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          <template v-if="!isPiniaLoading">
-            {{ greeting }} {{ onboardingStore.formData.nickname || 'dort' }}! 👋
-          </template>
-          <template v-else>
-            <div class="flex items-center gap-2 justify-center">
-              <div class="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-              Lade Profil...
-            </div>
-          </template>
+          Therapieplatz-Finder Guide 🎯
         </h1>
-        <p class="text-sm text-blue-100/80">
-          <template v-if="!isPiniaLoading">
-            {{ therapistData && therapistData.therapists.length > 0 
-              ? `${therapistData.therapists.length} Therapeuten in ${therapistData.plz} gefunden`
-              : onboardingStore.formData.location 
-                ? 'Suche Therapeuten in deiner Nähe...'
-                : 'Bitte vervollständige dein Profil im Onboarding.'
-            }}
-          </template>
-          <template v-else>
-            Lade deine gespeicherten Daten...
-          </template>
+        <p class="text-blue-100/80 text-sm">
+          Der bewährte 7-Schritte-Weg zum Therapieplatz
         </p>
       </div>
 
-      <!-- Filters -->
-      <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
-        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3">
-          <div class="flex items-center gap-2 mb-3">
-            <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-blue-300" />
-            <span class="text-blue-200 font-medium text-sm">Filter</span>
-            <UBadge v-if="hasActiveFilters" color="blue" variant="soft" size="xs">{{ activeFiltersCount }}</UBadge>
-            <button 
-              v-if="hasActiveFilters"
-              @click="clearFilters"
-              class="ml-auto text-xs text-blue-300 hover:text-blue-200 transition-colors"
-            >
-              Zurücksetzen
-            </button>
+      <!-- Motivational Progress -->
+      <ClientOnly>
+        <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
+              <span class="text-white font-medium text-sm">Dein Fortschritt</span>
+            </div>
+            <div class="text-blue-200 font-bold text-sm">
+              {{ Math.round(overallProgress) }}% geschafft
+            </div>
           </div>
-
-          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2">
-            <!-- Therapy Type -->
-            <select 
-              v-model="filters.therapyType"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Alle Therapiearten" class="text-gray-900">Alle Therapien</option>
-              <option v-for="option in therapyTypeOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option.replace('Kinder- & Jugendtherapie', 'K&J-Therapie') }}
-              </option>
-            </select>
-
-            <!-- Problem -->
-            <select 
-              v-model="filters.problem"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Alle Probleme" class="text-gray-900">Alle Probleme</option>
-              <option v-for="option in problemOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option }}
-              </option>
-            </select>
-
-            <!-- Age Group -->
-            <select 
-              v-model="filters.ageGroup"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Alle Altersgruppen" class="text-gray-900">Alle Altersgruppen</option>
-              <option v-for="option in ageGroupOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option }}
-              </option>
-            </select>
-
-            <!-- Billing -->
-            <select 
-              v-model="filters.billing"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Alle Abrechnungsarten" class="text-gray-900">Alle Abrechnungen</option>
-              <option v-for="option in billingOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option.replace('Gesetzliche Krankenversicherung', 'Gesetzlich').replace('Private Krankenversicherung', 'Privat') }}
-              </option>
-            </select>
-
-            <!-- Gender -->
-            <select 
-              v-model="filters.gender"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Egal" class="text-gray-900">Geschlecht egal</option>
-              <option v-for="option in genderOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option }}
-              </option>
-            </select>
-
-            <!-- Free Places -->
-            <select 
-              v-model="filters.freePlaces"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Egal" class="text-gray-900">Alle Plätze</option>
-              <option v-for="option in freePlacesOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
-                {{ option }}
-              </option>
-            </select>
-
-            <!-- Specialization -->
-            <div class="relative">
-              <input 
-                v-model="filters.specialization"
-                type="text"
-                placeholder="Spezialisierung..."
-                class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-full"
-              />
-              <!-- Loading indicator for search -->
+          
+          <!-- Custom animated progress bar -->
+          <div class="mb-3 relative">
+            <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
               <div 
-                v-if="filters.specialization !== debouncedSpecialization && filters.specialization"
-                class="absolute right-2 top-1/2 transform -translate-y-1/2"
+                class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-1000 ease-out"
+                :style="{ width: overallProgress + '%' }"
+              />
+            </div>
+            <div 
+              class="absolute top-0 left-0 h-full w-6 bg-gradient-to-r from-white/20 to-transparent rounded-full transition-all duration-1000 ease-out animate-pulse"
+              :style="{ left: Math.max(0, overallProgress - 6) + '%' }"
+              v-if="overallProgress > 0"
+            />
+          </div>
+          
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-blue-100/70">Schritt {{ currentStep }} von {{ stepperItems.length }}</span>
+            <div class="flex items-center gap-1">
+              <div
+                v-for="i in stepperItems.length" 
+                :key="i"
+                :class="[
+                  'w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+                  i <= completedSteps 
+                    ? 'bg-green-400 border-green-400 scale-110' 
+                    : 'border-white/30'
+                ]"
               >
-                <div class="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <UIcon 
+                  v-if="i <= completedSteps"
+                  name="i-heroicons-check"
+                  class="w-2 h-2 text-white"
+                />
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Loading State -->
-      <div v-if="isPiniaLoading || pending" class="w-full space-y-4">
-        <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-          <div class="flex items-center gap-3">
-            <div class="relative">
-              <div class="w-8 h-8 border-2 border-blue-400/30 rounded-full"></div>
-              <div class="absolute inset-0 w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <div>
-              <div class="text-blue-200 font-medium text-sm">
-                {{ isPiniaLoading ? 'Lade Profildaten...' : 'Suche Therapeuten...' }}
-              </div>
-              <div class="text-blue-100/60 text-xs">Das kann einen Moment dauern</div>
-            </div>
+          <!-- Motivational message -->
+          <div class="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <p class="text-blue-200 text-xs text-center font-medium">
+              {{ motivationalMessage }}
+            </p>
           </div>
         </div>
+        <template #fallback>
+          <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
+                <span class="text-white font-medium text-sm">Dein Fortschritt</span>
+              </div>
+              <div class="text-blue-200 font-bold text-sm">
+                0% geschafft
+              </div>
+            </div>
+            
+            <!-- Custom animated progress bar -->
+            <div class="mb-3 relative">
+              <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-1000 ease-out w-0" />
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-blue-100/70">Schritt 1 von 7</span>
+              <div class="flex items-center gap-1">
+                <div
+                  v-for="i in 7" 
+                  :key="i"
+                  class="w-3 h-3 rounded-full border-2 border-white/30"
+                />
+              </div>
+            </div>
+
+            <!-- Motivational message -->
+            <div class="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p class="text-blue-200 text-xs text-center font-medium">
+                🚀 Du startest Deine Reise zum Therapieplatz!
+              </p>
+            </div>
+          </div>
+        </template>
+      </ClientOnly>
+
+      <!-- Horizontal Stepper with Scrolling -->
+      <div class="w-full max-w-7xl">
+        <ClientOnly>
+          <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
+            <div class="min-w-max px-4">
+              <UStepper 
+                ref="stepperRef"
+                :default-value="currentStepIndex"
+                :model-value="currentStepIndex"
+                @update:model-value="(value) => currentStepIndex = value"
+                :items="visibleStepperItems" 
+                class="w-full min-w-[1200px]"
+                color="primary"
+                orientation="horizontal"
+                size="md"
+                :disabled="false"
+              />
+            </div>
+          </div>
+          <template #fallback>
+            <div class="h-24 flex items-center justify-center text-blue-200">
+              <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mr-2" />
+              Lade Stepper...
+            </div>
+          </template>
+        </ClientOnly>
         
-        <!-- Loading Skeleton -->
-        <div class="space-y-3">
-          <div v-for="i in 3" :key="i" class="rounded-xl bg-white/5 backdrop-blur-sm p-4 border border-white/10 animate-pulse">
-            <div class="flex items-start gap-3">
-              <div class="w-12 h-12 rounded-lg bg-blue-500/20"></div>
-              <div class="flex-1 space-y-2">
-                <div class="h-4 bg-blue-500/20 rounded w-3/4"></div>
-                <div class="h-3 bg-blue-500/15 rounded w-1/2"></div>
-                <div class="flex gap-2">
-                  <div class="h-3 bg-blue-500/15 rounded w-16"></div>
-                  <div class="h-3 bg-blue-500/15 rounded w-20"></div>
-                </div>
+        <!-- Step Content (Fixed, No Scrolling) -->
+        <ClientOnly>
+          <div class="w-full">
+            <!-- Step 1: Terminservicestelle Erstgespräch -->
+            <div v-if="currentStep === 1" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+              <div class="flex items-center gap-2 mb-2">
+                <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
+                <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Error State -->
-      <div v-else-if="error" class="w-full rounded-xl bg-red-500/20 backdrop-blur-sm p-4 border border-red-500/30">
-        <div class="flex items-center gap-2 text-red-200">
-          <span class="text-lg">⚠️</span>
-          <span class="text-sm">Fehler beim Laden der Therapeuten-Daten</span>
-        </div>
-      </div>
-
-      <!-- No Location State -->
-      <div v-else-if="!isPiniaLoading && !onboardingStore.formData.location" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-        <div class="text-center space-y-3">
-          <div class="text-blue-300 text-lg">📍</div>
-          <h3 class="font-bold text-blue-300 text-base">Standort fehlt</h3>
-          <p class="text-blue-100/80 text-sm">
-            Bitte vervollständige dein Profil, um Therapeuten in deiner Nähe zu finden.
-          </p>
-          <button @click="$router.push('/onboarding')" class="mt-3 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-colors hover:bg-blue-600">
-            Profil vervollständigen
-          </button>
-        </div>
-      </div>
-
-      <!-- Therapist Results -->
-      <div v-else-if="!isPiniaLoading && therapistData && therapistData.therapists.length > 0" class="w-full space-y-4">
-        <!-- Results Header -->
-        <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-bold text-blue-300 text-base">Gefundene Therapeuten</h3>
-              <p class="text-blue-100/80 text-sm">PLZ {{ therapistData.plz }} • {{ therapistData.radius }}km Umkreis</p>
-            </div>
-            <div class="text-right">
-              <div class="text-2xl font-bold text-white">{{ therapistData.therapists.length }}</div>
-              <div class="text-xs text-blue-100/80">verfügbar</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Therapist List -->
-        <div class="space-y-3 max-h-80 overflow-y-auto">
-          <div 
-            v-for="therapist in therapistData.therapists" 
-            :key="therapist.id"
-            class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
-            @click="openTherapistProfile(therapist.profileUrl)"
-          >
-            <div class="flex items-start gap-3">
-              <!-- Profile Image -->
-              <div class="flex-shrink-0">
-                <div v-if="therapist.image" class="w-12 h-12 rounded-lg overflow-hidden">
-                  <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
-                </div>
-                <div v-else class="w-12 h-12 rounded-lg bg-blue-500/30 flex items-center justify-center">
-                  <svg class="w-6 h-6 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                </div>
-              </div>
-
-              <!-- Therapist Info -->
-              <div class="flex-1 min-w-0">
-                <h4 class="font-semibold text-white text-sm group-hover:text-blue-200 transition-colors">
-                  {{ therapist.name }}
-                </h4>
-                <p class="text-blue-100/80 text-xs mt-1">
-                  {{ therapist.qualification }}
+              
+              <div class="space-y-3 text-sm">
+                <p class="text-blue-100/90">
+                  Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
                 </p>
-                <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
-                  <div class="flex items-center gap-1">
-                    <span>📍</span>
-                    <span>{{ therapist.distance }}km</span>
-                  </div>
-                  <div v-if="therapist.phone" class="flex items-center gap-1">
-                    <span>📞</span>
-                    <span>{{ therapist.phone }}</span>
-                  </div>
+                
+                <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                  <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
+                  <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+                </div>
+
+                <div class="space-y-2">
+                  <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
+                  <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                    <li>• Behandlungsbedarf muss festgestellt werden</li>
+                    <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
+                    <li>• Nur dann ist später Kostenerstattung möglich</li>
+                  </ul>
                 </div>
               </div>
 
-              <!-- Arrow -->
-              <div class="flex-shrink-0 text-blue-100/40 group-hover:text-blue-200 transition-colors">
-                <span class="text-sm">→</span>
+              <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                <UButton 
+                  @click="completeStep(1)" 
+                  :color="stepProgress[1] ? 'green' : 'blue'" 
+                  size="sm"
+                  variant="outline"
+                >
+                  {{ stepProgress[1] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+                </UButton>
+                
+                <UButton 
+                  @click="nextStep" 
+                  color="primary"
+                  size="sm"
+                  trailing-icon="i-heroicons-chevron-right"
+                >
+                  Weiter
+                </UButton>
               </div>
             </div>
           </div>
-        </div>
+
+          <!-- Step 2: Probatorik -->
+          <div v-if="currentStep === 2" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
+              <h3 class="text-lg font-semibold text-white">Terminservicestelle: Probatorik</h3>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Nach dem Erstgespräch erhältst Du über die Terminservicestelle eine probatorische Sitzung.
+              </p>
+              
+              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium">📋 Dringlichkeitscode benötigt</h4>
+                <p class="text-amber-100/80 text-xs mt-1">
+                  Den Code findest Du auf der "Individuellen Patienteninformation" aus dem Erstgespräch
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zur Probatorik:</h4>
+                <p class="text-blue-100/80 text-xs">
+                  Den Dringlichkeitscode erhältst Du nur, wenn "zeitnah erforderlich" angekreuzt wurde.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(2)" 
+                :color="stepProgress[2] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[2] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 3: Kontaktprotokoll -->
+          <div v-if="currentStep === 3" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
+              <h3 class="text-lg font-semibold text-white">Kontaktprotokoll erstellen</h3>
+            </div>
+            <p class="text-blue-100/90 text-sm">
+              Führe ein Kontaktprotokoll mit 6-10 Therapeuten für die Kostenerstattung.
+            </p>
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(3)" 
+                :color="stepProgress[3] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[3] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 4: Hausarzt -->
+          <div v-if="currentStep === 4" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-300" />
+              <h3 class="text-lg font-semibold text-white">Hausarzt Bescheinigung</h3>
+            </div>
+            <p class="text-blue-100/90 text-sm">
+              Hole Dir eine Bescheinigung von Deinem Hausarzt über die Notwendigkeit der Behandlung.
+            </p>
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(4)" 
+                :color="stepProgress[4] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[4] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 5: Kostenerstattung -->
+          <div v-if="currentStep === 5" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
+              <h3 class="text-lg font-semibold text-white">Kostenerstattungsantrag</h3>
+            </div>
+            <p class="text-blue-100/90 text-sm">
+              Stelle einen Antrag auf Kostenerstattung bei Deiner Krankenkasse.
+            </p>
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(5)" 
+                :color="stepProgress[5] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[5] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 6: Widerspruch -->
+          <div v-if="currentStep === 6" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300" />
+              <h3 class="text-lg font-semibold text-white">Widerspruch einlegen</h3>
+            </div>
+            <p class="text-blue-100/90 text-sm">
+              Falls der Antrag abgelehnt wird, lege fristgerecht Widerspruch ein.
+            </p>
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(6)" 
+                :color="stepProgress[6] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[6] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 7: Private Therapeuten -->
+          <div v-if="currentStep === 7" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-green-300" />
+              <h3 class="text-lg font-semibold text-white">Private Therapeuten</h3>
+            </div>
+            <p class="text-blue-100/90 text-sm">
+              Alternative: Suche nach privaten Therapeuten, die oft schneller verfügbar sind.
+            </p>
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(7)" 
+                :color="stepProgress[7] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[7] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <div class="flex items-center gap-2 text-green-400 text-sm font-medium">
+                <UIcon name="i-heroicons-check-circle" class="w-5 h-5" />
+                Guide abgeschlossen!
+              </div>
+            </div>
+          </div>
+          <template #fallback>
+            <div class="w-full">
+              <!-- Default Step 1 content for SSR -->
+              <div class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+                <div class="flex items-center gap-2 mb-2">
+                  <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
+                  <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
+                </div>
+                
+                <div class="space-y-3 text-sm">
+                  <p class="text-blue-100/90">
+                    Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
+                  </p>
+                  
+                  <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                    <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
+                    <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+                  </div>
+
+                  <div class="space-y-2">
+                    <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
+                    <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                      <li>• Behandlungsbedarf muss festgestellt werden</li>
+                      <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
+                      <li>• Nur dann ist später Kostenerstattung möglich</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                  <UButton 
+                    color="blue"
+                    size="sm"
+                    variant="outline"
+                  >
+                    Als erledigt markieren
+                  </UButton>
+                  
+                  <UButton 
+                    color="primary"
+                    size="sm"
+                    trailing-icon="i-heroicons-chevron-right"
+                  >
+                    Weiter
+                  </UButton>
+                </div>
+              </div>
+            </div>
+          </template>
+        </ClientOnly>
       </div>
 
-      <!-- No Results State -->
-      <div v-else-if="!isPiniaLoading && therapistData && therapistData.therapists.length === 0" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-        <div class="text-center space-y-3">
-          <div class="text-blue-300 text-lg">🔍</div>
-          <h3 class="font-bold text-blue-300 text-base">Keine Therapeuten gefunden</h3>
-          <p class="text-blue-100/80 text-sm">
-            In PLZ {{ therapistData.plz }} wurden keine passenden Therapeuten gefunden.
-          </p>
-        </div>
+      <!-- Action buttons -->
+      <div class="flex gap-3">
+        <button @click="resetGuide" class="group relative overflow-hidden rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-500/30 px-4 py-2 text-red-200 text-sm font-medium transition-all duration-300 hover:bg-red-500/30 hover:scale-105 active:scale-95">
+          <div class="relative z-10 flex items-center gap-2">
+            <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+            Guide zurücksetzen
+          </div>
+        </button>
+        
+        <button @click="$router.push('/app')" class="group relative overflow-hidden rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 px-4 py-2 text-white text-sm font-medium transition-all duration-300 hover:bg-white/30 hover:scale-105 active:scale-95">
+          <div class="relative z-10 flex items-center gap-2">
+            <span class="group-hover:-translate-x-1 transition-transform duration-300">←</span>
+            Zurück zur App
+          </div>
+          <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+        </button>
       </div>
-      
-      <!-- Back Button -->
-      <button @click="$router.push('/')" class="group relative overflow-hidden rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 px-4 py-2 text-white text-sm font-medium transition-all duration-300 hover:bg-white/30 hover:scale-105 active:scale-95">
-        <div class="relative z-10 flex items-center gap-2">
-          <span class="group-hover:-translate-x-1 transition-transform duration-300">←</span>
-          Zurück zum Start
-        </div>
-        <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-      </button>
     </div>
   </PageCard>
 </template>
 
 <script setup lang="ts">
-interface TherapistData {
+interface StepperItem {
+  slot: string
+  title: string
+  description: string
+  icon: string
+  value: number
+}
+
+interface TherapistResult {
   id: string
   name: string
   qualification: string
@@ -290,304 +533,258 @@ interface TherapistData {
   phone: string
   distance: number
   profileUrl: string
-  image?: string
 }
 
-interface TherapistSearchResult {
-  plz: string
-  totalResults: number
-  radius: number
-  therapists: TherapistData[]
+interface ProtocolEntry {
+  name: string
+  date: string
+  result: string
+  contacted: boolean
 }
 
-const onboardingStore = useOnboardingStore()
+// Stepper configuration
+const stepperItems = ref<StepperItem[]>([
+  {
+    slot: 'erstgespraech',
+    title: 'Erstgespräch',
+    description: 'Terminservice 116 117',
+    icon: 'i-heroicons-phone',
+    value: 0
+  },
+  {
+    slot: 'probatorik',
+    title: 'Probatorik',
+    description: 'Dringlichkeitscode',
+    icon: 'i-heroicons-document-text',
+    value: 1
+  },
+  {
+    slot: 'kontaktprotokoll',
+    title: 'Kontaktprotokoll',
+    description: '6-10 Therapeuten',
+    icon: 'i-heroicons-clipboard-document-list',
+    value: 2
+  },
+  {
+    slot: 'hausarzt',
+    title: 'Hausarzt',
+    description: 'Bescheinigung',
+    icon: 'i-heroicons-user',
+    value: 3
+  },
+  {
+    slot: 'kostenerstattung',
+    title: 'Kostenerstattung',
+    description: 'Antrag Krankenkasse',
+    icon: 'i-heroicons-document-text',
+    value: 4
+  },
+  {
+    slot: 'widerspruch',
+    title: 'Widerspruch',
+    description: 'Falls abgelehnt',
+    icon: 'i-heroicons-exclamation-triangle',
+    value: 5
+  },
+  {
+    slot: 'private',
+    title: 'Private Therapeuten',
+    description: 'Schneller verfügbar',
+    icon: 'i-heroicons-user-group',
+    value: 6
+  }
+])
 
-// Loading state for Pinia data
-const isPiniaLoading = ref(true)
+// Use all items but make them more compact
+const visibleStepperItems = computed(() => stepperItems.value)
 
-// Load filters from localStorage or use defaults
-const getStoredFilters = () => {
+// Load persisted state or defaults
+const getStoredGuideState = () => {
   if (process.client) {
     try {
-      const stored = localStorage.getItem('therapist-filters')
+      const stored = localStorage.getItem('therapist-guide-state')
       if (stored) {
-        return { ...{
-          therapyType: 'Alle Therapiearten',
-          gender: 'Egal',
-          problem: 'Alle Probleme',
-          ageGroup: 'Alle Altersgruppen',
-          billing: 'Alle Abrechnungsarten',
-          freePlaces: 'Egal',
-          specialization: ''
-        }, ...JSON.parse(stored) }
+        return JSON.parse(stored)
       }
     } catch (error) {
-      console.warn('Failed to load stored filters:', error)
+      console.warn('Failed to load stored guide state:', error)
     }
   }
   return {
-    therapyType: 'Alle Therapiearten',
-    gender: 'Egal',
-    problem: 'Alle Probleme',
-    ageGroup: 'Alle Altersgruppen',
-    billing: 'Alle Abrechnungsarten',
-    freePlaces: 'Egal',
-    specialization: ''
+    currentStep: 1,
+    stepProgress: {
+      1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false
+    },
+    protocolEntries: [],
+    hausarztCompleted: false,
+    antragCompleted: false,
+    antragStatus: ''
   }
 }
 
-// Filter state (using display values)
-const filters = ref(getStoredFilters())
+const storedState = getStoredGuideState()
 
-// Debounced specialization for API calls
-const debouncedSpecialization = ref(filters.value.specialization)
+// State with persistence
+const currentStep = ref(storedState.currentStep)
 
-// Debounce the specialization field to avoid excessive API calls
-watch(() => filters.value.specialization, (newValue) => {
-  // Clear existing timeout
-  if (process.client && window.specializationTimeout) {
-    clearTimeout(window.specializationTimeout)
-  }
-  
-  // Set new timeout for 500ms delay
-  if (process.client) {
-    window.specializationTimeout = setTimeout(() => {
-      debouncedSpecialization.value = newValue
-    }, 500)
-  }
+// Template refs
+const stepperContainer = ref<HTMLElement>()
+const stepperRef = ref()
+
+// Reactive stepper index (0-based)
+const currentStepIndex = ref(storedState.currentStep - 1)
+
+// Keep currentStep and currentStepIndex in sync
+watch(currentStep, (newStep) => {
+  const newIndex = newStep - 1
+  currentStepIndex.value = newIndex
 }, { immediate: true })
 
-// Save filters to localStorage whenever they change
-watch(filters, (newFilters) => {
+watch(currentStepIndex, (newIndex) => {
+  const newStep = newIndex + 1
+  currentStep.value = newStep
+})
+
+// Auto-scroll to current step
+const scrollToCurrentStep = () => {
+  if (!stepperContainer.value) return
+  
+  nextTick(() => {
+    const container = stepperContainer.value!
+    const stepWidth = 150 // Reduced for less scrolling
+    const offset = 40 // Increased offset to scroll less
+    const scrollPosition = Math.max(0, (currentStepIndex.value * stepWidth) - offset)
+    
+    container.scrollTo({
+      left: scrollPosition,
+      behavior: 'smooth'
+    })
+  })
+}
+
+// Progress tracking
+const stepProgress = ref(storedState.stepProgress)
+
+// Computed progress values
+const completedSteps = computed(() => {
+  return Object.values(stepProgress.value).filter(Boolean).length
+})
+
+const overallProgress = computed(() => {
+  const baseProgress = (currentStep.value - 1) / stepperItems.value.length * 100
+  const completionBonus = completedSteps.value / stepperItems.value.length * 100
+  return Math.min(100, Math.max(baseProgress, completionBonus))
+})
+
+const motivationalMessage = computed(() => {
+  const messages = [
+    "🚀 Du startest Deine Reise zum Therapieplatz!",
+    "💪 Großartig! Du machst echte Fortschritte!",
+    "📝 Super! Das Kontaktprotokoll ist wichtig!",
+    "🏥 Du holst Dir professionelle Unterstützung!",
+    "📋 Fast geschafft! Der Antrag ist ein großer Schritt!",
+    "⚖️ Du kennst Deine Rechte und nutzt sie!",
+    "🎉 Fantastisch! Du bist kurz vor dem Ziel!"
+  ]
+  
+  if (completedSteps.value === stepperItems.value.length) {
+    return "🏆 Herzlichen Glückwunsch! Du hast alle Schritte gemeistert!"
+  }
+  
+  return messages[currentStep.value - 1] || "Du schaffst das! 💙"
+})
+
+// Navigation
+const nextStep = () => {
+  if (currentStep.value < stepperItems.value.length) {
+    currentStep.value++
+    scrollToCurrentStep()
+  }
+}
+
+const prevStep = () => {
+  if (currentStep.value > 1) {
+    currentStep.value--
+    scrollToCurrentStep()
+  }
+}
+
+const completeStep = (step: number) => {
+  stepProgress.value[step] = !stepProgress.value[step] // Toggle completion
+  
+  // Show toast
+  const toast = useToast()
+  const stepNames = ['Erstgespräch', 'Probatorik', 'Kontaktprotokoll', 'Hausarzt', 'Kostenerstattung', 'Widerspruch', 'Private Therapeuten']
+  
+  if (stepProgress.value[step]) {
+    toast.add({
+      title: 'Schritt abgeschlossen! 🎉',
+      description: `${stepNames[step - 1]} erfolgreich bearbeitet`,
+      color: 'green',
+      timeout: 3000
+    })
+  } else {
+    toast.add({
+      title: 'Schritt zurückgesetzt',
+      description: `${stepNames[step - 1]} als nicht erledigt markiert`,
+      color: 'gray',
+      timeout: 2000
+    })
+  }
+}
+
+// Save state to localStorage whenever it changes
+const saveGuideState = () => {
   if (process.client) {
     try {
-      localStorage.setItem('therapist-filters', JSON.stringify(newFilters))
+      const state = {
+        currentStep: currentStep.value,
+        stepProgress: stepProgress.value,
+        protocolEntries: [],
+        hausarztCompleted: false,
+        antragCompleted: false,
+        antragStatus: ''
+      }
+      localStorage.setItem('therapist-guide-state', JSON.stringify(state))
     } catch (error) {
-      console.warn('Failed to save filters:', error)
+      console.warn('Failed to save guide state:', error)
     }
   }
-}, { deep: true })
+}
 
-// Check if Pinia data is loaded
+// Watch for state changes and save
+watch([currentStep, stepProgress], saveGuideState, { deep: true })
+
+// Watch for step changes and auto-scroll
+watch(currentStep, () => {
+  scrollToCurrentStep()
+}, { immediate: false })
+
+// Auto-scroll on mount
 onMounted(() => {
-  // Simulate loading delay for persisted state
-  const checkPiniaLoaded = () => {
-    if (onboardingStore.$state) {
-      isPiniaLoading.value = false
-    } else {
-      setTimeout(checkPiniaLoaded, 100)
-    }
+  nextTick(() => {
+    scrollToCurrentStep()
+  })
+})
+
+const resetGuide = () => {
+  // Reset all state
+  currentStep.value = 1
+  stepProgress.value = {
+    1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false
   }
   
-  // Small delay to ensure persisted state is loaded
-  setTimeout(() => {
-    isPiniaLoading.value = false
-  }, 500)
-})
-
-// Cleanup timeout on unmount
-onUnmounted(() => {
-  if (process.client && window.specializationTimeout) {
-    clearTimeout(window.specializationTimeout)
-  }
-})
-
-// Extract PLZ from location string (assuming format like "90403 Nürnberg" or "Nürnberg, 90403")
-const extractPlz = (location: string): string | null => {
-  const plzMatch = location.match(/\b(\d{5})\b/)
-  return plzMatch ? plzMatch[1] : null
-}
-
-// Get greeting based on time of day
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Guten Morgen'
-  if (hour < 18) return 'Guten Tag'
-  return 'Guten Abend'
-})
-
-// Map display values to API values
-const therapyTypeMap: Record<string, string> = {
-  'Alle Therapiearten': '',
-  'Verhaltenstherapie': 'verhaltenstherapie',
-  'Tiefenpsychologie': 'tiefenpsychologie', 
-  'Systemische Therapie': 'systemisch',
-  'Kinder- & Jugendtherapie': 'kinder'
-}
-
-
-const genderMap: Record<string, string | null> = {
-  'Egal': null,
-  'Weiblich': '2',
-  'Männlich': '1'
-}
-
-const problemMap: Record<string, string | null> = {
-  'Alle Probleme': null,
-  'Depression': 'depression',
-  'Angst - Phobie': 'angst',
-  'Trauma': 'trauma',
-  'Beziehungsprobleme': 'beziehung',
-  'Burnout': 'burnout',
-  'Essstörungen': 'ess',
-  'Sucht': 'sucht',
-  'ADHS': 'adhs',
-  'Zwangsstörungen': 'zwang'
-}
-
-const ageGroupMap: Record<string, string | null> = {
-  'Alle Altersgruppen': null,
-  'Kinder (0-12)': 'kinder',
-  'Jugendliche (13-17)': 'jugend',
-  'Erwachsene (18-64)': 'erwachsene',
-  'Senioren (65+)': 'senioren'
-}
-
-const billingMap: Record<string, string | null> = {
-  'Alle Abrechnungsarten': null,
-  'Gesetzliche Krankenversicherung': '7',
-  'Private Krankenversicherung': '8',
-  'Selbstzahler': '9'
-}
-
-const freePlacesMap: Record<string, string | null> = {
-  'Egal': null,
-  'Nur freie Plätze': '1'
-}
-
-// Therapy type options
-const therapyTypeOptions = [
-  'Alle Therapiearten',
-  'Verhaltenstherapie', 
-  'Tiefenpsychologie',
-  'Systemische Therapie',
-  'Kinder- & Jugendtherapie'
-]
-
-
-// Gender options
-const genderOptions = [
-  'Egal',
-  'Weiblich',
-  'Männlich'
-]
-
-// Problem options (Worum geht es?)
-const problemOptions = [
-  'Alle Probleme',
-  'Depression',
-  'Angst - Phobie',
-  'Trauma',
-  'Beziehungsprobleme',
-  'Burnout',
-  'Essstörungen',
-  'Sucht',
-  'ADHS',
-  'Zwangsstörungen'
-]
-
-// Age group options (Für wen?)
-const ageGroupOptions = [
-  'Alle Altersgruppen',
-  'Kinder (0-12)',
-  'Jugendliche (13-17)',
-  'Erwachsene (18-64)',
-  'Senioren (65+)'
-]
-
-// Billing options (Abrechnung)
-const billingOptions = [
-  'Alle Abrechnungsarten',
-  'Gesetzliche Krankenversicherung',
-  'Private Krankenversicherung',
-  'Selbstzahler'
-]
-
-// Free places options (Freie Plätze)
-const freePlacesOptions = [
-  'Egal',
-  'Nur freie Plätze'
-]
-
-// Extract PLZ from user's location
-const userPlz = computed(() => {
-  if (!onboardingStore.formData.location) return null
-  return extractPlz(onboardingStore.formData.location)
-})
-
-// Fetch therapist data with reactive query (using debounced specialization)
-const queryParams = computed(() => ({
-  plz: userPlz.value,
-  therapyType: therapyTypeMap[filters.value.therapyType] || undefined,
-  gender: genderMap[filters.value.gender] || undefined,
-  problem: problemMap[filters.value.problem] || undefined,
-  ageGroup: ageGroupMap[filters.value.ageGroup] || undefined,
-  billing: billingMap[filters.value.billing] || undefined,
-  freePlaces: freePlacesMap[filters.value.freePlaces] || undefined,
-  specialization: debouncedSpecialization.value || undefined
-}))
-
-const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
-  query: queryParams,
-  default: () => null,
-  server: false, // Only fetch on client side to avoid SSR issues
-  transform: (_data: TherapistSearchResult) => {
-    // Log filter changes for debugging
-    console.log('Applied filters:', filters.value)
-    console.log('Query params:', queryParams.value)
-    console.log('Therapist count:', _data?.therapists?.length || 0)
-    return _data
-  }
-})
-
-// Clear all filters
-const clearFilters = () => {
-  filters.value = {
-    therapyType: 'Alle Therapiearten',
-    gender: 'Egal',
-    problem: 'Alle Probleme',
-    ageGroup: 'Alle Altersgruppen',
-    billing: 'Alle Abrechnungsarten',
-    freePlaces: 'Egal',
-    specialization: ''
-  }
-  
-  // Also clear from localStorage
+  // Clear localStorage
   if (process.client) {
-    try {
-      localStorage.removeItem('therapist-filters')
-    } catch (error) {
-      console.warn('Failed to clear stored filters:', error)
-    }
+    localStorage.removeItem('therapist-guide-state')
   }
-}
-
-// Check if any filters are active
-const hasActiveFilters = computed(() => {
-  return filters.value.therapyType !== 'Alle Therapiearten' || 
-         filters.value.gender !== 'Egal' ||
-         filters.value.problem !== 'Alle Probleme' ||
-         filters.value.ageGroup !== 'Alle Altersgruppen' ||
-         filters.value.billing !== 'Alle Abrechnungsarten' ||
-         filters.value.freePlaces !== 'Egal' ||
-         filters.value.specialization !== ''
-})
-
-// Count active filters
-const activeFiltersCount = computed(() => {
-  return [
-    filters.value.therapyType !== 'Alle Therapiearten',
-    filters.value.gender !== 'Egal',
-    filters.value.problem !== 'Alle Probleme',
-    filters.value.ageGroup !== 'Alle Altersgruppen',
-    filters.value.billing !== 'Alle Abrechnungsarten',
-    filters.value.freePlaces !== 'Egal',
-    filters.value.specialization !== ''
-  ].filter(Boolean).length
-})
-
-// Open therapist profile in new tab
-const openTherapistProfile = (profileUrl: string) => {
-  window.open(profileUrl, '_blank', 'noopener,noreferrer')
+  
+  const toast = useToast()
+  toast.add({
+    title: 'Guide zurückgesetzt',
+    description: 'Alle Fortschritte wurden gelöscht. Du kannst von vorne beginnen.',
+    color: 'blue',
+    timeout: 3000
+  })
 }
 </script>

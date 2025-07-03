@@ -1,11 +1,114 @@
 <template>
-  <Container>
-    <div class="fade-container">
-      <slot />
-    </div>
-    <AppFooter />
-  </Container>
+  <div class="relative min-h-screen">
+    <!-- Background with gradient -->
+    <div class="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-teal-800"></div>
+    
+    <!-- Navigation Header -->
+    <header class="relative z-50 sticky top-0 backdrop-blur-lg border-b border-white/10 bg-white/5 mb-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <!-- Logo/Brand -->
+          <NuxtLink to="/" class="flex items-center gap-3 group">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-400/80 to-blue-600/80 text-lg font-bold text-white shadow-lg backdrop-blur-sm transition-all group-hover:scale-105">
+              K
+            </div>
+            <div class="hidden sm:block">
+              <div class="text-lg font-bold text-white">KARL</div>
+              <div class="text-xs text-blue-100/70 -mt-1">Therapy Finder</div>
+            </div>
+          </NuxtLink>
+
+          <!-- Navigation Links -->
+          <nav class="hidden md:flex items-center space-x-1">
+            <UButton 
+              to="/" 
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              :class="$route.path === '/' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+            >
+              <UIcon name="i-heroicons-home" class="w-4 h-4 mr-2" />
+              Home
+            </UButton>
+            
+            <UButton 
+              to="/onboarding" 
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              :class="$route.path === '/onboarding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+            >
+              <UIcon name="i-heroicons-user-circle" class="w-4 h-4 mr-2" />
+              Profil
+            </UButton>
+            
+            <UButton 
+              to="/app" 
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              :class="$route.path === '/app' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+            >
+              <UIcon name="i-heroicons-map" class="w-4 h-4 mr-2" />
+              Guide
+            </UButton>
+            
+            <UButton 
+              to="/therapists" 
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              :class="$route.path === '/therapists' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+            >
+              <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2" />
+              Therapeuten
+            </UButton>
+          </nav>
+
+          <!-- Mobile Navigation -->
+          <div class="md:hidden">
+            <UDropdownMenu :items="mobileMenuItems" :content="{ align: 'end' }">
+              <UButton variant="ghost" color="blue" size="sm">
+                <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
+              </UButton>
+            </UDropdownMenu>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <Container>
+      <div class="fade-container">
+        <slot />
+      </div>
+      <AppFooter />
+    </Container>
+  </div>
 </template>
+
+<script setup>
+const route = useRoute()
+
+// Mobile menu items
+const mobileMenuItems = [{
+  label: 'Home',
+  icon: 'i-heroicons-home',
+  to: '/'
+}, {
+  label: 'Profil',
+  icon: 'i-heroicons-user-circle',
+  to: '/onboarding'
+}, {
+  label: 'Guide',
+  icon: 'i-heroicons-map',
+  to: '/app'
+}, {
+  label: 'Therapeuten',
+  icon: 'i-heroicons-user-group',
+  to: '/therapists'
+}]
+</script>
 
 <style lang="postcss">
 .scrollable-card {
