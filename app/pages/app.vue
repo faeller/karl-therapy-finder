@@ -7,10 +7,10 @@
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          Dein Weg zum Therapieplatz 🎯
+          Hey {{ onboardingStore?.formData?.nickname || 'dort' }}! 👋
         </h1>
         <p class="text-blue-100/80 text-sm">
-          Ein bewährter 7-Schritte-Leitfaden für Deutschland
+          Schön, dass du den Weg zum Therapieplatz angehst
         </p>
       </div>
 
@@ -124,9 +124,15 @@
       <!-- Horizontal Stepper with Scrolling -->
       <div class="w-full max-w-7xl space-y-6">
         <!-- Stepper Title -->
-        <div class="text-center">
-          <h2 class="text-xl font-semibold text-white mb-2">Deine nächsten Schritte</h2>
-          <p class="text-blue-100/70 text-sm">Folge dem bewährten Leitfaden für deinen Therapieplatz</p>
+        <div class="text-center space-y-2">
+          <h2 class="text-xl font-semibold text-white">Deine nächsten Schritte</h2>
+          <p class="text-blue-100/80 text-sm">
+            Du hast schon <span class="font-medium text-blue-200">{{ completedSteps }} von {{ stepperItems.length }}</span> Schritten geschafft!
+          </p>
+          <p class="text-blue-100/60 text-xs">
+            Grobe Schätzung: noch <span class="font-medium">{{ Math.max(2, 8 - completedSteps) }}-12 Wochen</span> bis zum Therapieplatz 
+            (kann aber auch deutlich länger dauern)
+          </p>
         </div>
         <ClientOnly>
           <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
@@ -713,6 +719,9 @@ const stepperItems = ref<StepperItem[]>([
 
 // Use all items but make them more compact
 const visibleStepperItems = computed(() => stepperItems.value)
+
+// Get user data from onboarding store
+const onboardingStore = useOnboardingStore()
 
 // Load persisted state or defaults
 const getStoredGuideState = () => {
