@@ -61,8 +61,7 @@
           <div class="min-w-max px-4">
             <UStepper 
               :key="`stepper-${currentStep}`"
-              :model-value="currentStepIndex" 
-              @update:model-value="(value) => currentStepIndex = value"
+              v-model="currentStepIndex"
               :items="visibleStepperItems" 
               class="w-full min-w-[1200px]"
               color="primary"
@@ -515,8 +514,15 @@ const stepperContainer = ref<HTMLElement>()
 
 // Computed for 0-based index for UStepper
 const currentStepIndex = computed({
-  get: () => currentStep.value - 1,
-  set: (value) => currentStep.value = value + 1
+  get: () => {
+    const index = currentStep.value - 1
+    console.log('currentStepIndex get:', index, 'currentStep:', currentStep.value)
+    return index
+  },
+  set: (value) => {
+    console.log('currentStepIndex set:', value, 'will set currentStep to:', value + 1)
+    currentStep.value = value + 1
+  }
 })
 
 // Auto-scroll to current step
@@ -526,7 +532,7 @@ const scrollToCurrentStep = () => {
   nextTick(() => {
     const container = stepperContainer.value!
     const stepWidth = 150 // Reduced for less scrolling
-    const offset = 30 // Increased offset to scroll less
+    const offset = 40 // Increased offset to scroll less
     const scrollPosition = Math.max(0, (currentStepIndex.value * stepWidth) - offset)
     
     container.scrollTo({
@@ -634,9 +640,14 @@ watch(currentStep, () => {
   scrollToCurrentStep()
 }, { immediate: false })
 
-// Auto-scroll on mount
+// Auto-scroll on mount and force stepper update
 onMounted(() => {
-  scrollToCurrentStep()
+  nextTick(() => {
+    // Force a small update to ensure stepper syncs
+    const temp = currentStep.value
+    currentStep.value = temp
+    scrollToCurrentStep()
+  })
 })
 
 const resetGuide = () => {
