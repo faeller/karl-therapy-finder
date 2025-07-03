@@ -27,13 +27,20 @@
             </div>
           </div>
           
-          <UProgress 
-            :value="Number(overallProgress)" 
-            :max="100"
-            color="primary"
-            size="lg"
-            class="mb-3"
-          />
+          <!-- Custom animated progress bar -->
+          <div class="mb-3 relative">
+            <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-1000 ease-out"
+                :style="{ width: overallProgress + '%' }"
+              />
+            </div>
+            <div 
+              class="absolute top-0 left-0 h-full w-6 bg-gradient-to-r from-white/20 to-transparent rounded-full transition-all duration-1000 ease-out animate-pulse"
+              :style="{ left: Math.max(0, overallProgress - 6) + '%' }"
+              v-if="overallProgress > 0"
+            />
+          </div>
           
           <div class="flex items-center justify-between text-xs">
             <span class="text-blue-100/70">Schritt {{ currentStep }} von {{ stepperItems.length }}</span>
@@ -42,9 +49,9 @@
                 v-for="i in stepperItems.length" 
                 :key="i"
                 :class="[
-                  'w-3 h-3 rounded-full border-2 flex items-center justify-center',
+                  'w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all duration-300',
                   i <= completedSteps 
-                    ? 'bg-green-400 border-green-400' 
+                    ? 'bg-green-400 border-green-400 scale-110' 
                     : 'border-white/30'
                 ]"
               >
@@ -76,13 +83,12 @@
               </div>
             </div>
             
-            <UProgress 
-              :value="0" 
-              :max="100"
-              color="primary"
-              size="lg"
-              class="mb-3"
-            />
+            <!-- Custom animated progress bar -->
+            <div class="mb-3 relative">
+              <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-1000 ease-out w-0" />
+              </div>
+            </div>
             
             <div class="flex items-center justify-between text-xs">
               <span class="text-blue-100/70">Schritt 1 von 7</span>
