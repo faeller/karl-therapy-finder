@@ -1,7 +1,7 @@
 <template>
   <div class="relative min-h-screen">
     <!-- Background with gradient -->
-    <div class="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-teal-800"></div>
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"></div>
     
     <!-- Navigation Header -->
     <header class="relative z-50 sticky top-0 backdrop-blur-lg border-b border-white/10 bg-white/5 mb-6">
