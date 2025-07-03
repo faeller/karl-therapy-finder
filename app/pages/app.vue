@@ -123,6 +123,11 @@
 
       <!-- Horizontal Stepper with Scrolling -->
       <div class="w-full max-w-7xl space-y-6">
+        <!-- Stepper Title -->
+        <div class="text-center">
+          <h2 class="text-xl font-semibold text-white mb-2">Deine nächsten Schritte</h2>
+          <p class="text-blue-100/70 text-sm">Folge dem bewährten Leitfaden für deinen Therapieplatz</p>
+        </div>
         <ClientOnly>
           <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
             <div class="min-w-max px-4">
