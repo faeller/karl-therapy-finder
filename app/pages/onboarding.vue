@@ -117,7 +117,7 @@ const canProceed = computed(() => {
   switch (currentStep.value) {
     case 0: return true // nickname is optional
     case 1: return formData.value.isAdult !== null
-    case 2: return formData.value.location.trim().length > 0
+    case 2: return /^\d{5}$/.test(formData.value.location.trim()) // exactly 5 digits required
     case 3: return true // struggles are optional
     case 4: return true // preferences are optional
     default: return true
@@ -251,16 +251,18 @@ const completeOnboarding = () => {
         <div class="space-y-6 text-center">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold text-white">Wo suchst du? 📍</h2>
-            <p class="text-blue-100/80">PLZ oder Stadt eingeben</p>
+            <p class="text-blue-100/80">Deine Postleitzahl eingeben</p>
           </div>
           
           <div class="space-y-4 max-w-sm mx-auto">
             <UInput
               :model-value="formData.location"
               @update:model-value="(value) => onboardingStore.updateFormData({ location: value })"
-              placeholder="z.B. 10115 oder Berlin"
+              placeholder="z.B. 10115"
               icon="i-heroicons-map-pin"
-              @keyup.enter="nextStep"
+              pattern="[0-9]{5}"
+              maxlength="5"
+              @keyup.enter="canProceed && nextStep()"
             />
             
             <div>

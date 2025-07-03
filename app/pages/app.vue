@@ -7,19 +7,31 @@
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          Hey {{ onboardingStore?.formData?.nickname || 'dort' }}! 👋
+          <template v-if="onboardingStore?.formData?.nickname">
+            Hey {{ onboardingStore.formData.nickname }}! 👋
+          </template>
+          <template v-else>
+            Hey! 👋
+          </template>
         </h1>
         <p class="text-blue-100/80 text-sm">
-          Schön, dass du den Weg zum Therapieplatz angehst
+          <template v-if="onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
+            Schön, dass du den Weg zum Therapieplatz angehst
+          </template>
+          <template v-else>
+            Bitte vervollständige dein Profil im Onboarding
+          </template>
         </p>
       </div>
 
-      <!-- Divider -->
-      <div class="w-full max-w-md">
-        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
-      </div>
+      <!-- Show main content only with valid PLZ -->
+      <template v-if="onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
+        <!-- Divider -->
+        <div class="w-full max-w-md">
+          <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+        </div>
 
-      <!-- Motivational Progress -->
+        <!-- Motivational Progress -->
       <ClientOnly>
         <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
           <div class="flex items-center justify-between mb-3">
@@ -634,6 +646,25 @@
           <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
         </button>
       </div>
+      </template>
+
+      <!-- Show onboarding prompt if no valid PLZ -->
+      <template v-else>
+        <div class="text-center space-y-4 mt-8">
+          <UIcon name="i-heroicons-map-pin" class="w-12 h-12 text-blue-300 mx-auto" />
+          <p class="text-blue-100/80">
+            Bitte gib zuerst deine Postleitzahl im Onboarding an, um den Therapie-Guide zu nutzen.
+          </p>
+          <UButton 
+            to="/onboarding" 
+            color="primary" 
+            size="lg"
+            icon="i-heroicons-arrow-right"
+          >
+            Zum Onboarding
+          </UButton>
+        </div>
+      </template>
     </div>
   </PageCard>
 </template>

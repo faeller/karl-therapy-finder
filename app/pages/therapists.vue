@@ -8,7 +8,7 @@
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
           <template v-if="!isPiniaLoading">
-            {{ greeting }} {{ onboardingStore.formData.nickname || 'dort' }}! 👋
+            {{ greeting }} {{ onboardingStore.formData.nickname || '' }}! 👋
           </template>
           <template v-else>
             <div class="flex items-center gap-2 justify-center">
