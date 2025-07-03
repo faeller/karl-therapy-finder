@@ -15,63 +15,114 @@
       </div>
 
       <!-- Motivational Progress -->
-      <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
-            <span class="text-white font-medium text-sm">Dein Fortschritt</span>
+      <ClientOnly>
+        <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
+              <span class="text-white font-medium text-sm">Dein Fortschritt</span>
+            </div>
+            <div class="text-blue-200 font-bold text-sm">
+              {{ Math.round(overallProgress) }}% geschafft
+            </div>
           </div>
-          <div class="text-blue-200 font-bold text-sm">
-            {{ Math.round(overallProgress) }}% geschafft
+          
+          <UProgress 
+            :value="Number(overallProgress)" 
+            :max="100"
+            color="primary"
+            size="lg"
+            class="mb-3"
+          />
+          
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-blue-100/70">Schritt {{ currentStep }} von {{ stepperItems.length }}</span>
+            <div class="flex items-center gap-1">
+              <UIcon 
+                v-for="i in stepperItems.length" 
+                :key="i"
+                :name="i <= completedSteps ? 'i-heroicons-check-circle' : 'i-heroicons-circle'"
+                :class="i <= completedSteps ? 'text-green-400' : 'text-white/30'"
+                class="w-3 h-3"
+              />
+            </div>
           </div>
-        </div>
-        
-        <UProgress 
-          :value="Number(overallProgress)" 
-          :max="100"
-          color="primary"
-          size="lg"
-          class="mb-3"
-        />
-        
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-blue-100/70">Schritt {{ currentStep }} von {{ stepperItems.length }}</span>
-          <div class="flex items-center gap-1">
-            <UIcon 
-              v-for="i in stepperItems.length" 
-              :key="i"
-              :name="i <= completedSteps ? 'i-heroicons-check-circle' : 'i-heroicons-circle'"
-              :class="i <= completedSteps ? 'text-green-400' : 'text-white/30'"
-              class="w-3 h-3"
-            />
-          </div>
-        </div>
 
-        <!-- Motivational message -->
-        <div class="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-          <p class="text-blue-200 text-xs text-center font-medium">
-            {{ motivationalMessage }}
-          </p>
+          <!-- Motivational message -->
+          <div class="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <p class="text-blue-200 text-xs text-center font-medium">
+              {{ motivationalMessage }}
+            </p>
+          </div>
         </div>
-      </div>
+        <template #fallback>
+          <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
+                <span class="text-white font-medium text-sm">Dein Fortschritt</span>
+              </div>
+              <div class="text-blue-200 font-bold text-sm">
+                0% geschafft
+              </div>
+            </div>
+            
+            <UProgress 
+              :value="0" 
+              :max="100"
+              color="primary"
+              size="lg"
+              class="mb-3"
+            />
+            
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-blue-100/70">Schritt 1 von 7</span>
+              <div class="flex items-center gap-1">
+                <UIcon 
+                  v-for="i in 7" 
+                  :key="i"
+                  name="i-heroicons-circle"
+                  class="text-white/30 w-3 h-3"
+                />
+              </div>
+            </div>
+
+            <!-- Motivational message -->
+            <div class="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p class="text-blue-200 text-xs text-center font-medium">
+                🚀 Du startest Deine Reise zum Therapieplatz!
+              </p>
+            </div>
+          </div>
+        </template>
+      </ClientOnly>
 
       <!-- Horizontal Stepper with Scrolling -->
       <div class="w-full max-w-7xl">
-        <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
-          <div class="min-w-max px-4">
-            <UStepper 
-              ref="stepperRef"
-              :default-value="currentStepIndex"
-              :model-value="currentStepIndex"
-              @update:model-value="(value) => currentStepIndex = value"
-              :items="visibleStepperItems" 
-              class="w-full min-w-[1200px]"
-              color="primary"
-              orientation="horizontal"
-              size="md"
-              :disabled="false"
-            /></div>
-        </div>
+        <ClientOnly>
+          <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
+            <div class="min-w-max px-4">
+              <UStepper 
+                ref="stepperRef"
+                :default-value="currentStepIndex"
+                :model-value="currentStepIndex"
+                @update:model-value="(value) => currentStepIndex = value"
+                :items="visibleStepperItems" 
+                class="w-full min-w-[1200px]"
+                color="primary"
+                orientation="horizontal"
+                size="md"
+                :disabled="false"
+              />
+            </div>
+          </div>
+          <template #fallback>
+            <div class="h-24 flex items-center justify-center text-blue-200">
+              <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mr-2" />
+              Lade Stepper...
+            </div>
+          </template>
+        </ClientOnly>
         
         <!-- Step Content (Fixed, No Scrolling) -->
         <div class="w-full">
@@ -521,13 +572,11 @@ const currentStepIndex = ref(storedState.currentStep - 1)
 // Keep currentStep and currentStepIndex in sync
 watch(currentStep, (newStep) => {
   const newIndex = newStep - 1
-  console.log('currentStep changed to:', newStep, 'setting index to:', newIndex)
   currentStepIndex.value = newIndex
 }, { immediate: true })
 
 watch(currentStepIndex, (newIndex) => {
   const newStep = newIndex + 1
-  console.log('currentStepIndex changed to:', newIndex, 'setting step to:', newStep)
   currentStep.value = newStep
 })
 
@@ -649,7 +698,6 @@ watch(currentStep, () => {
 // Auto-scroll on mount
 onMounted(() => {
   nextTick(() => {
-    console.log('mounted with currentStep:', currentStep.value, 'currentStepIndex:', currentStepIndex.value)
     scrollToCurrentStep()
   })
 })
