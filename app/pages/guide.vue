@@ -27,9 +27,9 @@
         </div>
         
         <UProgress 
-          :value="overallProgress" 
+          :value="Number(overallProgress)" 
           :max="100"
-          color="blue"
+          color="primary"
           size="lg"
           class="mb-3"
         />
@@ -60,8 +60,10 @@
         <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
           <div class="min-w-max px-4">
             <UStepper 
-              :key="`stepper-${currentStep}`"
-              v-model="currentStepIndex"
+              ref="stepperRef"
+              :default-value="currentStepIndex"
+              :model-value="currentStepIndex"
+              @update:model-value="(value) => currentStepIndex = value"
               :items="visibleStepperItems" 
               class="w-full min-w-[1200px]"
               color="primary"
@@ -511,18 +513,22 @@ const currentStep = ref(storedState.currentStep)
 
 // Template refs
 const stepperContainer = ref<HTMLElement>()
+const stepperRef = ref()
 
-// Computed for 0-based index for UStepper
-const currentStepIndex = computed({
-  get: () => {
-    const index = currentStep.value - 1
-    console.log('currentStepIndex get:', index, 'currentStep:', currentStep.value)
-    return index
-  },
-  set: (value) => {
-    console.log('currentStepIndex set:', value, 'will set currentStep to:', value + 1)
-    currentStep.value = value + 1
-  }
+// Reactive stepper index (0-based)
+const currentStepIndex = ref(storedState.currentStep - 1)
+
+// Keep currentStep and currentStepIndex in sync
+watch(currentStep, (newStep) => {
+  const newIndex = newStep - 1
+  console.log('currentStep changed to:', newStep, 'setting index to:', newIndex)
+  currentStepIndex.value = newIndex
+}, { immediate: true })
+
+watch(currentStepIndex, (newIndex) => {
+  const newStep = newIndex + 1
+  console.log('currentStepIndex changed to:', newIndex, 'setting step to:', newStep)
+  currentStep.value = newStep
 })
 
 // Auto-scroll to current step
@@ -640,12 +646,10 @@ watch(currentStep, () => {
   scrollToCurrentStep()
 }, { immediate: false })
 
-// Auto-scroll on mount and force stepper update
+// Auto-scroll on mount
 onMounted(() => {
   nextTick(() => {
-    // Force a small update to ensure stepper syncs
-    const temp = currentStep.value
-    currentStep.value = temp
+    console.log('mounted with currentStep:', currentStep.value, 'currentStepIndex:', currentStepIndex.value)
     scrollToCurrentStep()
   })
 })
