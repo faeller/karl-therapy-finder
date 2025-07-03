@@ -265,19 +265,19 @@ const completeOnboarding = () => {
             
             <div>
               <label class="block text-sm text-blue-100/80 mb-2">Wie weit würdest du fahren?</label>
-              <USelect
-                :model-value="formData.searchRadius"
-                @update:model-value="(value) => onboardingStore.updateFormData({ searchRadius: value })"
-                :options="[
-                  { label: '5 km', value: 5 },
-                  { label: '10 km', value: 10 },
-                  { label: '25 km', value: 25 },
-                  { label: '50 km', value: 50 },
-                  { label: '100+ km', value: 100 }
-                ]"
-                option-attribute="label"
-                value-attribute="value"
-              />
+              <div class="grid grid-cols-3 gap-2">
+                <UButton
+                  v-for="option in [{ label: '5 km', value: 5 }, { label: '10 km', value: 10 }, { label: '25 km', value: 25 }, { label: '50 km', value: 50 }, { label: '100+ km', value: 100 }]"
+                  :key="option.value"
+                  :variant="formData.searchRadius === option.value ? 'solid' : 'outline'"
+                  :color="formData.searchRadius === option.value ? 'primary' : 'white'"
+                  size="sm"
+                  @click="onboardingStore.updateFormData({ searchRadius: option.value })"
+                  class="text-xs"
+                >
+                  {{ option.label }}
+                </UButton>
+              </div>
             </div>
           </div>
         </div>
@@ -318,25 +318,37 @@ const completeOnboarding = () => {
             <!-- Gender preference -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapeut*in Geschlecht</label>
-              <USelect
-                :model-value="formData.therapistGender"
-                @update:model-value="(value) => onboardingStore.updateFormData({ therapistGender: value })"
-                :options="genderOptions"
-                option-attribute="label"
-                value-attribute="value"
-              />
+              <div class="grid grid-cols-2 gap-2">
+                <UButton
+                  v-for="option in genderOptions"
+                  :key="option.value"
+                  :variant="formData.therapistGender === option.value ? 'solid' : 'outline'"
+                  :color="formData.therapistGender === option.value ? 'primary' : 'white'"
+                  size="sm"
+                  @click="onboardingStore.updateFormData({ therapistGender: option.value })"
+                  class="text-xs"
+                >
+                  {{ option.label }}
+                </UButton>
+              </div>
             </div>
 
             <!-- Therapy method -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapie-Verfahren</label>
-              <USelect
-                :model-value="formData.therapyMethod"
-                @update:model-value="(value) => onboardingStore.updateFormData({ therapyMethod: value })"
-                :options="therapyMethodOptions"
-                option-attribute="label"
-                value-attribute="value"
-              />
+              <div class="grid grid-cols-1 gap-2">
+                <UButton
+                  v-for="option in therapyMethodOptions"
+                  :key="option.value"
+                  :variant="formData.therapyMethod === option.value ? 'solid' : 'outline'"
+                  :color="formData.therapyMethod === option.value ? 'primary' : 'white'"
+                  size="sm"
+                  @click="onboardingStore.updateFormData({ therapyMethod: option.value })"
+                  class="text-xs"
+                >
+                  {{ option.label }}
+                </UButton>
+              </div>
             </div>
 
             <!-- Recent therapy -->
@@ -366,13 +378,19 @@ const completeOnboarding = () => {
             <!-- Payment type -->
             <div>
               <label class="block text-sm font-medium text-blue-100/90 mb-2">Kassensitz oder Kostenerstattung?</label>
-              <USelect
-                :model-value="formData.paymentType"
-                @update:model-value="(value) => onboardingStore.updateFormData({ paymentType: value })"
-                :options="paymentOptions"
-                option-attribute="label"
-                value-attribute="value"
-              />
+              <div class="grid grid-cols-1 gap-2">
+                <UButton
+                  v-for="option in paymentOptions"
+                  :key="option.value"
+                  :variant="formData.paymentType === option.value ? 'solid' : 'outline'"
+                  :color="formData.paymentType === option.value ? 'primary' : 'white'"
+                  size="sm"
+                  @click="onboardingStore.updateFormData({ paymentType: option.value })"
+                  class="text-xs"
+                >
+                  {{ option.label }}
+                </UButton>
+              </div>
             </div>
           </div>
         </div>
