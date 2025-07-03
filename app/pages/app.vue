@@ -7,7 +7,13 @@
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          <template v-if="onboardingStore?.formData?.nickname">
+          <template v-if="isLoadingProfile">
+            <div class="flex items-center gap-2 justify-center">
+              <div class="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
+              Lade Profil...
+            </div>
+          </template>
+          <template v-else-if="onboardingStore?.formData?.nickname">
             Hey {{ onboardingStore.formData.nickname }}! 👋
           </template>
           <template v-else>
@@ -15,17 +21,20 @@
           </template>
         </h1>
         <p class="text-blue-100/80 text-sm">
-          <template v-if="onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
+          <template v-if="isLoadingProfile">
+            Lade deine gespeicherten Daten...
+          </template>
+          <template v-else-if="onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
             Schön, dass du den Weg zum Therapieplatz angehst
           </template>
           <template v-else>
-            Bitte vervollständige dein Profil im Onboarding
+            Bitte vervollständige dein Profil
           </template>
         </p>
       </div>
 
       <!-- Show main content only with valid PLZ -->
-      <template v-if="onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
+      <template v-if="!isLoadingProfile && onboardingStore?.formData?.location && /^\d{5}$/.test(onboardingStore.formData.location)">
         <!-- Divider -->
         <div class="w-full max-w-md">
           <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
@@ -648,12 +657,12 @@
       </div>
       </template>
 
-      <!-- Show onboarding prompt if no valid PLZ -->
-      <template v-else>
+      <!-- Show profile prompt if no valid PLZ (and not loading) -->
+      <template v-else-if="!isLoadingProfile">
         <div class="text-center space-y-4 mt-8">
           <UIcon name="i-heroicons-map-pin" class="w-12 h-12 text-blue-300 mx-auto" />
           <p class="text-blue-100/80">
-            Bitte gib zuerst deine Postleitzahl im Onboarding an, um den Therapie-Guide zu nutzen.
+            Bitte gib zuerst deine Postleitzahl in deinem Profil an, um den Therapie-Guide zu nutzen.
           </p>
           <UButton 
             to="/onboarding" 
@@ -661,7 +670,7 @@
             size="lg"
             icon="i-heroicons-arrow-right"
           >
-            Zum Onboarding
+            Zum Profil
           </UButton>
         </div>
       </template>
@@ -753,6 +762,17 @@ const visibleStepperItems = computed(() => stepperItems.value)
 
 // Get user data from onboarding store
 const onboardingStore = useOnboardingStore()
+
+// Loading state for localStorage data
+const isLoadingProfile = ref(true)
+
+// Check if profile is loaded
+onMounted(() => {
+  // Give a moment for Pinia to hydrate from localStorage
+  setTimeout(() => {
+    isLoadingProfile.value = false
+  }, 100)
+})
 
 // Load persisted state or defaults
 const getStoredGuideState = () => {
