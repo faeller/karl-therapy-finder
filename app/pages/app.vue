@@ -1,6 +1,6 @@
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-5xl flex-col items-center gap-6">
+    <div class="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
       <!-- Header -->
       <div class="w-full text-center space-y-3">
         <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
@@ -14,10 +14,14 @@
         </p>
       </div>
 
+      <!-- Divider -->
+      <div class="w-full max-w-md">
+        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+      </div>
 
       <!-- Motivational Progress -->
       <ClientOnly>
-        <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+        <div class="w-full max-w-2xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-yellow-400" />
@@ -112,8 +116,13 @@
         </template>
       </ClientOnly>
 
+      <!-- Divider -->
+      <div class="w-full max-w-lg">
+        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+      </div>
+
       <!-- Horizontal Stepper with Scrolling -->
-      <div class="w-full max-w-7xl">
+      <div class="w-full max-w-7xl space-y-6">
         <ClientOnly>
           <div ref="stepperContainer" class="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-blue-500/50 hover:scrollbar-thumb-blue-400/70 scroll-smooth mb-6">
             <div class="min-w-max px-4">
@@ -141,9 +150,9 @@
         
         <!-- Step Content (Fixed, No Scrolling) -->
         <ClientOnly>
-          <div class="w-full">
+          <div class="w-full mt-6">
             <!-- Step 1: Terminservicestelle Erstgespräch -->
-            <div v-if="currentStep === 1" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div v-if="currentStep === 1" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
               <div class="flex items-center gap-2 mb-2">
                 <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
                 <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
@@ -191,7 +200,7 @@
           </div>
 
           <!-- Step 2: Probatorik -->
-          <div v-if="currentStep === 2" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 2" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Terminservicestelle: Probatorik</h3>
@@ -249,7 +258,7 @@
           </div>
 
           <!-- Step 3: Kontaktprotokoll -->
-          <div v-if="currentStep === 3" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 3" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Kontaktprotokoll erstellen</h3>
@@ -307,7 +316,7 @@
           </div>
 
           <!-- Step 4: Hausarzt -->
-          <div v-if="currentStep === 4" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 4" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Hausarzt Bescheinigung</h3>
@@ -357,7 +366,7 @@
           </div>
 
           <!-- Step 5: Kostenerstattung -->
-          <div v-if="currentStep === 5" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 5" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Kostenerstattungsantrag</h3>
@@ -415,7 +424,7 @@
           </div>
 
           <!-- Step 6: Widerspruch -->
-          <div v-if="currentStep === 6" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 6" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300" />
               <h3 class="text-lg font-semibold text-white">Widerspruch einlegen</h3>
@@ -466,7 +475,7 @@
           </div>
 
           <!-- Step 7: Private Therapeuten -->
-          <div v-if="currentStep === 7" class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+          <div v-if="currentStep === 7" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-2 mb-2">
               <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-green-300" />
               <h3 class="text-lg font-semibold text-white">Private Therapeuten</h3>
@@ -522,7 +531,7 @@
           <template #fallback>
             <div class="w-full">
               <!-- Default Step 1 content for SSR -->
-              <div class="space-y-3 p-4 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+              <div class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
                 <div class="flex items-center gap-2 mb-2">
                   <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
                   <h3 class="text-lg font-semibold text-white">Terminservicestelle: Erstgespräch</h3>
@@ -571,6 +580,11 @@
         </ClientOnly>
       </div>
 
+      <!-- Divider -->
+      <div class="w-full max-w-lg">
+        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+      </div>
+
       <!-- Encouraging Message -->
       <div class="w-full max-w-4xl bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm border border-green-400/20 rounded-xl p-6 space-y-4">
         <div class="text-center space-y-3">
@@ -585,6 +599,11 @@
             Solltest Du bei einigen Schritten unsicher sein, nutze gerne unsere Therapeutensuche oder wende Dich an Beratungsstellen in Deiner Nähe.
           </p>
         </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-full max-w-md">
+        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
       </div>
 
       <!-- Action buttons -->
