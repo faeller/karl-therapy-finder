@@ -28,6 +28,11 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   const specialization = query.specialization as string
   const maxDistance = query.maxDistance ? parseFloat(query.maxDistance as string) : null
   const therapyType = query.therapyType as string
+  const gender = query.gender as string
+  const problem = query.problem as string
+  const ageGroup = query.ageGroup as string
+  const billing = query.billing as string
+  const freePlaces = query.freePlaces as string
 
   if (!plz) {
     throw createError({
@@ -37,25 +42,56 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   }
 
   // Create cache key based on filters
-  const cacheKey = `${plz}-${specialization || ''}-${maxDistance || ''}-${therapyType || ''}`
+  const cacheKey = `${plz}-${specialization || ''}-${maxDistance || ''}-${therapyType || ''}-${gender || ''}-${problem || ''}-${ageGroup || ''}-${billing || ''}-${freePlaces || ''}`
   
   // Check cache first
   const cached = cache.get(cacheKey)
   if (cached && Date.now() < cached.expires) {
+    console.log(`✅ Cache hit for: ${cacheKey.substring(0, 50)}...`)
     return cached.data
   }
+  
+  console.log(`🔄 Cache miss, fetching from therapie.de for: ${cacheKey.substring(0, 50)}...`)
 
   try {
-    // Fetch first 3 pages to get more comprehensive results
-    const pages = [1, 2, 3]
+    // Fetch first 5 pages to get more comprehensive results
+    const pages = [1, 2, 3, 4, 5]
     const allTherapists: TherapistData[] = []
     let totalResults = 0
     let radius = 10
     let extractedPlz = plz
 
     for (const page of pages) {
-      // Construct the URL for therapie.de
-      const url = `https://www.therapie.de/therapeutensuche/ergebnisse/?ort=${plz}${page > 1 ? `&page=${page}` : ''}`
+      // Construct the URL for therapie.de with all filter parameters
+      const params = new URLSearchParams()
+      params.set('ort', plz)
+      
+      if (page > 1) {
+        params.set('page', page.toString())
+      }
+      
+      if (gender) {
+        params.set('geschlecht', gender)
+      }
+      
+      if (billing) {
+        params.set('abrechnungsverfahren', billing)
+      }
+      
+      if (freePlaces) {
+        params.set('terminzeitraum', freePlaces)
+      }
+      
+      // Add more parameters as needed for other filters
+      if (therapyType) {
+        // Map therapy types to therapie.de parameters if needed
+        // This might need specific parameter names from therapie.de
+      }
+      
+      const url = `https://www.therapie.de/therapeutensuche/ergebnisse/?${params.toString()}`
+      
+      // Debug: Log the constructed URL
+      console.log(`Fetching URL: ${url}`)
     
       // Fetch the HTML content
       const response = await $fetch<string>(url, {
