@@ -407,6 +407,24 @@ const completeOnboarding = () => {
             </ul>
           </div>
           
+          <!-- Welcome Message -->
+          <div class="w-full max-w-lg bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 space-y-4 text-center">
+            <h3 class="text-lg font-semibold text-blue-200">Hey, schön dass Du zu uns gefunden hast! 👋</h3>
+            <p class="text-blue-100/90 text-sm leading-relaxed">
+              Wir haben KARL als Plattform ins Leben gerufen, weil wir der festen Überzeugung sind, dass die Suche nach Psychotherapieplätzen keine Probleme bereiten sollte. Und genau das ist leider derzeit der Fall.
+            </p>
+            
+            <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+              <p class="text-blue-200 text-sm leading-relaxed">
+                <span class="font-medium">Es gibt allerdings einen sinnvollen Weg</span> oder einen sinnvollen Ablauf, wie Du Deine Chancen auf einen Therapieplatz optimierst und sogar die Chance auf eine kürzere Wartezeit bis Therapiebeginn hast.
+              </p>
+            </div>
+            
+            <p class="text-blue-100/80 text-sm italic">
+              Und diesen Weg zeigen wir Dir in unserem Guide. Möge er Dir eine gute Hilfe sein! 💙
+            </p>
+          </div>
+
           <UButton
             @click="completeOnboarding"
             size="xl"

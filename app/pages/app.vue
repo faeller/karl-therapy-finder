@@ -14,25 +14,6 @@
         </p>
       </div>
 
-      <!-- Introduction -->
-      <div class="w-full max-w-4xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 space-y-4">
-        <div class="text-center space-y-2">
-          <h2 class="text-lg font-semibold text-blue-200">Hey, schön dass Du zu uns gefunden hast! 👋</h2>
-          <p class="text-blue-100/90 text-sm leading-relaxed">
-            Wir haben KARL als Plattform ins Leben gerufen, weil wir der festen Überzeugung sind, dass die Suche nach Psychotherapieplätzen keine Probleme bereiten sollte. Und genau das ist leider derzeit der Fall.
-          </p>
-        </div>
-        
-        <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-          <p class="text-blue-200 text-sm leading-relaxed">
-            <span class="font-medium">Es gibt allerdings einen sinnvollen Weg</span> oder einen sinnvollen Ablauf, wie Du Deine Chancen auf einen Therapieplatz optimierst und sogar die Chance auf eine kürzere Wartezeit bis Therapiebeginn hast.
-          </p>
-        </div>
-        
-        <p class="text-blue-100/80 text-sm text-center italic">
-          Und diesen Weg zeigen wir Dir in diesem kleinen Guide. Möge er Dir eine gute Hilfe sein! 💙
-        </p>
-      </div>
 
       <!-- Motivational Progress -->
       <ClientOnly>
@@ -142,7 +123,7 @@
                 :model-value="currentStepIndex"
                 @update:model-value="(value) => currentStepIndex = value"
                 :items="visibleStepperItems" 
-                class="w-full min-w-[1200px]"
+                class="w-full min-w-[1200px] xl:min-w-[1400px] 2xl:min-w-[1600px]"
                 color="primary"
                 orientation="horizontal"
                 size="md"
