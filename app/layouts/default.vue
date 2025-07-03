@@ -28,7 +28,7 @@
               :class="$route.path === '/' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-home" class="w-4 h-4 mr-2" />
-              Home
+              Startseite
             </UButton>
             
             <UButton 
@@ -50,7 +50,7 @@
               :class="$route.path === '/app' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-map" class="w-4 h-4 mr-2" />
-              Guide
+              Home
             </UButton>
             
             <UButton 
@@ -92,7 +92,7 @@ const route = useRoute()
 
 // Mobile menu items
 const mobileMenuItems = [{
-  label: 'Home',
+  label: 'Startseite',
   icon: 'i-heroicons-home',
   to: '/'
 }, {
@@ -100,7 +100,7 @@ const mobileMenuItems = [{
   icon: 'i-heroicons-user-circle',
   to: '/onboarding'
 }, {
-  label: 'Guide',
+  label: 'Home',
   icon: 'i-heroicons-map',
   to: '/app'
 }, {

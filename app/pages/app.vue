@@ -7,10 +7,30 @@
           K
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          Therapieplatz-Finder Guide 🎯
+          Dein Weg zum Therapieplatz 🎯
         </h1>
         <p class="text-blue-100/80 text-sm">
-          Der bewährte 7-Schritte-Weg zum Therapieplatz
+          Ein bewährter 7-Schritte-Leitfaden für Deutschland
+        </p>
+      </div>
+
+      <!-- Introduction -->
+      <div class="w-full max-w-4xl bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 space-y-4">
+        <div class="text-center space-y-2">
+          <h2 class="text-lg font-semibold text-blue-200">Hey, schön dass Du zu uns gefunden hast! 👋</h2>
+          <p class="text-blue-100/90 text-sm leading-relaxed">
+            Wir haben KARL als Plattform ins Leben gerufen, weil wir der festen Überzeugung sind, dass die Suche nach Psychotherapieplätzen keine Probleme bereiten sollte. Und genau das ist leider derzeit der Fall.
+          </p>
+        </div>
+        
+        <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+          <p class="text-blue-200 text-sm leading-relaxed">
+            <span class="font-medium">Es gibt allerdings einen sinnvollen Weg</span> oder einen sinnvollen Ablauf, wie Du Deine Chancen auf einen Therapieplatz optimierst und sogar die Chance auf eine kürzere Wartezeit bis Therapiebeginn hast.
+          </p>
+        </div>
+        
+        <p class="text-blue-100/80 text-sm text-center italic">
+          Und diesen Weg zeigen wir Dir in diesem kleinen Guide. Möge er Dir eine gute Hilfe sein! 💙
         </p>
       </div>
 
@@ -150,20 +170,19 @@
               
               <div class="space-y-3 text-sm">
                 <p class="text-blue-100/90">
-                  Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch.
+                  Bei der Terminservicestelle erhältst Du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch. Hier brauchst Du einen Dringlichkeitscode, den Du auf der Individuellen Patienteninformation aus dem Erstgespräch findest.
                 </p>
                 
                 <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
                   <p class="text-blue-200 font-medium">📞 Terminservicestelle: 116 117</p>
-                  <p class="text-blue-100/80 text-xs mt-1">Oder online: eterminservice.de</p>
+                  <p class="text-blue-100/80 text-xs mt-1">Je nach örtlicher Verfügbarkeit auch online: eterminservice.de</p>
                 </div>
 
                 <div class="space-y-2">
                   <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Erstgespräch:</h4>
                   <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                    <li>• Behandlungsbedarf muss festgestellt werden</li>
-                    <li>• "Therapie zeitnah erforderlich" muss angekreuzt sein</li>
-                    <li>• Nur dann ist später Kostenerstattung möglich</li>
+                    <li>• Ein späteres Kostenerstattungsverfahren wird nur möglich, wenn (1) Behandlungsbedarf festgestellt wird und</li>
+                    <li>• (2) auf dem Diagnosebogen ("Individuelle Patienteninformation") angekreuzt ist, dass eine Therapie zeitnah erforderlich ist!</li>
                   </ul>
                 </div>
               </div>
@@ -199,7 +218,7 @@
             
             <div class="space-y-3 text-sm">
               <p class="text-blue-100/90">
-                Nach dem Erstgespräch erhältst Du über die Terminservicestelle eine probatorische Sitzung.
+                Nach dem Erstgespräch erhältst Du über die Terminservicestelle zudem eine probatorische Sitzung. Hierzu brauchst Du einen Dringlichkeitscode, den Du auf der Individuellen Patienteninformation aus dem Erstgespräch findest.
               </p>
               
               <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
@@ -212,7 +231,7 @@
               <div class="space-y-2">
                 <h4 class="text-blue-200 font-medium">⚠️ Wichtig zur Probatorik:</h4>
                 <p class="text-blue-100/80 text-xs">
-                  Den Dringlichkeitscode erhältst Du nur, wenn "zeitnah erforderlich" angekreuzt wurde.
+                  Den Dringlichkeitscode erhältst Du im vorherigen Erstgespräch nur, wenn eine Dringlichkeit vom Therapeuten oder der Therapeutin festgestellt wird (= "zeitnah erforderlich" ist angekreuzt).
                 </p>
               </div>
             </div>
@@ -254,9 +273,27 @@
               <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Kontaktprotokoll erstellen</h3>
             </div>
-            <p class="text-blue-100/90 text-sm">
-              Führe ein Kontaktprotokoll mit 6-10 Therapeuten für die Kostenerstattung.
-            </p>
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Zudem solltest Du Dich selbständig (oder mit Hilfe von Freunden oder Bekannten) bei Psychotherapeuten um einen Therapieplatz bemüht haben. Deine Bemühungen der Kontaktaufnahme solltest Du in einem Kontaktprotokoll niederschreiben.
+              </p>
+              
+              <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                <h4 class="text-blue-200 font-medium">💡 Therapeuten finden</h4>
+                <p class="text-blue-100/80 text-xs mt-1">
+                  Zum Beispiel findest Du erreichbare Psychotherapeuten im Internet auf therapie.de.
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Kontaktprotokoll:</h4>
+                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                  <li>• Es sollte jeweils den Namen der Therapeuten, das Datum und die Uhrzeit des Kontakts sowie eine Aussage der Therapeuten darüber enthalten, ob ein Therapieplatz in absehbarer Zeit (= in unter drei Monaten) verfügbar ist oder nicht.</li>
+                  <li>• Notiere bitte auch die Psychotherapeuten, die nicht ans Telefon gehen!</li>
+                  <li>• Insgesamt solltest Du je nach lokaler Verfügbarkeit zwischen sechs und zehn Therapeuten im Protokoll aufführen.</li>
+                </ul>
+              </div>
+            </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
@@ -294,9 +331,19 @@
               <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Hausarzt Bescheinigung</h3>
             </div>
-            <p class="text-blue-100/90 text-sm">
-              Hole Dir eine Bescheinigung von Deinem Hausarzt über die Notwendigkeit der Behandlung.
-            </p>
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Vereinbare bitte einen Termin bei Deinem Hausarzt. Du brauchst eine Bescheinigung über die Notwendigkeit einer Psychotherapie.
+              </p>
+              
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Hausarzt:</h4>
+                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                  <li>• Sprich offen mit Deinem Hausarzt, dass Du diese Bescheinigung für ein Kostenerstattungsverfahren benötigst.</li>
+                  <li>• Gib Deinem Hausarzt auch zu erkennen, dass Du Deine Psychotherapie für nötig hältst, dass sie Dir sehr helfen würde und dass Du Dich bereits sehr um einen Therapieplatz bemüht hast und damit keinen Erfolg hattest.</li>
+                </ul>
+              </div>
+            </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
@@ -334,9 +381,27 @@
               <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
               <h3 class="text-lg font-semibold text-white">Kostenerstattungsantrag</h3>
             </div>
-            <p class="text-blue-100/90 text-sm">
-              Stelle einen Antrag auf Kostenerstattung bei Deiner Krankenkasse.
-            </p>
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Wenn Du bis hierhin noch keinen Therapiebeginn in absehbarer Zeit in Sicht hast, kannst Du einen Antrag auf Kostenerstattung an Deine Krankenkasse senden. In diesem solltest Du schreiben, dass Deine bisherigen Bemühungen nicht zu einem Therapieplatz geführt haben, diese Therapie aber nachweisbar dringend und zeitnah erforderlich ist.
+              </p>
+              
+              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium">📋 Rechtsnorm beachten</h4>
+                <p class="text-amber-100/80 text-xs mt-1">
+                  Du solltest Dich dabei auf die Rechtsnorm zur Kostenerstattung § 13 Abs. 3 SGB V beziehen und im Schreiben um die Kostenübernahme einer privaten Psychotherapie bitten.
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Kostenerstattungsantrag:</h4>
+                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                  <li>• Ein solcher Antrag kann komplex sein und wird häufig abgelehnt.</li>
+                  <li>• Die Krankenkassen entscheiden in aller Regel in zwei bis fünf Wochen über Deinen Antrag auf Kostenerstattung.</li>
+                  <li>• Du findest auch im Internet einige Musterschreiben, die Du eigenständig anpassen und individualisieren kannst.</li>
+                </ul>
+              </div>
+            </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
@@ -374,9 +439,20 @@
               <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300" />
               <h3 class="text-lg font-semibold text-white">Widerspruch einlegen</h3>
             </div>
-            <p class="text-blue-100/90 text-sm">
-              Falls der Antrag abgelehnt wird, lege fristgerecht Widerspruch ein.
-            </p>
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Sollte Deine Krankenkasse den Antrag auf Kostenerstattung ablehnen, empfehlen wir Dir, einen Widerspruch zu schreiben. Erfahrungsgemäß hat ein solcher Widerspruch oftmals Erfolg, denn in vielen Fällen lehnen die Krankenkassen derlei Anträge zu Unrecht ab.
+              </p>
+              
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Widerspruch:</h4>
+                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                  <li>• Der Widerspruch sollte sehr zielgenau und treffend formuliert sein.</li>
+                  <li>• Aus rechtlichen Gründen sollte das Schreiben individuell angepasst werden – so, wie es für Dich am besten passt.</li>
+                  <li>• Alternativ findest Du auch zum Widerspruchsschreiben einige Muster im Internet, die Du verwenden könntest.</li>
+                </ul>
+              </div>
+            </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
@@ -414,9 +490,28 @@
               <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-green-300" />
               <h3 class="text-lg font-semibold text-white">Private Therapeuten</h3>
             </div>
-            <p class="text-blue-100/90 text-sm">
-              Alternative: Suche nach privaten Therapeuten, die oft schneller verfügbar sind.
-            </p>
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Nachdem die Krankenkasse Deinem Antrag zugestimmt hat, kannst Du Dir einen privaten Psychotherapeuten oder eine private Psychotherapeutin suchen und einen individuellen Behandlungsbeginn vereinbaren. Solche Psychotherapeuten sind oft viel schneller verfügbar.
+              </p>
+              
+              <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                <h4 class="text-blue-200 font-medium">🔍 Private Therapeuten finden</h4>
+                <p class="text-blue-100/80 text-xs mt-1">
+                  Im Internet über Google oder auf therapie.de findest Du Psychotherapeuten in Deinem Umfeld. Du kannst hier auch die Suche einschränken, indem Du in der Navigation die Wartezeit auf "verfügbar" oder "bis drei Monate" umstellst.
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig hierzu:</h4>
+                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
+                  <li>• Teile Deinem Wunschtherapeuten beim Erstkontakt mit, dass Du das Kostenerstattungsverfahren nutzen möchtest und die Zusage zu den ersten Sitzungen von Deiner Krankenkasse erhalten hast.</li>
+                  <li>• Dein Therapeut wird Dir bei der Beantragung weiterer Sitzungen oder bei weiteren Fragen gerne helfen.</li>
+                  <li>• Achtung vor Heilpraktikern: Diese sind sehr häufig zu finden. Dies sind keine Psychotherapeuten und sie können nicht mit Deiner Krankenkasse abrechnen!</li>
+                  <li>• Beachte bitte auch, dass je nach örtlicher Verfügbarkeit auch bei privaten Psychotherapeuten die Kapazitäten ausgelastet sein können.</li>
+                </ul>
+              </div>
+            </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
@@ -495,6 +590,22 @@
         </ClientOnly>
       </div>
 
+      <!-- Encouraging Message -->
+      <div class="w-full max-w-4xl bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm border border-green-400/20 rounded-xl p-6 space-y-4">
+        <div class="text-center space-y-3">
+          <h3 class="text-lg font-semibold text-green-200 flex items-center justify-center gap-2">
+            <UIcon name="i-heroicons-heart" class="w-5 h-5" />
+            Du schaffst das!
+          </h3>
+          <p class="text-blue-100/90 text-sm leading-relaxed">
+            Wir von KARL wünschen Dir ganz viel Kraft und Erfolg bei Deiner Suche! Der Weg mag manchmal mühsam erscheinen, aber jeder Schritt bringt Dich näher zu der Hilfe, die Du verdienst.
+          </p>
+          <p class="text-blue-200/80 text-xs italic">
+            Solltest Du bei einigen Schritten unsicher sein, nutze gerne unsere Therapeutensuche oder wende Dich an Beratungsstellen in Deiner Nähe.
+          </p>
+        </div>
+      </div>
+
       <!-- Action buttons -->
       <div class="flex gap-3">
         <button @click="resetGuide" class="group relative overflow-hidden rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-500/30 px-4 py-2 text-red-200 text-sm font-medium transition-all duration-300 hover:bg-red-500/30 hover:scale-105 active:scale-95">
@@ -504,10 +615,10 @@
           </div>
         </button>
         
-        <button @click="$router.push('/app')" class="group relative overflow-hidden rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 px-4 py-2 text-white text-sm font-medium transition-all duration-300 hover:bg-white/30 hover:scale-105 active:scale-95">
+        <button @click="$router.push('/therapists')" class="group relative overflow-hidden rounded-xl bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 px-4 py-2 text-blue-200 text-sm font-medium transition-all duration-300 hover:bg-blue-500/30 hover:scale-105 active:scale-95">
           <div class="relative z-10 flex items-center gap-2">
-            <span class="group-hover:-translate-x-1 transition-transform duration-300">←</span>
-            Zurück zur App
+            <UIcon name="i-heroicons-user-group" class="w-4 h-4" />
+            Therapeuten suchen
           </div>
           <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
         </button>
