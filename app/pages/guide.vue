@@ -38,13 +38,22 @@
           <div class="flex items-center justify-between text-xs">
             <span class="text-blue-100/70">Schritt {{ currentStep }} von {{ stepperItems.length }}</span>
             <div class="flex items-center gap-1">
-              <UIcon 
+              <div
                 v-for="i in stepperItems.length" 
                 :key="i"
-                :name="i <= completedSteps ? 'i-heroicons-check-circle' : 'i-heroicons-circle'"
-                :class="i <= completedSteps ? 'text-green-400' : 'text-white/30'"
-                class="w-3 h-3"
-              />
+                :class="[
+                  'w-3 h-3 rounded-full border-2 flex items-center justify-center',
+                  i <= completedSteps 
+                    ? 'bg-green-400 border-green-400' 
+                    : 'border-white/30'
+                ]"
+              >
+                <UIcon 
+                  v-if="i <= completedSteps"
+                  name="i-heroicons-check"
+                  class="w-2 h-2 text-white"
+                />
+              </div>
             </div>
           </div>
 
@@ -78,11 +87,10 @@
             <div class="flex items-center justify-between text-xs">
               <span class="text-blue-100/70">Schritt 1 von 7</span>
               <div class="flex items-center gap-1">
-                <UIcon 
+                <div
                   v-for="i in 7" 
                   :key="i"
-                  name="i-heroicons-circle"
-                  class="text-white/30 w-3 h-3"
+                  class="w-3 h-3 rounded-full border-2 border-white/30"
                 />
               </div>
             </div>
