@@ -407,19 +407,6 @@ const completeOnboarding = () => {
             </ul>
           </div>
           
-          <!-- Welcome Message -->
-          <div class="w-full max-w-md bg-gradient-to-r from-blue-500/10 to-green-500/10 backdrop-blur-sm border border-blue-400/20 rounded-xl p-4 space-y-3 text-center">
-            <h3 class="text-base font-semibold text-blue-200 flex items-center justify-center gap-2">
-              <span>👋</span> Hey, schön dass Du da bist!
-            </h3>
-            <p class="text-blue-100/90 text-xs leading-relaxed">
-              Die Therapieplatz-Suche sollte keine Probleme bereiten – ist aber leider kompliziert. 
-              <span class="font-medium text-blue-200">Unser Guide zeigt Dir den optimalen Weg.</span>
-            </p>
-            <p class="text-blue-200/80 text-xs italic">
-              Möge er Dir eine gute Hilfe sein! 💙
-            </p>
-          </div>
 
           <UButton
             @click="completeOnboarding"
