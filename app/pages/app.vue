@@ -199,23 +199,84 @@
                 <p class="text-blue-100/90 leading-relaxed">
                   Bei der <strong>Terminservicestelle</strong> erhältst du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch. In diesem Gespräch wird geklärt, ob eine Therapie für dich geeignet ist.
                 </p>
+
+                <!-- PLZ Display and Edit -->
+                <div class="bg-white/5 p-3 lg:p-4 rounded-lg border border-white/10">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-blue-300" />
+                      <span class="text-blue-200 text-sm">Verfügbarkeit geprüft für PLZ:</span>
+                      <template v-if="!isEditingPlz">
+                        <span class="font-mono font-semibold text-blue-100">{{ currentPlz || '-----' }}</span>
+                      </template>
+                      <template v-else>
+                        <input 
+                          v-model="tempPlz"
+                          type="text" 
+                          maxlength="5"
+                          pattern="[0-9]{5}"
+                          placeholder="12345"
+                          class="w-20 px-2 py-1 text-sm font-mono bg-white/10 border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                          @keyup.enter="saveNewPlz"
+                          @keyup.escape="cancelEditingPlz"
+                        />
+                      </template>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <template v-if="!isEditingPlz">
+                        <button 
+                          @click="startEditingPlz"
+                          class="text-xs text-blue-300 hover:text-blue-200 transition-colors"
+                        >
+                          ändern
+                        </button>
+                        <span class="text-blue-300/50 text-xs">(e.g. Berlin: 10115)</span>
+                      </template>
+                      <template v-else>
+                        <button 
+                          @click="saveNewPlz"
+                          :disabled="!/^\d{5}$/.test(tempPlz)"
+                          class="text-xs text-green-300 hover:text-green-200 transition-colors disabled:opacity-50"
+                        >
+                          ✓
+                        </button>
+                        <button 
+                          @click="cancelEditingPlz"
+                          class="text-xs text-red-300 hover:text-red-200 transition-colors ml-1"
+                        >
+                          ✕
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
                 
                 <!-- Contact Options -->
-                <div class="grid gap-3 lg:gap-4 lg:grid-cols-2">
+                <div class="grid gap-3 lg:gap-4 lg:grid-cols-2 items-stretch">
                   <!-- Phone Option -->
-                  <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20 group hover:border-blue-400/30 transition-all duration-300">
+                  <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20 group hover:border-blue-400/30 transition-all duration-300 flex flex-col">
                     <div class="flex items-center gap-2 mb-3">
                       <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
                       <p class="text-blue-200 font-semibold">Telefonisch anrufen</p>
                     </div>
-                    <div class="text-2xl lg:text-3xl font-bold text-blue-300 mb-3">
+                    <a 
+                      href="tel:116117"
+                      class="text-2xl lg:text-3xl font-bold text-blue-300 hover:text-blue-200 transition-colors block mb-2"
+                    >
                       116 117
-                    </div>
+                    </a>
                     <p class="text-blue-100/80 text-xs mb-4">Kostenlos aus allen Netzen • 24/7 erreichbar</p>
+                    
+                    <!-- Info about what happens during the call -->
+                    <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex-grow">
+                      <p class="text-xs text-blue-200/80">
+                        💡 <strong>Was passiert beim Anruf:</strong> Du wirst nach deiner PLZ, deinem Anliegen und deiner Versicherung gefragt. Der Service vermittelt dir direkt einen Termin für ein Erstgespräch.
+                      </p>
+                    </div>
                     
                     <a 
                       href="tel:116117"
-                      class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                      class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 w-fit min-w-[140px]"
                     >
                       <UIcon name="i-heroicons-phone" class="w-4 h-4" />
                       Jetzt anrufen
@@ -223,25 +284,102 @@
                   </div>
 
                   <!-- Online Option -->
-                  <div class="bg-green-500/10 p-4 lg:p-5 rounded-xl border border-green-500/20 group hover:border-green-400/30 transition-all duration-300">
+                  <div :class="[
+                    'p-4 lg:p-5 rounded-xl border group transition-all duration-300 flex flex-col',
+                    onlineServiceData?.available 
+                      ? 'bg-green-500/10 border-green-500/20 hover:border-green-400/30' 
+                      : 'bg-amber-500/10 border-amber-500/20 hover:border-amber-400/30'
+                  ]">
                     <div class="flex items-center gap-2 mb-3">
-                      <UIcon name="i-heroicons-computer-desktop" class="w-5 h-5 text-green-300" />
-                      <p class="text-green-200 font-semibold">Online Terminbuchung</p>
+                      <UIcon name="i-heroicons-computer-desktop" :class="[
+                        'w-5 h-5',
+                        onlineServiceData?.available ? 'text-green-300' : 'text-amber-300'
+                      ]" />
+                      <p :class="[
+                        'font-semibold',
+                        onlineServiceData?.available ? 'text-green-200' : 'text-amber-200'
+                      ]">Online Terminbuchung</p>
+                      <!-- Status indicator -->
+                      <div v-if="!isCheckingService && onlineServiceData" class="ml-auto">
+                        <UIcon 
+                          v-if="onlineServiceData.available" 
+                          name="i-heroicons-check-circle" 
+                          class="w-4 h-4 text-green-400" 
+                        />
+                        <UIcon 
+                          v-else 
+                          name="i-heroicons-exclamation-triangle" 
+                          class="w-4 h-4 text-amber-400" 
+                        />
+                      </div>
+                      <div v-else-if="isCheckingService" class="ml-auto">
+                        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 text-blue-300 animate-spin" />
+                      </div>
                     </div>
-                    <div class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-1">
-                      eterminservice.de
-                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
-                    </div>
-                    <p class="text-green-100/80 text-xs mb-4">Je nach Region verfügbar • Direkte Terminbuchung</p>
                     
                     <a 
                       href="https://www.eterminservice.de"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                      :class="[
+                        'text-lg font-semibold mb-3 flex items-center gap-1 hover:opacity-80 transition-opacity',
+                        onlineServiceData?.available ? 'text-green-300' : 'text-amber-300'
+                      ]"
+                    >
+                      eterminservice.de
+                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                    </a>
+                    
+                    <!-- Dynamic status message -->
+                    <div :class="[
+                      'text-xs mb-4 space-y-1',
+                      onlineServiceData?.available ? 'text-green-100/80' : 'text-amber-100/80'
+                    ]">
+                      <p>
+                        <template v-if="isCheckingService">
+                          Verfügbarkeit wird geprüft für PLZ {{ currentPlz }}...
+                        </template>
+                        <template v-else-if="onlineServiceData?.message">
+                          {{ onlineServiceData.message }}
+                        </template>
+                        <template v-else>
+                          Je nach Region verfügbar • Direkte Terminbuchung
+                        </template>
+                      </p>
+                      <p v-if="onlineServiceData && !isCheckingService" :class="[
+                        'text-xs',
+                        onlineServiceData.available ? 'text-green-200/60' : 'text-amber-200/60'
+                      ]">
+                        Region: {{ onlineServiceData.region || 'Unbekannt' }} (PLZ {{ onlineServiceData.plz }})
+                        <template v-if="onlineServiceData.radius">
+                          • Radius: {{ onlineServiceData.radius }}km
+                        </template>
+                      </p>
+                    </div>
+                    
+                    <!-- Note about manual booking -->
+                    <div v-if="onlineServiceData?.available" class="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex-grow">
+                      <p class="text-xs text-green-200/80">
+                        💡 <strong>Hinweis:</strong> Klicke auf "Online buchen" unten, um direkt zur eterminservice.de Website zu gelangen und dort manuell einen Termin zu buchen.
+                      </p>
+                    </div>
+                    
+                    <!-- Spacer for alignment when no note is shown -->
+                    <div v-else class="flex-grow"></div>
+                    
+                    <a 
+                      href="https://www.eterminservice.de"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :class="[
+                        'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 w-fit min-w-[170px]',
+                        onlineServiceData?.available 
+                          ? 'bg-green-500 hover:bg-green-600 text-white' 
+                          : 'bg-amber-500 hover:bg-amber-600 text-white'
+                      ]"
                     >
                       <UIcon name="i-heroicons-computer-desktop" class="w-4 h-4" />
-                      Online buchen
+                      {{ onlineServiceData?.available ? 'Online buchen' : 'Trotzdem versuchen' }}
                     </a>
                   </div>
                 </div>
@@ -826,6 +964,15 @@ interface ProtocolEntry {
   contacted: boolean
 }
 
+interface EterminserviceAvailability {
+  plz: string
+  available: boolean
+  radius?: string
+  region?: string
+  errors?: string[]
+  message?: string
+}
+
 // Stepper configuration
 const stepperItems = ref<StepperItem[]>([
   {
@@ -888,11 +1035,71 @@ const onboardingStore = useOnboardingStore()
 // Loading state for localStorage data
 const isLoadingProfile = ref(true)
 
+// Online service availability
+const onlineServiceData = ref<EterminserviceAvailability | null>(null)
+const isCheckingService = ref(false)
+const isEditingPlz = ref(false)
+const tempPlz = ref('')
+
+// Note: Email functionality disabled due to eterminservice.de anti-bot protection
+
+// Get current PLZ for display and checks
+const currentPlz = computed(() => {
+  return onboardingStore?.formData?.location || ''
+})
+
+// Check regional service availability
+const checkRegionalServices = async (plz?: string) => {
+  const useThisPlz = plz || currentPlz.value
+  if (!useThisPlz || !/^\d{5}$/.test(useThisPlz)) return
+  
+  if (isCheckingService.value) return // Prevent duplicate requests
+  
+  try {
+    isCheckingService.value = true
+    const response = await $fetch<EterminserviceAvailability>(`/api/eterminservice?plz=${useThisPlz}&service=psychotherapy`)
+    onlineServiceData.value = response
+  } catch (error) {
+    console.error('Failed to check service availability:', error)
+    // Set fallback data
+    onlineServiceData.value = {
+      plz: useThisPlz,
+      available: false,
+      message: 'Status unbekannt - bitte rufen Sie 116 117 an'
+    }
+  } finally {
+    isCheckingService.value = false
+  }
+}
+
+// Handle PLZ editing
+const startEditingPlz = () => {
+  tempPlz.value = currentPlz.value
+  isEditingPlz.value = true
+}
+
+const saveNewPlz = () => {
+  if (/^\d{5}$/.test(tempPlz.value)) {
+    // Update the onboarding store
+    onboardingStore.updateFormData({ location: tempPlz.value })
+    isEditingPlz.value = false
+    // Check availability with new PLZ
+    checkRegionalServices(tempPlz.value)
+  }
+}
+
+const cancelEditingPlz = () => {
+  isEditingPlz.value = false
+  tempPlz.value = ''
+}
+
 // Check if profile is loaded
 onMounted(() => {
   // Give a moment for Pinia to hydrate from localStorage
   setTimeout(() => {
     isLoadingProfile.value = false
+    // Check online service availability after profile loads
+    checkRegionalServices()
   }, 100)
 })
 
@@ -1085,4 +1292,6 @@ const resetGuide = () => {
     timeout: 3000
   })
 }
+
+// Email functionality removed due to eterminservice.de access restrictions
 </script>
