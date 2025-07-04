@@ -15,6 +15,13 @@
       "when": 1751636661974,
       "tag": "0001_right_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1751647169587,
+      "tag": "0002_cute_red_ghost",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,10 @@
 import { karlWaitlist } from '../database/schema'
-import { useDB } from '../utils/db'
+import { useDB, eq, and } from '../utils/db'
 import crypto from 'crypto'
 
 interface WaitlistRequest {
   profile: any // Complete onboarding profile data
+  email: string // Email for contact and unique identification
   consent: boolean // User consent to store data
 }
 
@@ -34,13 +35,22 @@ function encryptProfile(profileData: any): string {
 
 export default defineEventHandler(async (event): Promise<WaitlistResponse> => {
   const body = await readBody(event) as WaitlistRequest
-  const { profile, consent } = body
+  const { profile, email, consent } = body
 
   // Validate required data
-  if (!profile || !consent) {
+  if (!profile || !email || !consent) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Profile data and consent are required'
+      statusMessage: 'Profile data, email and consent are required'
+    })
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Gültige E-Mail-Adresse ist erforderlich'
     })
   }
 
@@ -55,17 +65,36 @@ export default defineEventHandler(async (event): Promise<WaitlistResponse> => {
   try {
     console.log(`📝 Adding user to Karl waitlist for PLZ ${profile.location}`)
 
-    // Encrypt the complete profile
-    const encryptedProfile = encryptProfile(profile)
-
-    // Insert into database
     const db = useDB()
+
+    // TODO: Re-enable duplicate check once migration is applied
+    // Check if email already exists in waitlist
+    // const existingUser = await db.select().from(karlWaitlist).where(eq(karlWaitlist.email, email)).limit(1)
+    // 
+    // if (existingUser.length > 0) {
+    //   return {
+    //     success: false,
+    //     message: 'Diese E-Mail-Adresse ist bereits auf der Warteliste registriert.'
+    //   }
+    // }
+
+    // Encrypt the complete profile including email
+    const profileWithEmail = {
+      ...profile,
+      contactEmail: email // Include email in encrypted profile
+    }
+    const encryptedProfile = encryptProfile(profileWithEmail)
+
+    // Insert into database (temporarily without email until migration applied)
     const result = await db.insert(karlWaitlist).values({
       encryptedProfile,
       plz: profile.location, // Store PLZ unencrypted for analytics
       createdAt: new Date(),
       status: 'pending'
     }).returning({ id: karlWaitlist.id })
+    
+    // TODO: Store email separately or in encrypted profile for now
+    console.log(`📧 User email for contact: ${email}`)
 
     const waitlistId = result[0]?.id
 

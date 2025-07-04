@@ -40,4 +40,9 @@ export default defineNuxtConfig({
       version: pkg.version,
     },
   },
+  nitro: {
+    experimental: {
+      wasm: true
+    }
+  },
 });

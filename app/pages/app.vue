@@ -3,7 +3,7 @@
     <div class="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
       <!-- Header -->
       <div class="w-full text-center space-y-3">
-        <div class="relative mx-auto">
+        <div class="relative mx-auto w-16">
           <div class="flex h-16 w-16 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
             K
           </div>
@@ -920,11 +920,25 @@
             </ul>
           </div>
           
+          <!-- Email Input -->
+          <div class="space-y-3">
+            <label class="block text-purple-200 text-sm font-medium">
+              E-Mail für Kontakt
+            </label>
+            <input
+              v-model="waitlistEmail"
+              type="email"
+              placeholder="deine.email@example.com"
+              class="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition-all"
+              required
+            />
+          </div>
+
           <!-- Waitlist Button -->
           <div class="flex justify-center">
             <UButton
               @click="joinKarlWaitlist"
-              :disabled="isJoiningWaitlist || !isProfileCompleteForWaitlist"
+              :disabled="isJoiningWaitlist || !isProfileCompleteForWaitlist || !waitlistEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)"
               :loading="isJoiningWaitlist"
               color="purple"
               size="lg"
@@ -946,8 +960,8 @@
           </div>
           
           <!-- Requirements notice -->
-          <p v-if="!isProfileCompleteForWaitlist" class="text-purple-200/60 text-xs italic">
-            Bitte gib eine gültige PLZ in deinem Profil an, um dich zur Warteliste hinzuzufügen.
+          <p v-if="!isProfileCompleteForWaitlist || !waitlistEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)" class="text-purple-200/60 text-xs italic">
+            Bitte gib eine gültige PLZ in deinem Profil und eine E-Mail-Adresse an.
           </p>
         </div>
       </div>
@@ -1126,6 +1140,7 @@ const tempPlz = ref('')
 // Karl waitlist functionality
 const isJoiningWaitlist = ref(false)
 const waitlistStatus = ref<{success: boolean, message: string} | null>(null)
+const waitlistEmail = ref('')
 
 // Get current PLZ for display and checks
 const currentPlz = computed(() => {
@@ -1393,11 +1408,19 @@ const joinKarlWaitlist = async () => {
     return
   }
   
-  // Validate required profile data (only PLZ required)
+  // Validate required profile data (PLZ and email required)
   if (!onboardingStore.formData.location || !/^\d{5}$/.test(onboardingStore.formData.location)) {
     waitlistStatus.value = {
       success: false,
       message: 'Bitte gib eine gültige PLZ in deinem Profil an.'
+    }
+    return
+  }
+
+  if (!waitlistEmail.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail.value)) {
+    waitlistStatus.value = {
+      success: false,
+      message: 'Bitte gib eine gültige E-Mail-Adresse an.'
     }
     return
   }
@@ -1410,6 +1433,7 @@ const joinKarlWaitlist = async () => {
       method: 'POST',
       body: {
         profile: onboardingStore.formData,
+        email: waitlistEmail.value.trim(),
         consent: true // User has seen privacy notice and clicked button
       }
     })
@@ -1427,6 +1451,9 @@ const joinKarlWaitlist = async () => {
         color: 'green',
         timeout: 5000
       })
+      
+      // Clear email field after successful submission
+      waitlistEmail.value = ''
     }
     
   } catch (error: any) {
