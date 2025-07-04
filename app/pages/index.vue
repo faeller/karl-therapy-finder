@@ -154,7 +154,7 @@ const navigateToApp = () => {
         class="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 px-6 py-3 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-95"
       >
         <div class="relative z-10 flex items-center gap-2">
-          <UIcon name="i-heroicons-code-bracket" class="w-4 h-4" />
+          <UIcon name="i-simple-icons-github" class="w-4 h-4" />
           GitHub
         </div>
         <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
