@@ -1,4 +1,5 @@
 import { karlWaitlist } from '../database/schema'
+import { useDB } from '../utils/db'
 import crypto from 'crypto'
 
 interface WaitlistRequest {
@@ -13,24 +14,21 @@ interface WaitlistResponse {
 }
 
 // Encryption settings
-const ENCRYPTION_ALGORITHM = 'aes-256-gcm'
+const ENCRYPTION_ALGORITHM = 'aes-256-cbc'
 const ENCRYPTION_KEY = process.env.KARL_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex')
 
 // Encrypt profile data
 function encryptProfile(profileData: any): string {
   const iv = crypto.randomBytes(16)
   const key = Buffer.from(ENCRYPTION_KEY, 'hex').slice(0, 32) // Ensure 32 bytes for AES-256
-  const cipher = crypto.createCipherGCM(ENCRYPTION_ALGORITHM, key, iv)
+  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv)
   
   let encrypted = cipher.update(JSON.stringify(profileData), 'utf8', 'hex')
   encrypted += cipher.final('hex')
   
-  const authTag = cipher.getAuthTag()
-  
   return JSON.stringify({
     iv: iv.toString('hex'),
-    encrypted,
-    authTag: authTag.toString('hex')
+    encrypted
   })
 }
 
@@ -46,18 +44,11 @@ export default defineEventHandler(async (event): Promise<WaitlistResponse> => {
     })
   }
 
-  // Validate that we have essential profile data
+  // Validate that we have essential profile data (only PLZ required)
   if (!profile.location || !/^\d{5}$/.test(profile.location)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Valid PLZ is required in profile'
-    })
-  }
-
-  if (!profile.nickname || !profile.concernType) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Nickname and concern type are required'
+      statusMessage: 'Gültige PLZ ist erforderlich'
     })
   }
 
@@ -68,7 +59,8 @@ export default defineEventHandler(async (event): Promise<WaitlistResponse> => {
     const encryptedProfile = encryptProfile(profile)
 
     // Insert into database
-    const result = await useDrizzle().insert(karlWaitlist).values({
+    const db = useDB()
+    const result = await db.insert(karlWaitlist).values({
       encryptedProfile,
       plz: profile.location, // Store PLZ unencrypted for analytics
       createdAt: new Date(),

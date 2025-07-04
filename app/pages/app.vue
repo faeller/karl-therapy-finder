@@ -888,10 +888,10 @@
         <div class="text-center space-y-3">
           <h3 class="text-lg font-semibold text-purple-200 flex items-center justify-center gap-2">
             <UIcon name="i-heroicons-sparkles" class="w-5 h-5" />
-            Lass Karl für dich anrufen
+            Lass Karl für dich anrufen (Für Warteliste Anmelden)
           </h3>
           <p class="text-purple-100/90 text-sm leading-relaxed">
-            Unser Team kann für dich anrufen und einen Termin vereinbaren. Wir melden uns bei dir, sobald wir einen Therapieplatz gefunden haben.
+            KARL AI kann für dich anrufen und einen Termin vereinbaren.
           </p>
           
           <!-- Privacy Notice -->
@@ -924,7 +924,7 @@
           <div class="flex justify-center">
             <UButton
               @click="joinKarlWaitlist"
-              :disabled="isJoiningWaitlist || !onboardingStore?.formData?.nickname || !onboardingStore?.formData?.concernType"
+              :disabled="isJoiningWaitlist || !isProfileCompleteForWaitlist"
               :loading="isJoiningWaitlist"
               color="purple"
               size="lg"
@@ -946,8 +946,8 @@
           </div>
           
           <!-- Requirements notice -->
-          <p v-if="!onboardingStore?.formData?.nickname || !onboardingStore?.formData?.concernType" class="text-purple-200/60 text-xs italic">
-            Bitte vervollständige dein Profil mit Nickname und Anliegen, um dich zur Warteliste hinzuzufügen.
+          <p v-if="!isProfileCompleteForWaitlist" class="text-purple-200/60 text-xs italic">
+            Bitte gib eine gültige PLZ in deinem Profil an, um dich zur Warteliste hinzuzufügen.
           </p>
         </div>
       </div>
@@ -1130,6 +1130,14 @@ const waitlistStatus = ref<{success: boolean, message: string} | null>(null)
 // Get current PLZ for display and checks
 const currentPlz = computed(() => {
   return onboardingStore?.formData?.location || ''
+})
+
+// Check if profile is complete for waitlist (only PLZ required)
+const isProfileCompleteForWaitlist = computed(() => {
+  const hasLocation = !!(onboardingStore?.formData?.location)
+  const isValidPlz = hasLocation && /^\d{5}$/.test(onboardingStore.formData.location)
+  
+  return hasLocation && isValidPlz
 })
 
 // Check regional service availability
@@ -1385,11 +1393,11 @@ const joinKarlWaitlist = async () => {
     return
   }
   
-  // Validate required profile data
-  if (!onboardingStore.formData.nickname || !onboardingStore.formData.concernType || !onboardingStore.formData.location) {
+  // Validate required profile data (only PLZ required)
+  if (!onboardingStore.formData.location || !/^\d{5}$/.test(onboardingStore.formData.location)) {
     waitlistStatus.value = {
       success: false,
-      message: 'Bitte vervollständige dein Profil mit Nickname, Anliegen und PLZ.'
+      message: 'Bitte gib eine gültige PLZ in deinem Profil an.'
     }
     return
   }
