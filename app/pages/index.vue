@@ -138,13 +138,27 @@ const navigateToApp = () => {
       </div>
     </div>
     
-    <!-- CTA Button -->
-    <button @click="navigateToApp" class="group relative overflow-hidden rounded-2xl bg-linear-to-r from-blue-500 to-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105 active:scale-95">
-      <div class="relative z-10 flex items-center gap-2">
-        Los geht's, KARL! 
-        <span class="text-xl group-hover:scale-110 transition-transform duration-300">🚀</span>
-      </div>
-      <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-    </button>
+    <!-- CTA Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 items-center">
+      <button @click="navigateToApp" class="group relative overflow-hidden rounded-2xl bg-linear-to-r from-blue-500 to-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105 active:scale-95">
+        <div class="relative z-10 flex items-center gap-2">
+          Los geht's, KARL! 
+          <span class="text-xl group-hover:scale-110 transition-transform duration-300">🚀</span>
+        </div>
+        <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+      </button>
+      
+      <NuxtLink 
+        to="https://github.com/faeller/karl-therapy-finder" 
+        target="_blank"
+        class="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 px-6 py-3 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-95"
+      >
+        <div class="relative z-10 flex items-center gap-2">
+          <UIcon name="i-heroicons-code-bracket" class="w-4 h-4" />
+          GitHub
+        </div>
+        <div class="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+      </NuxtLink>
+    </div>
   </PageCard>
 </template>

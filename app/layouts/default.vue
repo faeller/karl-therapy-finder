@@ -65,6 +65,20 @@
             </UButton>
           </nav>
 
+          <!-- GitHub Link -->
+          <div class="hidden md:block">
+            <UButton 
+              to="https://github.com/faeller/karl-therapy-finder"
+              target="_blank"
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              class="text-blue-100/80 hover:text-blue-200 hover:bg-white/10"
+            >
+              <UIcon name="i-heroicons-code-bracket" class="w-4 h-4" />
+            </UButton>
+          </div>
+
           <!-- Mobile Navigation -->
           <div class="md:hidden">
             <UDropdownMenu :items="mobileMenuItems" :content="{ align: 'end' }">
@@ -107,6 +121,11 @@ const mobileMenuItems = [{
   label: 'Therapeuten',
   icon: 'i-heroicons-user-group',
   to: '/therapists'
+}, {
+  label: 'GitHub',
+  icon: 'i-heroicons-code-bracket',
+  to: 'https://github.com/faeller/karl-therapy-finder',
+  target: '_blank'
 }]
 </script>
 
