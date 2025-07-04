@@ -207,13 +207,13 @@
                 </p>
 
                 <!-- PLZ Display and Edit -->
-                <div class="bg-white/5 p-3 lg:p-4 rounded-lg border border-white/10">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
+                <div class="bg-white/5 p-4 lg:p-5 rounded-lg border border-white/10">
+                  <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
                       <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-blue-300" />
                       <span class="text-blue-200 text-sm">Verfügbarkeit geprüft für PLZ:</span>
                       <template v-if="!isEditingPlz">
-                        <span class="font-mono font-semibold text-blue-100">{{ currentPlz || '-----' }}</span>
+                        <span class="font-mono font-semibold text-blue-100 ml-2">{{ currentPlz || '-----' }}</span>
                       </template>
                       <template v-else>
                         <input 
