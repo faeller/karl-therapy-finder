@@ -9,11 +9,22 @@
         <div class="flex h-16 items-center justify-between">
           <!-- Logo/Brand -->
           <NuxtLink to="/" class="flex items-center gap-3 group">
-            <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-400/80 to-blue-600/80 text-lg font-bold text-white shadow-lg backdrop-blur-sm transition-all group-hover:scale-105">
-              K
+            <div class="relative">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-400/80 to-blue-600/80 text-lg font-bold text-white shadow-lg backdrop-blur-sm transition-all group-hover:scale-105">
+                K
+              </div>
+              <!-- AI Badge -->
+              <div class="absolute -bottom-1 -right-1 bg-black text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                AI
+              </div>
             </div>
             <div class="hidden sm:block">
-              <div class="text-lg font-bold text-white">KARL</div>
+              <div class="flex items-center gap-2">
+                <div class="text-lg font-bold text-white">KARL</div>
+                <span class="bg-green-500/20 border border-green-500/30 text-green-200 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  ALPHA
+                </span>
+              </div>
               <div class="text-xs text-blue-100/70 -mt-1">Therapy Finder</div>
             </div>
           </NuxtLink>

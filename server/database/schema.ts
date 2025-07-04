@@ -19,3 +19,12 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   userView: integer('user_view', { mode: 'boolean' }).notNull().default(false),
 });
+
+export const karlWaitlist = sqliteTable('karl_waitlist', {
+  id: integer('id').primaryKey(),
+  encryptedProfile: text('encrypted_profile').notNull(), // Encrypted JSON of complete profile
+  plz: text('plz').notNull(), // Store PLZ separately for analytics (unencrypted)
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  status: text('status').notNull().default('pending'), // pending, contacted, closed
+  notes: text('notes'), // For Karl team to add notes
+});

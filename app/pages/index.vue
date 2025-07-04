@@ -9,13 +9,24 @@ const navigateToApp = () => {
   <PageCard>
     <div class="relative z-10 flex w-full max-w-md lg:max-w-4xl xl:max-w-6xl flex-col items-center gap-6 lg:gap-8 text-center">
       <!-- KARL Logo/Icon -->
-      <div class="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-3xl font-bold text-white shadow-2xl backdrop-blur-sm">
-        K
+      <div class="relative">
+        <div class="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-3xl font-bold text-white shadow-2xl backdrop-blur-sm">
+          K
+        </div>
+        <!-- AI Badge -->
+        <div class="absolute -bottom-2 -right-2 bg-black text-white text-sm font-bold px-2 py-1 rounded-full shadow-lg">
+          AI
+        </div>
       </div>
       
       <!-- App Title Section -->
       <div class="space-y-2 lg:space-y-3">
-        <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white">KARL</h1>
+        <div class="flex items-center justify-center gap-3">
+          <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white">KARL</h1>
+          <span class="bg-green-500/20 border border-green-500/30 text-green-200 text-sm lg:text-base font-bold px-3 py-1 rounded-full">
+            ALPHA
+          </span>
+        </div>
         <p class="text-lg lg:text-xl xl:text-2xl text-blue-100/90 font-medium">Kontakt Automatisierung Richtung Leben</p>
         <p class="text-sm lg:text-base text-blue-200/70 italic max-w-xs lg:max-w-md mx-auto leading-relaxed">
           (Ja, der Name ist genau so sperrig wie das deutsche Gesundheitssystem 🤷‍♂️)

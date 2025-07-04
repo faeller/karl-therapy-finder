@@ -3,8 +3,14 @@
     <div class="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
       <!-- Header -->
       <div class="w-full text-center space-y-3">
-        <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
-          K
+        <div class="relative mx-auto">
+          <div class="flex h-16 w-16 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
+            K
+          </div>
+          <!-- AI Badge -->
+          <div class="absolute -bottom-1 -right-1 bg-black text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+            AI
+          </div>
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
           <template v-if="isLoadingProfile">
