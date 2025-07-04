@@ -877,6 +877,80 @@
         <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
       </div>
 
+      <!-- Karl Waitlist Section -->
+      <div class="w-full max-w-4xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm border border-purple-400/20 rounded-xl p-6 space-y-4">
+        <div class="text-center space-y-3">
+          <h3 class="text-lg font-semibold text-purple-200 flex items-center justify-center gap-2">
+            <UIcon name="i-heroicons-sparkles" class="w-5 h-5" />
+            Lass Karl für dich anrufen
+          </h3>
+          <p class="text-purple-100/90 text-sm leading-relaxed">
+            Unser Team kann für dich anrufen und einen Termin vereinbaren. Wir melden uns bei dir, sobald wir einen Therapieplatz gefunden haben.
+          </p>
+          
+          <!-- Privacy Notice -->
+          <div class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 text-left">
+            <h4 class="text-purple-200 font-medium text-sm mb-2 flex items-center gap-2">
+              <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
+              Datenschutz & Verschlüsselung
+            </h4>
+            <ul class="text-purple-100/80 text-xs space-y-1.5">
+              <li class="flex items-start gap-2">
+                <span class="text-purple-300 mt-0.5">•</span>
+                <span>Deine Profildaten werden mit AES-256 verschlüsselt gespeichert</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-purple-300 mt-0.5">•</span>
+                <span>Nur deine PLZ wird unverschlüsselt für regionale Zuordnung gespeichert</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-purple-300 mt-0.5">•</span>
+                <span>Daten werden nur zur Terminvermittlung verwendet und nach Erfolg gelöscht</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-purple-300 mt-0.5">•</span>
+                <span>Du kannst jederzeit per E-Mail die Löschung deiner Daten verlangen</span>
+              </li>
+            </ul>
+          </div>
+          
+          <!-- Waitlist Button -->
+          <div class="flex justify-center">
+            <UButton
+              @click="joinKarlWaitlist"
+              :disabled="isJoiningWaitlist || !onboardingStore?.formData?.nickname || !onboardingStore?.formData?.concernType"
+              :loading="isJoiningWaitlist"
+              color="purple"
+              size="lg"
+              icon="i-heroicons-phone"
+              class="px-6 py-3"
+            >
+              {{ isJoiningWaitlist ? 'Wird hinzugefügt...' : 'Zur Karl-Warteliste hinzufügen' }}
+            </UButton>
+          </div>
+          
+          <!-- Status message -->
+          <div v-if="waitlistStatus" :class="[
+            'text-sm p-3 rounded-lg',
+            waitlistStatus.success 
+              ? 'bg-green-500/10 border border-green-500/20 text-green-200' 
+              : 'bg-red-500/10 border border-red-500/20 text-red-200'
+          ]">
+            {{ waitlistStatus.message }}
+          </div>
+          
+          <!-- Requirements notice -->
+          <p v-if="!onboardingStore?.formData?.nickname || !onboardingStore?.formData?.concernType" class="text-purple-200/60 text-xs italic">
+            Bitte vervollständige dein Profil mit Nickname und Anliegen, um dich zur Warteliste hinzuzufügen.
+          </p>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-full max-w-md">
+        <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+      </div>
+
       <!-- Encouraging Message -->
       <div class="w-full max-w-4xl bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm border border-green-400/20 rounded-xl p-6 space-y-4">
         <div class="text-center space-y-3">
@@ -1042,6 +1116,10 @@ const isEditingPlz = ref(false)
 const tempPlz = ref('')
 
 // Note: Email functionality disabled due to eterminservice.de anti-bot protection
+
+// Karl waitlist functionality
+const isJoiningWaitlist = ref(false)
+const waitlistStatus = ref<{success: boolean, message: string} | null>(null)
 
 // Get current PLZ for display and checks
 const currentPlz = computed(() => {
@@ -1294,4 +1372,57 @@ const resetGuide = () => {
 }
 
 // Email functionality removed due to eterminservice.de access restrictions
+
+// Join Karl waitlist with encrypted profile storage
+const joinKarlWaitlist = async () => {
+  if (!onboardingStore?.formData || isJoiningWaitlist.value) {
+    return
+  }
+  
+  // Validate required profile data
+  if (!onboardingStore.formData.nickname || !onboardingStore.formData.concernType || !onboardingStore.formData.location) {
+    waitlistStatus.value = {
+      success: false,
+      message: 'Bitte vervollständige dein Profil mit Nickname, Anliegen und PLZ.'
+    }
+    return
+  }
+  
+  try {
+    isJoiningWaitlist.value = true
+    waitlistStatus.value = null
+    
+    const response = await $fetch('/api/karl-waitlist', {
+      method: 'POST',
+      body: {
+        profile: onboardingStore.formData,
+        consent: true // User has seen privacy notice and clicked button
+      }
+    })
+    
+    waitlistStatus.value = {
+      success: response.success,
+      message: response.message
+    }
+    
+    if (response.success) {
+      const toast = useToast()
+      toast.add({
+        title: 'Erfolgreich hinzugefügt! 🎉',
+        description: 'Du bist jetzt auf der Karl-Warteliste. Wir melden uns!',
+        color: 'green',
+        timeout: 5000
+      })
+    }
+    
+  } catch (error: any) {
+    console.error('Failed to join Karl waitlist:', error)
+    waitlistStatus.value = {
+      success: false,
+      message: error?.data?.message || 'Es gab einen Fehler. Bitte versuche es später erneut.'
+    }
+  } finally {
+    isJoiningWaitlist.value = false
+  }
+}
 </script>

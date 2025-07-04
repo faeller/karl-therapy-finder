@@ -139,7 +139,7 @@ const switchLanguage = async (newLocale) => {
   }
 }
 
-// Mobile menu items with dynamic language options
+// Mobile menu items (language switcher hidden)
 const mobileMenuItems = computed(() => {
   const baseItems = [{
     label: 'Startseite',
@@ -159,20 +159,6 @@ const mobileMenuItems = computed(() => {
     to: '/therapists'
   }]
 
-  // Add language options
-  const languageItems = locales.value.map(loc => {
-    // Handle both string and object formats
-    const localeCode = typeof loc === 'string' ? loc : loc.code
-    const localeName = typeof loc === 'string' ? languageConfig[loc]?.name : loc.name
-    
-    return {
-      label: `${languageConfig[localeCode]?.flag || '🌐'} ${languageConfig[localeCode]?.name || localeName || localeCode}`,
-      icon: localeCode === locale.value ? 'i-heroicons-check' : 'i-heroicons-language',
-      click: () => switchLanguage(localeCode),
-      disabled: localeCode === locale.value
-    }
-  })
-
   const githubItem = {
     label: 'GitHub',
     icon: 'i-simple-icons-github',
@@ -180,7 +166,7 @@ const mobileMenuItems = computed(() => {
     target: '_blank'
   }
 
-  return [...baseItems, ...languageItems, githubItem]
+  return [...baseItems, githubItem]
 })
 
 // Load persisted language on mount
