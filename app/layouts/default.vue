@@ -163,12 +163,18 @@ const mobileMenuItems = computed(() => {
   }]
 
   // Add language options
-  const languageItems = locales.value.map(loc => ({
-    label: `${languageConfig[loc.code]?.flag || '🌐'} ${languageConfig[loc.code]?.name || loc.name}`,
-    icon: loc.code === locale.value ? 'i-heroicons-check' : 'i-heroicons-language',
-    click: () => switchLanguage(loc.code),
-    disabled: loc.code === locale.value
-  }))
+  const languageItems = locales.value.map(loc => {
+    // Handle both string and object formats
+    const localeCode = typeof loc === 'string' ? loc : loc.code
+    const localeName = typeof loc === 'string' ? languageConfig[loc]?.name : loc.name
+    
+    return {
+      label: `${languageConfig[localeCode]?.flag || '🌐'} ${languageConfig[localeCode]?.name || localeName || localeCode}`,
+      icon: localeCode === locale.value ? 'i-heroicons-check' : 'i-heroicons-language',
+      click: () => switchLanguage(localeCode),
+      disabled: localeCode === locale.value
+    }
+  })
 
   const githubItem = {
     label: 'GitHub',
@@ -184,8 +190,16 @@ const mobileMenuItems = computed(() => {
 onMounted(() => {
   if (process.client) {
     const savedLanguage = localStorage.getItem('karl-language')
-    if (savedLanguage && savedLanguage !== locale.value && locales.value.some(l => l.code === savedLanguage)) {
-      setLocale(savedLanguage)
+    if (savedLanguage && savedLanguage !== locale.value) {
+      // Check if saved language exists in available locales
+      const hasLocale = locales.value.some(l => {
+        const localeCode = typeof l === 'string' ? l : l.code
+        return localeCode === savedLanguage
+      })
+      
+      if (hasLocale) {
+        setLocale(savedLanguage)
+      }
     }
   }
 })
