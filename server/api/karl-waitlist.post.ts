@@ -16,7 +16,12 @@ interface WaitlistResponse {
 
 // Encryption settings
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc'
-const ENCRYPTION_KEY = process.env.KARL_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex')
+const ENCRYPTION_KEY = process.env.KARL_ENCRYPTION_KEY
+
+// Validate encryption key
+if (!ENCRYPTION_KEY || ENCRYPTION_KEY === 'your-aes-256-encryption-key-64-chars-long') {
+  throw new Error('Encryption key not configured or using default placeholder')
+}
 
 // Encrypt profile data
 function encryptProfile(profileData: any): string {

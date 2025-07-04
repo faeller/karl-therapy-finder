@@ -11,9 +11,14 @@ interface LoginResponse {
   token?: string
 }
 
-// Admin password (in production, use environment variable)
-const ADMIN_PASSWORD = process.env.KARL_ADMIN_PASSWORD || 'karl-admin-2025'
-const JWT_SECRET = process.env.KARL_JWT_SECRET || crypto.randomBytes(32).toString('hex')
+// Admin password (must be set via environment variable)
+const ADMIN_PASSWORD = process.env.KARL_ADMIN_PASSWORD
+const JWT_SECRET = process.env.KARL_JWT_SECRET
+
+// Validate JWT secret
+if (!JWT_SECRET || JWT_SECRET === 'your-random-jwt-secret-64-chars-long') {
+  throw new Error('JWT secret not configured or using default placeholder')
+}
 
 export default defineEventHandler(async (event): Promise<LoginResponse> => {
   const body = await readBody(event) as LoginRequest
@@ -23,6 +28,14 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Password is required'
+    })
+  }
+
+  // Check if admin password is configured
+  if (!ADMIN_PASSWORD || ADMIN_PASSWORD === 'your-secure-admin-password') {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Admin password not configured or using default placeholder'
     })
   }
 

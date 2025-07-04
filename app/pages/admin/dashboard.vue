@@ -148,17 +148,135 @@
 
       <!-- Detail Modal -->
       <UModal v-model="showDetailModal">
-        <div class="p-6" v-if="selectedEntry">
-          <h3 class="text-lg font-semibold mb-4">Entry Details - ID {{ selectedEntry.id }}</h3>
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white" v-if="selectedEntry">
+          <h3 class="text-xl font-bold text-white mb-6">Entry Details - ID {{ selectedEntry.id }}</h3>
           
           <div class="space-y-4">
-            <div>
-              <strong>Profile Data:</strong>
-              <pre class="mt-2 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-96">{{ JSON.stringify(selectedEntry.profile, null, 2) }}</pre>
+            <!-- Contact Information -->
+            <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl backdrop-blur-sm">
+              <h4 class="font-semibold text-blue-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-user" class="w-4 h-4" />
+                Kontaktinformationen
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span class="font-medium text-blue-300">Name:</span>
+                  <span class="ml-2 text-white">{{ selectedEntry.profile?.nickname || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-blue-300">E-Mail:</span>
+                  <span class="ml-2 text-white">{{ selectedEntry.profile?.contactEmail || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-blue-300">PLZ:</span>
+                  <span class="ml-2 text-white font-mono">{{ selectedEntry.plz }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-blue-300">Alter:</span>
+                  <span class="ml-2 text-white">{{ selectedEntry.profile?.age || 'N/A' }}</span>
+                </div>
+              </div>
             </div>
+
+            <!-- Location Details -->
+            <div class="bg-green-500/10 border border-green-500/20 p-4 rounded-xl backdrop-blur-sm" v-if="selectedEntry.profile?.location">
+              <h4 class="font-semibold text-green-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-map-pin" class="w-4 h-4" />
+                Standort
+              </h4>
+              <div class="text-sm">
+                <span class="font-medium text-green-300">Ort:</span>
+                <span class="ml-2 text-white">{{ selectedEntry.profile.location }}</span>
+              </div>
+            </div>
+
+            <!-- Problems/Issues -->
+            <div class="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl backdrop-blur-sm" v-if="selectedEntry.profile?.problems?.length">
+              <h4 class="font-semibold text-purple-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4" />
+                Probleme ({{ selectedEntry.profile.problems.length }})
+              </h4>
+              <div class="flex flex-wrap gap-2">
+                <span 
+                  v-for="problem in selectedEntry.profile.problems" 
+                  :key="problem"
+                  class="inline-block bg-purple-500/20 text-purple-200 border border-purple-500/30 px-3 py-1 rounded-full text-xs"
+                >
+                  {{ problem }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Insurance Information -->
+            <div class="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl backdrop-blur-sm" v-if="selectedEntry.profile?.insurance">
+              <h4 class="font-semibold text-orange-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
+                Versicherung
+              </h4>
+              <div class="text-sm">
+                <span class="font-medium text-orange-300">Krankenkasse:</span>
+                <span class="ml-2 text-white">{{ selectedEntry.profile.insurance }}</span>
+              </div>
+            </div>
+
+            <!-- Therapy Preferences -->
+            <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl backdrop-blur-sm" v-if="selectedEntry.profile?.therapyType || selectedEntry.profile?.preferredGender">
+              <h4 class="font-semibold text-indigo-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-heart" class="w-4 h-4" />
+                Therapie-Präferenzen
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div v-if="selectedEntry.profile.therapyType">
+                  <span class="font-medium text-indigo-300">Therapieart:</span>
+                  <span class="ml-2 text-white">{{ selectedEntry.profile.therapyType }}</span>
+                </div>
+                <div v-if="selectedEntry.profile.preferredGender">
+                  <span class="font-medium text-indigo-300">Bevorzugtes Geschlecht:</span>
+                  <span class="ml-2 text-white">{{ selectedEntry.profile.preferredGender }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status and Timestamps -->
+            <div class="bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
+              <h4 class="font-semibold text-white mb-3 flex items-center gap-2">
+                <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+                Status & Zeitstempel
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span class="font-medium text-white/70">Status:</span>
+                  <span 
+                    :class="[
+                      'ml-2 px-2 py-1 rounded-full text-xs font-medium',
+                      selectedEntry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-200 border border-yellow-500/30' :
+                      selectedEntry.status === 'contacted' ? 'bg-green-500/20 text-green-200 border border-green-500/30' :
+                      'bg-gray-500/20 text-gray-200 border border-gray-500/30'
+                    ]"
+                  >
+                    {{ selectedEntry.status }}
+                  </span>
+                </div>
+                <div>
+                  <span class="font-medium text-white/70">Erstellt:</span>
+                  <span class="ml-2 text-white">{{ formatDate(selectedEntry.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Raw JSON (collapsible) -->
+            <details class="bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
+              <summary class="font-semibold text-white cursor-pointer hover:text-blue-200 transition-colors flex items-center gap-2">
+                <UIcon name="i-heroicons-code-bracket" class="w-4 h-4" />
+                Raw JSON Daten
+              </summary>
+              <pre class="mt-3 p-3 bg-black/30 border border-white/10 rounded-lg text-xs overflow-auto max-h-96 text-blue-100">{{ JSON.stringify(selectedEntry.profile, null, 2) }}</pre>
+            </details>
             
-            <div class="flex justify-end gap-2">
-              <UButton @click="showDetailModal = false" color="gray">Close</UButton>
+            <div class="flex justify-end gap-2 pt-4">
+              <UButton @click="showDetailModal = false" color="blue" variant="outline">
+                Schließen
+              </UButton>
             </div>
           </div>
         </div>
