@@ -1,0 +1,140 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "continue": "Continue",
+    "back": "Back",
+    "done": "Done",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "free": "Free",
+    "completed": "Completed ✓",
+    "markCompleted": "Mark as completed",
+    "step": "Step",
+    "of": "of",
+    "progress": "Progress"
+  },
+  "nav": {
+    "home": "Home",
+    "app": "Guide",
+    "therapists": "Therapists",
+    "github": "GitHub"
+  },
+  "landing": {
+    "title": "KARL",
+    "subtitle": "Contact Automation Towards Life",
+    "subtitleNote": "(Yes, the name is as bureaucratic as the German healthcare system 🤷‍♂️)",
+    "hero": {
+      "buddy": "Your buddy for the",
+      "hunt": "Therapy Hunt",
+      "location": "in Germany"
+    },
+    "stats": {
+      "waitTime": "5-6 months average waiting time",
+      "therapists": "Only 15,000 of 37,000 therapists accept public insurance",
+      "calls": "100+ calls are often needed"
+    },
+    "features": {
+      "title": "KARL helps you with:",
+      "find": "Finding therapists",
+      "track": "Tracking progress",
+      "emails": "Writing emails",
+      "guide": "Process guidance",
+      "paperwork": "Simplifying paperwork"
+    },
+    "notices": {
+      "free": {
+        "title": "💝 Completely free",
+        "text": "KARL is completely free for now. We appreciate donations once we set them up."
+      },
+      "development": {
+        "title": "🚧 In Development:",
+        "text": "📞 Automatic calls to therapists & 116117 as well as ✉️ email sending"
+      }
+    },
+    "privacy": {
+      "title": "Privacy first",
+      "local": "Your data stays local in your browser for now. If this changes, you'll need to consent first.",
+      "transparency": "Transparency - When KARL sends emails or makes calls for you, we'll show you exactly what data is shared.",
+      "serious": "We take privacy seriously – even though many AI providers unfortunately don't."
+    },
+    "cta": {
+      "start": "Let's go, KARL!",
+      "github": "GitHub"
+    }
+  },
+  "guide": {
+    "greeting": {
+      "loading": "Loading profile...",
+      "loadingText": "Loading your saved data...",
+      "withLocation": "Great that you're taking the path to a therapy spot",
+      "noLocation": "Please complete your profile",
+      "hey": "Hey",
+      "heyWithName": "Hey {name}! 👋"
+    },
+    "progress": {
+      "title": "Your Progress",
+      "completed": "{percent}% completed",
+      "stepOf": "Step {current} of {total}",
+      "estimate": "Rough estimate: {weeks}-12 more weeks until therapy spot",
+      "estimateNote": "(but can also take much longer)"
+    },
+    "stepper": {
+      "title": "Your next steps",
+      "completed": "You've already completed {completed} of {total} steps!"
+    },
+    "steps": {
+      "step1": {
+        "title": "Step 1: Schedule initial consultation",
+        "subtitle": "The easiest way to get a first consultation appointment",
+        "description": "At the appointment service center, you can easily get an appointment for an initial psychotherapeutic consultation. This consultation determines whether therapy is suitable for you.",
+        "phone": {
+          "title": "Call by phone",
+          "number": "116 117",
+          "info": "Free from all networks • Available 24/7"
+        },
+        "online": {
+          "title": "Online appointment booking",
+          "website": "eterminservice.de",
+          "info": "Available by region • Direct appointment booking"
+        },
+        "important": {
+          "title": "Important for later cost reimbursement:",
+          "treatment": "Treatment need must be determined by the therapist",
+          "required": "On the \"Individual Patient Information\" must be checked: \"Therapy urgently required\"",
+          "only": "Only then is a cost reimbursement procedure possible later"
+        },
+        "whatHappens": {
+          "title": "What happens in the initial consultation?",
+          "talk": "Detailed conversation about your situation (approx. 50 minutes)",
+          "assessment": "Assessment of whether psychotherapy makes sense",
+          "document": "You receive an \"Individual Patient Information\" with urgency code"
+        },
+        "continueButton": "Continue to Step 2"
+      }
+    },
+    "encouragement": {
+      "title": "You can do this!",
+      "message": "We at KARL wish you lots of strength and success in your search! The path may sometimes seem difficult, but every step brings you closer to the help you deserve.",
+      "note": "If you're unsure about some steps, feel free to use our therapist search or contact counseling centers in your area."
+    },
+    "actions": {
+      "reset": "Reset guide",
+      "findTherapists": "Find therapists"
+    },
+    "motivational": [
+      "🚀 You're starting your journey to a therapy spot!",
+      "💪 Great! You're making real progress!",
+      "📝 Awesome! The contact protocol is important!",
+      "🏥 You're getting professional support!",
+      "📋 Almost there! The application is a big step!",
+      "⚖️ You know your rights and use them!",
+      "🎉 Fantastic! You're close to the goal!",
+      "🏆 Congratulations! You've mastered all steps!"
+    ]
+  }
+}

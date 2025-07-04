@@ -65,8 +65,12 @@
             </UButton>
           </nav>
 
-          <!-- GitHub Link -->
-          <div class="hidden md:block">
+          <!-- Right Side Actions -->
+          <div class="hidden md:flex items-center gap-2">
+            <!-- Language Switcher -->
+            <LanguageSwitcher />
+            
+            <!-- GitHub Link -->
             <UButton 
               to="https://github.com/faeller/karl-therapy-finder"
               target="_blank"
@@ -103,30 +107,88 @@
 
 <script setup>
 const route = useRoute()
+const { locale, locales, setLocale } = useI18n()
 
-// Mobile menu items
-const mobileMenuItems = [{
-  label: 'Startseite',
-  icon: 'i-heroicons-home',
-  to: '/'
-}, {
-  label: 'Profil',
-  icon: 'i-heroicons-user-circle',
-  to: '/onboarding'
-}, {
-  label: 'Home',
-  icon: 'i-heroicons-map',
-  to: '/app'
-}, {
-  label: 'Therapeuten',
-  icon: 'i-heroicons-user-group',
-  to: '/therapists'
-}, {
-  label: 'GitHub',
-  icon: 'i-simple-icons-github',
-  to: 'https://github.com/faeller/karl-therapy-finder',
-  target: '_blank'
-}]
+// Language configuration
+const languageConfig = {
+  de: { name: 'Deutsch', flag: '🇩🇪' },
+  en: { name: 'English', flag: '🇬🇧' }
+}
+
+// Switch language function with persistence
+const switchLanguage = async (newLocale) => {
+  if (newLocale === locale.value) return
+  
+  try {
+    // Set the locale
+    await setLocale(newLocale)
+    
+    // Persist to localStorage
+    if (process.client) {
+      localStorage.setItem('karl-language', newLocale)
+    }
+    
+    // Show success toast
+    const toast = useToast()
+    const langName = languageConfig[newLocale]?.name || newLocale
+    toast.add({
+      title: newLocale === 'de' ? 'Sprache geändert' : 'Language changed',
+      description: newLocale === 'de' ? `Auf Deutsch umgestellt` : `Switched to ${langName}`,
+      color: 'blue',
+      timeout: 2000
+    })
+  } catch (error) {
+    console.error('Failed to switch language:', error)
+  }
+}
+
+// Mobile menu items with dynamic language options
+const mobileMenuItems = computed(() => {
+  const baseItems = [{
+    label: 'Startseite',
+    icon: 'i-heroicons-home',
+    to: '/'
+  }, {
+    label: 'Profil',
+    icon: 'i-heroicons-user-circle',
+    to: '/onboarding'
+  }, {
+    label: 'Home',
+    icon: 'i-heroicons-map',
+    to: '/app'
+  }, {
+    label: 'Therapeuten',
+    icon: 'i-heroicons-user-group',
+    to: '/therapists'
+  }]
+
+  // Add language options
+  const languageItems = locales.value.map(loc => ({
+    label: `${languageConfig[loc.code]?.flag || '🌐'} ${languageConfig[loc.code]?.name || loc.name}`,
+    icon: loc.code === locale.value ? 'i-heroicons-check' : 'i-heroicons-language',
+    click: () => switchLanguage(loc.code),
+    disabled: loc.code === locale.value
+  }))
+
+  const githubItem = {
+    label: 'GitHub',
+    icon: 'i-simple-icons-github',
+    to: 'https://github.com/faeller/karl-therapy-finder',
+    target: '_blank'
+  }
+
+  return [...baseItems, ...languageItems, githubItem]
+})
+
+// Load persisted language on mount
+onMounted(() => {
+  if (process.client) {
+    const savedLanguage = localStorage.getItem('karl-language')
+    if (savedLanguage && savedLanguage !== locale.value && locales.value.some(l => l.code === savedLanguage)) {
+      setLocale(savedLanguage)
+    }
+  }
+})
 </script>
 
 <style lang="postcss">

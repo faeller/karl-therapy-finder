@@ -1,0 +1,140 @@
+{
+  "common": {
+    "loading": "Lade...",
+    "continue": "Weiter",
+    "back": "Zurück",
+    "done": "Erledigt",
+    "close": "Schließen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "yes": "Ja",
+    "no": "Nein",
+    "or": "oder",
+    "and": "und",
+    "free": "Kostenlos",
+    "completed": "Abgeschlossen ✓",
+    "markCompleted": "Als erledigt markieren",
+    "step": "Schritt",
+    "of": "von",
+    "progress": "Fortschritt"
+  },
+  "nav": {
+    "home": "Startseite",
+    "app": "Home",
+    "therapists": "Therapeuten",
+    "github": "GitHub"
+  },
+  "landing": {
+    "title": "KARL",
+    "subtitle": "Kontakt Automatisierung Richtung Leben",
+    "subtitleNote": "(Ja, der Name ist genau so sperrig wie das deutsche Gesundheitssystem 🤷‍♂️)",
+    "hero": {
+      "buddy": "Dein Buddy für die",
+      "hunt": "Therapieplatz-Jagd",
+      "location": "in Deutschland"
+    },
+    "stats": {
+      "waitTime": "5-6 Monate durchschnittliche Wartezeit",
+      "therapists": "Nur 15.000 von 37.000 Therapeuten haben Kassensitz",
+      "calls": "100+ Anrufe werden oft benötigt"
+    },
+    "features": {
+      "title": "KARL hilft dir beim:",
+      "find": "Therapeuten finden",
+      "track": "Fortschritt verfolgen",
+      "emails": "E-Mails formulieren",
+      "guide": "Durch Prozess leiten",
+      "paperwork": "Papierkram vereinfachen"
+    },
+    "notices": {
+      "free": {
+        "title": "💝 Komplett kostenlos",
+        "text": "KARL ist fürs erste völlig gratis. Wir freuen uns über Spenden, sobald wir sie eingerichtet haben."
+      },
+      "development": {
+        "title": "🚧 In Entwicklung:",
+        "text": "📞 Automatische Anrufe bei Therapeuten & 116117 sowie ✉️ E-Mail-Versand"
+      }
+    },
+    "privacy": {
+      "title": "Datenschutz first",
+      "local": "Deine Daten bleiben fürs erste lokal in deinem Browser. Sobald sich das ändert, musst du erst zustimmen.",
+      "transparency": "Transparenz - Wenn KARL für dich E-Mails sendet oder anruft, zeigen wir dir genau, welche Daten geteilt werden.",
+      "serious": "Wir nehmen Datenschutz ernst – auch wenn viele KI-Anbieter das leider nicht tun."
+    },
+    "cta": {
+      "start": "Los geht's, KARL!",
+      "github": "GitHub"
+    }
+  },
+  "guide": {
+    "greeting": {
+      "loading": "Lade Profil...",
+      "loadingText": "Lade deine gespeicherten Daten...",
+      "withLocation": "Schön, dass du den Weg zum Therapieplatz angehst",
+      "noLocation": "Bitte vervollständige dein Profil",
+      "hey": "Hey",
+      "heyWithName": "Hey {name}! 👋"
+    },
+    "progress": {
+      "title": "Dein Fortschritt",
+      "completed": "{percent}% geschafft",
+      "stepOf": "Schritt {current} von {total}",
+      "estimate": "Grobe Schätzung: noch {weeks}-12 Wochen bis zum Therapieplatz",
+      "estimateNote": "(kann aber auch deutlich länger dauern)"
+    },
+    "stepper": {
+      "title": "Deine nächsten Schritte",
+      "completed": "Du hast schon {completed} von {total} Schritten geschafft!"
+    },
+    "steps": {
+      "step1": {
+        "title": "Schritt 1: Erstgespräch vereinbaren",
+        "subtitle": "Der einfachste Weg zu einem ersten Beratungstermin",
+        "description": "Bei der Terminservicestelle erhältst du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch. In diesem Gespräch wird geklärt, ob eine Therapie für dich geeignet ist.",
+        "phone": {
+          "title": "Telefonisch anrufen",
+          "number": "116 117",
+          "info": "Kostenlos aus allen Netzen • 24/7 erreichbar"
+        },
+        "online": {
+          "title": "Online Terminbuchung",
+          "website": "eterminservice.de",
+          "info": "Je nach Region verfügbar • Direkte Terminbuchung"
+        },
+        "important": {
+          "title": "Wichtig für spätere Kostenerstattung:",
+          "treatment": "Behandlungsbedarf muss vom Therapeuten festgestellt werden",
+          "required": "Auf der \"Individuellen Patienteninformation\" muss angekreuzt sein: \"Therapie zeitnah erforderlich\"",
+          "only": "Nur dann ist später ein Kostenerstattungsverfahren möglich"
+        },
+        "whatHappens": {
+          "title": "Was passiert im Erstgespräch?",
+          "talk": "Ausführliches Gespräch über deine Situation (ca. 50 Minuten)",
+          "assessment": "Einschätzung, ob eine Psychotherapie sinnvoll ist",
+          "document": "Du erhältst eine \"Individuelle Patienteninformation\" mit Dringlichkeitscode"
+        },
+        "continueButton": "Weiter zu Schritt 2"
+      }
+    },
+    "encouragement": {
+      "title": "Du schaffst das!",
+      "message": "Wir von KARL wünschen Dir ganz viel Kraft und Erfolg bei Deiner Suche! Der Weg mag manchmal mühsam erscheinen, aber jeder Schritt bringt Dich näher zu der Hilfe, die Du verdienst.",
+      "note": "Solltest Du bei einigen Schritten unsicher sein, nutze gerne unsere Therapeutensuche oder wende Dich an Beratungsstellen in Deiner Nähe."
+    },
+    "actions": {
+      "reset": "Guide zurücksetzen",
+      "findTherapists": "Therapeuten suchen"
+    },
+    "motivational": [
+      "🚀 Du startest Deine Reise zum Therapieplatz!",
+      "💪 Großartig! Du machst echte Fortschritte!",
+      "📝 Super! Das Kontaktprotokoll ist wichtig!",
+      "🏥 Du holst Dir professionelle Unterstützung!",
+      "📋 Fast geschafft! Der Antrag ist ein großer Schritt!",
+      "⚖️ Du kennst Deine Rechte und nutzt sie!",
+      "🎉 Fantastisch! Du bist kurz vor dem Ziel!",
+      "🏆 Herzlichen Glückwunsch! Du hast alle Schritte gemeistert!"
+    ]
+  }
+}

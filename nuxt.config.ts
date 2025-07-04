@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   future: { compatibilityVersion: 4 },
-  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui'],
+  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui', '@nuxtjs/i18n'],
   css: ['~/assets/css/main.css'],
   app: {
     head: {
@@ -23,6 +23,17 @@ export default defineNuxtConfig({
   },
   colorMode: {
     preference: 'dark',
+  },
+  i18n: {
+    locales: ['de', 'en'],
+    defaultLocale: 'de',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root'
+    },
+    vueI18n: './i18n.config.ts'
   },
   runtimeConfig: {
     public: {
