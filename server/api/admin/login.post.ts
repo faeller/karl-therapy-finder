@@ -1,4 +1,3 @@
-import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
 interface LoginRequest {
@@ -13,11 +12,26 @@ interface LoginResponse {
 
 // Admin password (must be set via environment variable)
 const ADMIN_PASSWORD = process.env.KARL_ADMIN_PASSWORD
-const JWT_SECRET = process.env.KARL_JWT_SECRET
+const TOKEN_SECRET = process.env.KARL_JWT_SECRET
 
-// Validate JWT secret
-if (!JWT_SECRET || JWT_SECRET === 'your-random-jwt-secret-64-chars-long') {
-  throw new Error('JWT secret not configured or using default placeholder')
+// Validate token secret
+if (!TOKEN_SECRET || TOKEN_SECRET === 'your-random-jwt-secret-64-chars-long') {
+  throw new Error('Token secret not configured or using default placeholder')
+}
+
+// Simple token generation for Cloudflare Workers compatibility
+function generateAdminToken(): string {
+  const timestamp = Date.now()
+  const randomBytes = crypto.randomBytes(16).toString('hex')
+  const payload = `admin:${timestamp}:${randomBytes}`
+  
+  // Create HMAC signature
+  const hmac = crypto.createHmac('sha256', TOKEN_SECRET)
+  hmac.update(payload)
+  const signature = hmac.digest('hex')
+  
+  // Combine payload and signature
+  return Buffer.from(`${payload}:${signature}`).toString('base64')
 }
 
 export default defineEventHandler(async (event): Promise<LoginResponse> => {
@@ -47,15 +61,8 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     }
   }
 
-  // Generate JWT token
-  const token = jwt.sign(
-    { 
-      admin: true, 
-      timestamp: Date.now() 
-    },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  )
+  // Generate admin token
+  const token = generateAdminToken()
 
   // Set httpOnly cookie
   setCookie(event, 'karl-admin-token', token, {

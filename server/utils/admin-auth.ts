@@ -1,7 +1,39 @@
-import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
-const JWT_SECRET = process.env.KARL_JWT_SECRET || crypto.randomBytes(32).toString('hex')
+const TOKEN_SECRET = process.env.KARL_JWT_SECRET || crypto.randomBytes(32).toString('hex')
+
+// Validate custom admin token
+function validateAdminToken(token: string): boolean {
+  try {
+    // Decode base64 token
+    const decoded = Buffer.from(token, 'base64').toString('utf8')
+    const parts = decoded.split(':')
+    
+    if (parts.length !== 4) return false
+    
+    const [type, timestamp, randomBytes, signature] = parts
+    
+    // Check if it's an admin token
+    if (type !== 'admin') return false
+    
+    // Check if token is not too old (24 hours)
+    const tokenTime = parseInt(timestamp)
+    const now = Date.now()
+    const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+    
+    if (now - tokenTime > maxAge) return false
+    
+    // Verify signature
+    const payload = `${type}:${timestamp}:${randomBytes}`
+    const hmac = crypto.createHmac('sha256', TOKEN_SECRET)
+    hmac.update(payload)
+    const expectedSignature = hmac.digest('hex')
+    
+    return signature === expectedSignature
+  } catch (error) {
+    return false
+  }
+}
 
 export function verifyAdminToken(event: any): boolean {
   try {
@@ -13,10 +45,7 @@ export function verifyAdminToken(event: any): boolean {
       return false
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any
-    
-    return decoded.admin === true
+    return validateAdminToken(token)
   } catch (error) {
     return false
   }
