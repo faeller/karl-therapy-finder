@@ -203,36 +203,46 @@
                 <!-- Contact Options -->
                 <div class="grid gap-3 lg:gap-4 lg:grid-cols-2">
                   <!-- Phone Option -->
-                  <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20">
-                    <div class="flex items-center gap-2 mb-2">
+                  <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20 group hover:border-blue-400/30 transition-all duration-300">
+                    <div class="flex items-center gap-2 mb-3">
                       <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
                       <p class="text-blue-200 font-semibold">Telefonisch anrufen</p>
                     </div>
+                    <div class="text-2xl lg:text-3xl font-bold text-blue-300 mb-3">
+                      116 117
+                    </div>
+                    <p class="text-blue-100/80 text-xs mb-4">Kostenlos aus allen Netzen • 24/7 erreichbar</p>
+                    
                     <a 
                       href="tel:116117"
-                      class="text-2xl lg:text-3xl font-bold text-blue-300 hover:text-blue-200 transition-colors block mb-1"
+                      class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                     >
-                      116 117
+                      <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                      Jetzt anrufen
                     </a>
-                    <p class="text-blue-100/80 text-xs">Kostenlos aus allen Netzen • 24/7 erreichbar</p>
                   </div>
 
                   <!-- Online Option -->
-                  <div class="bg-green-500/10 p-4 lg:p-5 rounded-xl border border-green-500/20">
-                    <div class="flex items-center gap-2 mb-2">
+                  <div class="bg-green-500/10 p-4 lg:p-5 rounded-xl border border-green-500/20 group hover:border-green-400/30 transition-all duration-300">
+                    <div class="flex items-center gap-2 mb-3">
                       <UIcon name="i-heroicons-computer-desktop" class="w-5 h-5 text-green-300" />
                       <p class="text-green-200 font-semibold">Online Terminbuchung</p>
                     </div>
+                    <div class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-1">
+                      eterminservice.de
+                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                    </div>
+                    <p class="text-green-100/80 text-xs mb-4">Je nach Region verfügbar • Direkte Terminbuchung</p>
+                    
                     <a 
                       href="https://www.eterminservice.de"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-lg font-semibold text-green-300 hover:text-green-200 transition-colors flex items-center gap-1 mb-1"
+                      class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                     >
-                      eterminservice.de
-                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                      <UIcon name="i-heroicons-computer-desktop" class="w-4 h-4" />
+                      Online buchen
                     </a>
-                    <p class="text-green-100/80 text-xs">Je nach Region verfügbar • Direkte Terminbuchung</p>
                   </div>
                 </div>
 
@@ -656,36 +666,46 @@
                   
                   <div class="grid gap-3 lg:gap-4 lg:grid-cols-2">
                     <!-- Phone Option -->
-                    <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20">
-                      <div class="flex items-center gap-2 mb-2">
+                    <div class="bg-blue-500/10 p-4 lg:p-5 rounded-xl border border-blue-500/20 group hover:border-blue-400/30 transition-all duration-300">
+                      <div class="flex items-center gap-2 mb-3">
                         <UIcon name="i-heroicons-phone" class="w-5 h-5 text-blue-300" />
                         <p class="text-blue-200 font-semibold">Telefonisch anrufen</p>
                       </div>
+                      <div class="text-2xl lg:text-3xl font-bold text-blue-300 mb-3">
+                        116 117
+                      </div>
+                      <p class="text-blue-100/80 text-xs mb-4">Kostenlos aus allen Netzen • 24/7 erreichbar</p>
+                      
                       <a 
                         href="tel:116117"
-                        class="text-2xl lg:text-3xl font-bold text-blue-300 hover:text-blue-200 transition-colors block mb-1"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                       >
-                        116 117
+                        <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                        Jetzt anrufen
                       </a>
-                      <p class="text-blue-100/80 text-xs">Kostenlos aus allen Netzen • 24/7 erreichbar</p>
                     </div>
 
                     <!-- Online Option -->
-                    <div class="bg-green-500/10 p-4 lg:p-5 rounded-xl border border-green-500/20">
-                      <div class="flex items-center gap-2 mb-2">
+                    <div class="bg-green-500/10 p-4 lg:p-5 rounded-xl border border-green-500/20 group hover:border-green-400/30 transition-all duration-300">
+                      <div class="flex items-center gap-2 mb-3">
                         <UIcon name="i-heroicons-computer-desktop" class="w-5 h-5 text-green-300" />
                         <p class="text-green-200 font-semibold">Online Terminbuchung</p>
                       </div>
+                      <div class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-1">
+                        eterminservice.de
+                        <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                      </div>
+                      <p class="text-green-100/80 text-xs mb-4">Je nach Region verfügbar • Direkte Terminbuchung</p>
+                      
                       <a 
                         href="https://www.eterminservice.de"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-lg font-semibold text-green-300 hover:text-green-200 transition-colors flex items-center gap-1 mb-1"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                       >
-                        eterminservice.de
-                        <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                        <UIcon name="i-heroicons-computer-desktop" class="w-4 h-4" />
+                        Online buchen
                       </a>
-                      <p class="text-green-100/80 text-xs">Je nach Region verfügbar • Direkte Terminbuchung</p>
                     </div>
                   </div>
                 </div>

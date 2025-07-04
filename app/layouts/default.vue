@@ -66,10 +66,7 @@
           </nav>
 
           <!-- Right Side Actions -->
-          <div class="hidden md:flex items-center gap-2">
-            <!-- Language Switcher -->
-            <LanguageSwitcher />
-            
+          <div class="hidden md:flex items-center gap-2">            
             <!-- GitHub Link -->
             <UButton 
               to="https://github.com/faeller/karl-therapy-finder"
