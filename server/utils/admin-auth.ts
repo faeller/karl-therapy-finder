@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-const TOKEN_SECRET = process.env.KARL_JWT_SECRET || crypto.randomBytes(32).toString('hex')
+const TOKEN_SECRET = process.env.KARL_JWT_SECRET
 
 // Validate custom admin token
 function validateAdminToken(token: string): boolean {
@@ -37,6 +37,10 @@ function validateAdminToken(token: string): boolean {
 
 export function verifyAdminToken(event: any): boolean {
   try {
+    if (!TOKEN_SECRET) {
+      return false
+    }
+
     // Check for token in cookie or Authorization header
     const token = getCookie(event, 'karl-admin-token') || 
                  getHeader(event, 'authorization')?.replace('Bearer ', '')
