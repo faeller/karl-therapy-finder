@@ -75,12 +75,15 @@ const handleLogin = async () => {
   try {
     const response = await $fetch('/api/admin/login', {
       method: 'POST',
+      credentials: 'include', // Ensure cookies are included in requests
       body: {
         password: password.value
       }
     })
 
     if (response.success) {
+      // Give browser time to process Set-Cookie header before redirect
+      await new Promise(resolve => setTimeout(resolve, 100))
       // Redirect to admin dashboard
       await navigateTo('/admin/dashboard')
     } else {

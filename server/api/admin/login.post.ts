@@ -64,12 +64,13 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
   // Generate admin token
   const token = generateAdminToken()
 
-  // Set httpOnly cookie
+  // Set httpOnly cookie with proper settings for Cloudflare
   setCookie(event, 'karl-admin-token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 // 24 hours
+    secure: true, // Always secure for production deployment
+    sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
+    maxAge: 24 * 60 * 60, // 24 hours
+    path: '/' // Ensure cookie is available site-wide, let domain auto-detect
   })
 
   return {
