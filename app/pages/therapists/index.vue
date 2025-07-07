@@ -328,6 +328,119 @@
 
       <!-- Kontaktprotokoll Tab Content -->
       <div v-if="activeTab === 'kontaktprotokoll'" class="w-full space-y-4">
+        <!-- PDF Export -->
+        <div v-if="!isLocalStorageLoading" class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-blue-300 text-base">Kontaktprotokoll exportieren</h3>
+            <UBadge color="green" variant="soft">{{ qualifyingContactAttempts.length }} qualifiziert</UBadge>
+          </div>
+          <p class="text-blue-100/80 text-sm mb-4">
+            Erstelle ein PDF-Dokument mit allen qualifizierten Kontaktversuchen für deine Krankenkasse. (Nur Versuche ohne Rückmeldung oder Wartezeit >3 Monate)
+          </p>
+          <div class="flex gap-3">
+            <button 
+              @click="previewPdf"
+              :disabled="qualifyingContactAttempts.length === 0"
+              class="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <UIcon name="i-heroicons-eye" class="w-4 h-4" />
+                PDF in neuem Tab öffnen
+              </div>
+            </button>
+            <button 
+              @click="exportToPdf"
+              :disabled="qualifyingContactAttempts.length === 0"
+              class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
+                PDF herunterladen
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Manual Contact -->
+        <div v-if="!isLocalStorageLoading" class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-blue-300 text-base">Manueller Kontaktversuch</h3>
+          </div>
+          <p class="text-blue-100/80 text-sm mb-4">
+            Füge einen Kontaktversuch zu einem Therapeuten hinzu, der nicht in unserer Suche gefunden wurde.
+          </p>
+          <button 
+            @click="openContactModal()"
+            class="w-full rounded-lg bg-green-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-green-600"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+              Kontaktversuch hinzufügen
+            </div>
+          </button>
+        </div>
+
+        <!-- Manual Contact Attempts -->
+        <div v-if="!isLocalStorageLoading && manualContactAttempts.length > 0" class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-blue-300 text-base">Manuelle Kontaktversuche</h3>
+            <UBadge color="orange" variant="soft">{{ manualContactAttempts.length }}</UBadge>
+          </div>
+          
+          <div class="space-y-3">
+            <div 
+              v-for="attempt in manualContactAttempts" 
+              :key="attempt.id"
+              class="rounded-lg bg-white/5 p-3 border border-white/10"
+            >
+              <div class="flex items-start gap-3">
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-white text-sm">{{ attempt.therapistName }}</h4>
+                  <p class="text-blue-100/80 text-xs mt-1">{{ attempt.therapistAddress }}</p>
+                  <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
+                    <div class="flex items-center gap-1">
+                      <span>📅</span>
+                      <span>{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <div :class="[
+                    'text-xs px-3 py-1.5 rounded-lg border',
+                    attempt.replyReceived 
+                      ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                      : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                  ]">
+                    <div class="flex items-center gap-1">
+                      <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
+                      {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                    </div>
+                  </div>
+                  <button 
+                    @click="toggleReplyStatus(attempt.id)"
+                    class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                    title="Bearbeiten"
+                  >
+                    <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
+                  </button>
+                  <button 
+                    @click="removeContactAttempt(attempt.id)"
+                    class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                    title="Löschen"
+                  >
+                    <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+              
+              <div v-if="attempt.waitingTime" class="mt-2 text-blue-100/80 text-xs">
+                Wartezeit: {{ attempt.waitingTime }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Bookmarked Therapists -->
         <div v-if="bookmarkedTherapists.length > 0" class="space-y-3">
           <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
@@ -337,8 +450,9 @@
             </div>
             
             <div class="space-y-3">
+              <!-- Active Therapists (Incomplete) -->
               <div 
-                v-for="therapist in bookmarkedTherapists" 
+                v-for="therapist in displayedTherapists" 
                 :key="therapist.id"
                 class="rounded-lg bg-white/5 p-3 border border-white/10"
               >
@@ -400,7 +514,9 @@
                 
                 <!-- Contact Attempts -->
                 <div v-if="getContactAttempts(therapist.id).length > 0" class="mt-3 pt-3 border-t border-white/10">
-                  <h5 class="text-xs font-medium text-blue-200 mb-2">Kontaktversuche</h5>
+                  <div class="mb-2">
+                    <h5 class="text-xs font-medium text-blue-200">Kontaktversuche</h5>
+                  </div>
                   <div class="space-y-2">
                     <div 
                       v-for="attempt in getContactAttempts(therapist.id)" 
@@ -450,121 +566,78 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Add Manual Contact -->
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-bold text-blue-300 text-base">Manueller Kontaktversuch</h3>
-            </div>
-            <p class="text-blue-100/80 text-sm mb-4">
-              Füge einen Kontaktversuch zu einem Therapeuten hinzu, der nicht in unserer Suche gefunden wurde.
-            </p>
-            <button 
-              @click="openContactModal()"
-              class="w-full rounded-lg bg-green-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-green-600"
-            >
-              <div class="flex items-center justify-center gap-2">
-                <UIcon name="i-heroicons-plus" class="w-4 h-4" />
-                Kontaktversuch hinzufügen
-              </div>
-            </button>
-          </div>
-
-          <!-- Manual Contact Attempts -->
-          <div v-if="manualContactAttempts.length > 0" class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-bold text-blue-300 text-base">Manuelle Kontaktversuche</h3>
-              <UBadge color="orange" variant="soft">{{ manualContactAttempts.length }}</UBadge>
-            </div>
-            
-            <div class="space-y-3">
-              <div 
-                v-for="attempt in manualContactAttempts" 
-                :key="attempt.id"
-                class="rounded-lg bg-white/5 p-3 border border-white/10"
-              >
-                <div class="flex items-start gap-3">
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-semibold text-white text-sm">{{ attempt.therapistName }}</h4>
-                    <p class="text-blue-100/80 text-xs mt-1">{{ attempt.therapistAddress }}</p>
-                    <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
-                      <div class="flex items-center gap-1">
-                        <span>📅</span>
-                        <span>{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2 flex-shrink-0">
-                    <div :class="[
-                      'text-xs px-3 py-1.5 rounded-lg border',
-                      attempt.replyReceived 
-                        ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                    ]">
-                      <div class="flex items-center gap-1">
-                        <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
-                        {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
-                      </div>
-                    </div>
+              
+              <!-- Completed Therapists Section -->
+              <div v-if="completedTherapists.length > 0" class="mt-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-medium text-blue-200/80">Abgeschlossene Therapeuten</h4>
+                  <div class="flex items-center gap-2">
+                    <UBadge color="green" variant="soft" size="xs">{{ completedTherapists.length }}</UBadge>
                     <button 
-                      @click="toggleReplyStatus(attempt.id)"
-                      class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
-                      title="Bearbeiten"
+                      @click="toggleAllCompleted"
+                      class="text-xs text-blue-300 hover:text-blue-200 transition-colors"
                     >
-                      <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
-                    </button>
-                    <button 
-                      @click="removeContactAttempt(attempt.id)"
-                      class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
-                      title="Löschen"
-                    >
-                      <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                      {{ showAllCompleted ? 'Ausblenden' : 'Anzeigen' }}
                     </button>
                   </div>
                 </div>
                 
-                <div v-if="attempt.waitingTime" class="mt-2 text-blue-100/80 text-xs">
-                  Wartezeit: {{ attempt.waitingTime }}
+                <div v-if="showAllCompleted" class="space-y-2">
+                  <div 
+                    v-for="therapist in completedTherapists" 
+                    :key="therapist.id"
+                    class="rounded-lg bg-white/[0.02] p-3 border border-white/5 opacity-75 transition-all"
+                  >
+                    <div class="flex items-start gap-3">
+                      <!-- Profile Image -->
+                      <div class="flex-shrink-0">
+                        <div v-if="therapist.image" class="w-8 h-8 rounded-lg overflow-hidden">
+                          <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
+                        </div>
+                        <div v-else class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <svg class="w-4 h-4 text-blue-200/60" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </div>
+                      </div>
+
+                      <!-- Therapist Info -->
+                      <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-white/80 text-sm">{{ therapist.name }}</h4>
+                        <p class="text-blue-100/60 text-xs mt-1">{{ therapist.qualification }}</p>
+                        <div class="flex items-center gap-3 mt-1 text-xs text-blue-100/50">
+                          <div class="flex items-center gap-1">
+                            <span>📍</span>
+                            <span>{{ therapist.distance }}km</span>
+                          </div>
+                          <div class="flex items-center gap-1">
+                            <UIcon name="i-heroicons-check-circle" class="w-3 h-3 text-green-400" />
+                            <span>Abgeschlossen</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Action Buttons -->
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <button 
+                          @click="toggleBookmark(therapist)"
+                          class="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-300/60 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all"
+                          title="Therapeut entfernen"
+                        >
+                          <UIcon name="i-heroicons-bookmark-solid" class="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-else class="text-center py-2">
+                  <span class="text-xs text-blue-100/50 italic">{{ completedTherapists.length }} abgeschlossene Therapeuten ausgeblendet</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- PDF Export -->
-          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-bold text-blue-300 text-base">Kontaktprotokoll exportieren</h3>
-              <UBadge color="green" variant="soft">{{ qualifyingContactAttempts.length }} qualifiziert</UBadge>
-            </div>
-            <p class="text-blue-100/80 text-sm mb-4">
-              Erstelle ein PDF-Dokument mit allen qualifizierten Kontaktversuchen für deine Krankenkasse. (Nur Versuche ohne Rückmeldung oder Wartezeit >3 Monate)
-            </p>
-            <div class="flex gap-3">
-              <button 
-                @click="previewPdf"
-                :disabled="qualifyingContactAttempts.length === 0"
-                class="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div class="flex items-center justify-center gap-2">
-                  <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                  PDF in neuem Tab öffnen
-                </div>
-              </button>
-              <button 
-                @click="exportToPdf"
-                :disabled="qualifyingContactAttempts.length === 0"
-                class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div class="flex items-center justify-center gap-2">
-                  <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
-                  PDF herunterladen
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
 
         <!-- Loading State for localStorage data -->
@@ -1373,6 +1446,65 @@ const qualifyingContactAttempts = computed(() => {
   })
   
   return Array.from(therapistAttempts.values())
+})
+
+// Sort bookmarked therapists by completion status
+const sortedBookmarkedTherapists = computed(() => {
+  return [...bookmarkedTherapists.value].sort((a, b) => {
+    const attemptsA = getContactAttempts(a.id)
+    const attemptsB = getContactAttempts(b.id)
+    
+    const isCompletedA = attemptsA.length > 0 && attemptsA.every(attempt => attempt.replyReceived)
+    const isCompletedB = attemptsB.length > 0 && attemptsB.every(attempt => attempt.replyReceived)
+    
+    // Incomplete therapists first (no attempts or pending attempts)
+    if (!isCompletedA && isCompletedB) return -1
+    if (isCompletedA && !isCompletedB) return 1
+    
+    // Among incomplete, prioritize those with no attempts
+    if (!isCompletedA && !isCompletedB) {
+      if (attemptsA.length === 0 && attemptsB.length > 0) return -1
+      if (attemptsA.length > 0 && attemptsB.length === 0) return 1
+    }
+    
+    return 0
+  })
+})
+
+// Helper to check if therapist is completed
+const isTherapistCompleted = (therapistId: string) => {
+  const attempts = getContactAttempts(therapistId)
+  return attempts.length > 0 && attempts.every(attempt => attempt.replyReceived)
+}
+
+// Collapsible state for completed therapists
+const collapsedCompletedTherapists = ref(new Set<string>())
+const showAllCompleted = ref(false)
+
+const toggleTherapistCollapse = (therapistId: string) => {
+  if (collapsedCompletedTherapists.value.has(therapistId)) {
+    collapsedCompletedTherapists.value.delete(therapistId)
+  } else {
+    collapsedCompletedTherapists.value.add(therapistId)
+  }
+}
+
+const toggleAllCompleted = () => {
+  showAllCompleted.value = !showAllCompleted.value
+}
+
+// Get completed and incomplete therapists separately
+const incompleteTherapists = computed(() => {
+  return sortedBookmarkedTherapists.value.filter(t => !isTherapistCompleted(t.id))
+})
+
+const completedTherapists = computed(() => {
+  return sortedBookmarkedTherapists.value.filter(t => isTherapistCompleted(t.id))
+})
+
+// Display therapists - incomplete ones in main section, completed ones only in completed section
+const displayedTherapists = computed(() => {
+  return incompleteTherapists.value
 })
 
 const generatePdf = async () => {

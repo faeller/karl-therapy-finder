@@ -72,7 +72,18 @@
               :class="$route.path === '/therapists' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2" />
-              Therapeuten / Kontaktprotokoll
+              Therapeuten
+            </UButton>
+            
+            <UButton 
+              to="/therapists/contact-protocol" 
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              :class="$route.path === '/therapists/contact-protocol' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+            >
+              <UIcon name="i-heroicons-document-text" class="w-4 h-4 mr-2" />
+              Kontaktprotokoll
             </UButton>
           </nav>
 
@@ -165,9 +176,13 @@ const mobileMenuItems = computed(() => {
     icon: 'i-heroicons-map',
     to: '/app'
   }, {
-    label: 'Therapeuten / Kontaktprotokoll',
+    label: 'Therapeuten',
     icon: 'i-heroicons-user-group',
     to: '/therapists'
+  }, {
+    label: 'Kontaktprotokoll',
+    icon: 'i-heroicons-document-text',
+    to: '/therapists/contact-protocol'
   }]
 
   const githubItem = {
