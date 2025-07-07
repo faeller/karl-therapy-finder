@@ -485,6 +485,65 @@
             </div>
             
             <div class="space-y-4 text-sm lg:text-base">
+              <!-- Progress Tracking - Moved to top and improved -->
+              <div class="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 lg:p-6 rounded-xl border border-green-500/20">
+                <h4 class="text-green-200 font-semibold mb-4 flex items-center gap-2">
+                  <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5" />
+                  Erstgespräch Fortschritt
+                </h4>
+                <div class="space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <UIcon 
+                        :name="hasUberweisungscode ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                        :class="hasUberweisungscode ? 'text-green-400' : 'text-amber-400'"
+                        class="w-5 h-5 mt-0.5 flex-shrink-0"
+                      />
+                      <div>
+                        <span class="text-green-100 font-medium text-sm block">Überweisungscode erhalten</span>
+                        <span class="text-green-200/70 text-xs">Vom Therapeuten im Erstgespräch</span>
+                      </div>
+                    </div>
+                    <UButton
+                      @click="toggleUberweisungscode"
+                      :color="hasUberweisungscode ? 'green' : 'amber'"
+                      size="sm"
+                      :variant="hasUberweisungscode ? 'solid' : 'outline'"
+                      :icon="hasUberweisungscode ? 'i-heroicons-check' : 'i-heroicons-clock'"
+                      class="shadow-lg hover:shadow-xl transition-all min-w-[80px]"
+                    >
+                      {{ hasUberweisungscode ? 'Erhalten' : 'Ausstehend' }}
+                    </UButton>
+                  </div>
+                  
+                  <div class="h-px bg-gradient-to-r from-transparent via-green-300/30 to-transparent"></div>
+                  
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <UIcon 
+                        :name="hasDringendErforderlich ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                        :class="hasDringendErforderlich ? 'text-green-400' : 'text-amber-400'"
+                        class="w-5 h-5 mt-0.5 flex-shrink-0"
+                      />
+                      <div>
+                        <span class="text-green-100 font-medium text-sm block">"Therapie dringend zeitnah erforderlich"</span>
+                        <span class="text-green-200/70 text-xs">Angekreuzt auf dem Diagnosebogen</span>
+                      </div>
+                    </div>
+                    <UButton
+                      @click="toggleDringendErforderlich"
+                      :color="hasDringendErforderlich ? 'green' : 'amber'"
+                      size="sm"
+                      :variant="hasDringendErforderlich ? 'solid' : 'outline'"
+                      :icon="hasDringendErforderlich ? 'i-heroicons-check' : 'i-heroicons-clock'"
+                      class="shadow-lg hover:shadow-xl transition-all min-w-[80px]"
+                    >
+                      {{ hasDringendErforderlich ? 'Angekreuzt' : 'Ausstehend' }}
+                    </UButton>
+                  </div>
+                </div>
+              </div>
+              
               <p class="text-blue-100/90 leading-relaxed">
                 Kontaktiere selbständig mehrere Psychotherapeuten und dokumentiere alle Versuche in einem Kontaktprotokoll. Dies ist wichtig für das spätere Kostenerstattungsverfahren.
               </p>
@@ -526,40 +585,6 @@
                 <p class="text-blue-100/80 text-xs">
                   Nutze Plattformen wie therapie.de oder die Therapeutensuche deiner Krankenkasse. Auch Empfehlungen von Hausärzten können hilfreich sein.
                 </p>
-              </div>
-
-              <!-- Progress Tracking -->
-              <div class="bg-white/5 p-4 lg:p-5 rounded-xl border border-white/10">
-                <h4 class="text-blue-200 font-semibold mb-3 flex items-center gap-2">
-                  <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
-                  Fortschritt verfolgen
-                </h4>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-blue-100/80 text-sm">Überweisungscode vom Therapeuten erhalten</span>
-                    <UButton
-                      @click="toggleUberweisungscode"
-                      :color="hasUberweisungscode ? 'green' : 'gray'"
-                      size="xs"
-                      variant="outline"
-                      :icon="hasUberweisungscode ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
-                    >
-                      {{ hasUberweisungscode ? 'Ja' : 'Nein' }}
-                    </UButton>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-blue-100/80 text-sm">Auf Diagnosebogen steht "Therapie dringend zeitnah erforderlich"</span>
-                    <UButton
-                      @click="toggleDringendErforderlich"
-                      :color="hasDringendErforderlich ? 'green' : 'gray'"
-                      size="xs"
-                      variant="outline"
-                      :icon="hasDringendErforderlich ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
-                    >
-                      {{ hasDringendErforderlich ? 'Ja' : 'Nein' }}
-                    </UButton>
-                  </div>
-                </div>
               </div>
             </div>
 
