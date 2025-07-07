@@ -89,10 +89,23 @@ const handleLogin = async () => {
         password: password.value
       }
     })
+    
+    console.log('Login response:', response)
 
     if (response.success) {
-      // Redirect to admin dashboard
-      await navigateTo('/admin/dashboard')
+      // Wait a bit to ensure session is set before redirecting
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify session is actually set
+      const session = await $fetch('/api/auth/session')
+      console.log('Session after login:', session)
+      
+      if (session.loggedIn) {
+        // Redirect to admin dashboard
+        await navigateTo('/admin/dashboard')
+      } else {
+        throw new Error('Session not persisted after login')
+      }
     }
   } catch (error: any) {
     console.error('Login error:', error)

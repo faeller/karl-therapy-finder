@@ -368,11 +368,14 @@ onMounted(async () => {
   try {
     // First check authentication
     const session = await $fetch('/api/auth/session')
+    console.log('Dashboard auth check:', session)
+    
     if (session.loggedIn && session.user?.role === 'admin') {
       isAuthenticated.value = true
       // Only load data after authentication is confirmed
       await fetchWaitlistData()
     } else {
+      console.log('Not authenticated, redirecting to login')
       // Not authenticated, redirect to login
       await navigateTo('/admin/login')
     }

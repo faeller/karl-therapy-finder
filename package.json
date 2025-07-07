@@ -52,6 +52,7 @@
     "h3-zod": "^0.5.3",
     "marked": "^15.0.12",
     "nuxt": "^3.17.5",
+    "nuxt-auth-utils": "^0.5.20",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.4.1",
     "vue": "latest",

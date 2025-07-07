@@ -1,6 +1,6 @@
 import { karlWaitlist } from '../../database/schema'
 import { useDB } from '../../utils/db'
-import { requireAdmin } from '../../utils/admin-auth'
+import { requireAdmin } from '../../utils/auth'
 import crypto from 'crypto'
 
 // Decryption settings (must match encryption)
@@ -32,7 +32,7 @@ function decryptProfile(encryptedData: string): any {
 
 export default defineEventHandler(async (event) => {
   // Require admin authentication
-  requireAdmin(event)
+  await requireAdmin(event)
 
   try {
     const db = useDB()
