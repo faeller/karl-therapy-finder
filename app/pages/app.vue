@@ -486,12 +486,20 @@
             
             <div class="space-y-4 text-sm lg:text-base">
               <!-- Progress Tracking - Moved to top and improved -->
-              <div class="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 lg:p-6 rounded-xl border border-green-500/20">
-                <h4 class="text-green-200 font-semibold mb-4 flex items-center gap-2">
-                  <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5" />
+              <div :class="[
+                'p-3 lg:p-4 rounded-lg border transition-all duration-300',
+                hasUberweisungscode && hasDringendErforderlich 
+                  ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20' 
+                  : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/20'
+              ]">
+                <h4 :class="[
+                  'font-semibold mb-3 flex items-center gap-2',
+                  hasUberweisungscode && hasDringendErforderlich ? 'text-green-200' : 'text-blue-200'
+                ]">
+                  <UIcon name="i-heroicons-clipboard-document-check" class="w-4 h-4" />
                   Erstgespräch Fortschritt
                 </h4>
-                <div class="space-y-4">
+                <div class="space-y-3">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-start gap-3">
                       <UIcon 
@@ -500,23 +508,32 @@
                         class="w-5 h-5 mt-0.5 flex-shrink-0"
                       />
                       <div>
-                        <span class="text-green-100 font-medium text-sm block">Überweisungscode erhalten</span>
-                        <span class="text-green-200/70 text-xs">Vom Therapeuten im Erstgespräch</span>
+                        <span :class="[
+                          'font-medium text-sm block',
+                          hasUberweisungscode && hasDringendErforderlich ? 'text-green-100' : 'text-blue-100'
+                        ]">Überweisungscode erhalten</span>
+                        <span :class="[
+                          'text-xs',
+                          hasUberweisungscode && hasDringendErforderlich ? 'text-green-200/70' : 'text-blue-200/70'
+                        ]">Vom Therapeuten im Erstgespräch</span>
                       </div>
                     </div>
                     <UButton
                       @click="toggleUberweisungscode"
-                      :color="hasUberweisungscode ? 'green' : 'amber'"
-                      size="sm"
+                      :color="hasUberweisungscode ? 'green' : 'blue'"
+                      size="xs"
                       :variant="hasUberweisungscode ? 'solid' : 'outline'"
-                      :icon="hasUberweisungscode ? 'i-heroicons-check' : 'i-heroicons-clock'"
-                      class="shadow-lg hover:shadow-xl transition-all min-w-[80px]"
+                      :icon="hasUberweisungscode ? 'i-heroicons-check' : 'i-heroicons-plus'"
+                      class="shadow hover:shadow-lg transition-all"
                     >
-                      {{ hasUberweisungscode ? 'Erhalten' : 'Ausstehend' }}
+                      {{ hasUberweisungscode ? 'Erhalten' : 'Als erledigt markieren' }}
                     </UButton>
                   </div>
                   
-                  <div class="h-px bg-gradient-to-r from-transparent via-green-300/30 to-transparent"></div>
+                  <div :class="[
+                    'h-px bg-gradient-to-r from-transparent to-transparent',
+                    hasUberweisungscode && hasDringendErforderlich ? 'via-green-300/30' : 'via-blue-300/30'
+                  ]"></div>
                   
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-start gap-3">
@@ -526,19 +543,25 @@
                         class="w-5 h-5 mt-0.5 flex-shrink-0"
                       />
                       <div>
-                        <span class="text-green-100 font-medium text-sm block">"Therapie dringend zeitnah erforderlich"</span>
-                        <span class="text-green-200/70 text-xs">Angekreuzt auf dem Diagnosebogen</span>
+                        <span :class="[
+                          'font-medium text-sm block',
+                          hasUberweisungscode && hasDringendErforderlich ? 'text-green-100' : 'text-blue-100'
+                        ]">"Therapie dringend zeitnah erforderlich"</span>
+                        <span :class="[
+                          'text-xs',
+                          hasUberweisungscode && hasDringendErforderlich ? 'text-green-200/70' : 'text-blue-200/70'
+                        ]">Angekreuzt auf dem Diagnosebogen</span>
                       </div>
                     </div>
                     <UButton
                       @click="toggleDringendErforderlich"
-                      :color="hasDringendErforderlich ? 'green' : 'amber'"
-                      size="sm"
+                      :color="hasDringendErforderlich ? 'green' : 'blue'"
+                      size="xs"
                       :variant="hasDringendErforderlich ? 'solid' : 'outline'"
-                      :icon="hasDringendErforderlich ? 'i-heroicons-check' : 'i-heroicons-clock'"
-                      class="shadow-lg hover:shadow-xl transition-all min-w-[80px]"
+                      :icon="hasDringendErforderlich ? 'i-heroicons-check' : 'i-heroicons-plus'"
+                      class="shadow hover:shadow-lg transition-all"
                     >
-                      {{ hasDringendErforderlich ? 'Angekreuzt' : 'Ausstehend' }}
+                      {{ hasDringendErforderlich ? 'Angekreuzt' : 'Als erledigt markieren' }}
                     </UButton>
                   </div>
                 </div>
