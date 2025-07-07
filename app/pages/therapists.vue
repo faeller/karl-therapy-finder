@@ -374,14 +374,24 @@
                   <!-- Action Buttons -->
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
+                      v-if="!getContactAttempts(therapist.id).length"
                       @click="addContactAttempt(therapist)"
                       class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                      title="Kontaktversuch hinzufügen"
                     >
                       <UIcon name="i-heroicons-plus" class="w-4 h-4" />
                     </button>
+                    <div 
+                      v-else
+                      class="p-2 rounded-lg bg-gray-500/20 text-gray-400 text-xs px-3"
+                      title="Kontaktversuch bereits vorhanden"
+                    >
+                      Bereits kontaktiert
+                    </div>
                     <button 
                       @click="toggleBookmark(therapist)"
                       class="p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all"
+                      title="Therapeut merken/entfernen"
                     >
                       <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
                     </button>
@@ -528,15 +538,15 @@
           <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
             <div class="flex items-center justify-between mb-3">
               <h3 class="font-bold text-blue-300 text-base">Kontaktprotokoll exportieren</h3>
-              <UBadge color="green" variant="soft">{{ totalContactAttempts }} Versuche</UBadge>
+              <UBadge color="green" variant="soft">{{ qualifyingContactAttempts.length }} qualifiziert</UBadge>
             </div>
             <p class="text-blue-100/80 text-sm mb-4">
-              Erstelle ein PDF-Dokument mit allen dokumentierten Kontaktversuchen für deine Krankenkasse.
+              Erstelle ein PDF-Dokument mit allen qualifizierten Kontaktversuchen für deine Krankenkasse. (Nur Versuche ohne Rückmeldung oder Wartezeit >3 Monate)
             </p>
             <div class="flex gap-3">
               <button 
                 @click="previewPdf"
-                :disabled="totalContactAttempts === 0"
+                :disabled="qualifyingContactAttempts.length === 0"
                 class="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div class="flex items-center justify-center gap-2">
@@ -546,7 +556,7 @@
               </button>
               <button 
                 @click="exportToPdf"
-                :disabled="totalContactAttempts === 0"
+                :disabled="qualifyingContactAttempts.length === 0"
                 class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div class="flex items-center justify-center gap-2">
@@ -587,8 +597,8 @@
     </div>
 
     <!-- Contact Attempt Modal -->
-    <div v-if="showContactModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div class="w-full max-w-lg bg-gray-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
+    <div v-if="showContactModal" @click="closeContactModal" @keydown.esc="closeContactModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div @click.stop @keydown.enter="submitContactAttempt" class="w-full max-w-lg bg-gray-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <!-- Modal Header -->
           <div class="flex items-center justify-between mb-6">
@@ -658,43 +668,38 @@
               />
             </div>
 
-            <!-- Reply Received -->
+            <!-- Waiting Time / Status -->
             <div>
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input 
-                  v-model="contactForm.replyReceived"
-                  type="checkbox"
-                  class="w-4 h-4 text-blue-600 bg-white/5 border-white/20 rounded focus:ring-blue-500"
-                />
-                <span class="text-sm font-medium text-blue-200">
-                  Rückmeldung bereits erhalten
-                </span>
+              <label class="block text-sm font-medium text-blue-200 mb-3">
+                Ergebnis des Kontaktversuchs *
               </label>
-            </div>
-
-            <!-- Waiting Time (if reply received) -->
-            <div v-if="contactForm.replyReceived">
-              <label class="block text-sm font-medium text-blue-200 mb-2">
-                Wartezeit / Status
-              </label>
-              <select 
-                v-model="contactForm.waitingTime"
-                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
-              >
-                <option value="" class="text-gray-500 bg-gray-900">Bitte wählen...</option>
-                <option v-for="option in waitingTimeOptions" :key="option" :value="option" class="text-white bg-gray-900">
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  v-for="option in waitingTimeOptions"
+                  :key="option"
+                  type="button"
+                  @click="selectWaitingTime(option)"
+                  :class="[
+                    'p-3 rounded-lg border transition-all text-sm text-left',
+                    contactForm.waitingTime === option
+                      ? 'bg-blue-500/30 border-blue-500 text-blue-200'
+                      : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/10 hover:border-white/30'
+                  ]"
+                >
                   {{ option }}
-                </option>
-              </select>
+                </button>
+              </div>
               
-              <!-- Custom input for "Eigene Eingabe" -->
-              <input 
-                v-if="contactForm.waitingTime === 'Eigene Eingabe'"
-                v-model="contactForm.waitingTime"
-                type="text"
-                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mt-2 text-white placeholder-white/40"
-                placeholder="Eigene Wartezeit eingeben..."
-              />
+              <!-- Custom input -->
+              <div class="mt-3">
+                <input 
+                  v-model="customWaitingTime"
+                  @input="selectCustomWaitingTime"
+                  type="text"
+                  class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+                  placeholder="Oder eigene Eingabe..."
+                />
+              </div>
             </div>
           </div>
 
@@ -708,7 +713,7 @@
             </button>
             <button 
               @click="submitContactAttempt"
-              :disabled="!contactForm.therapistName || !contactForm.therapistAddress"
+              :disabled="!contactForm.therapistName || !contactForm.therapistAddress || !contactForm.waitingTime"
               class="flex-1 px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {{ editingAttemptId ? 'Aktualisieren' : 'Hinzufügen' }}
@@ -780,7 +785,9 @@ const contactForm = ref({
   waitingTime: ''
 })
 
-// Predefined waiting time options
+const customWaitingTime = ref('')
+
+// Predefined waiting time options (these automatically set replyReceived = true)
 const waitingTimeOptions = [
   'Gar nicht erreichbar',
   'Keinen Behandlungsplatz frei',
@@ -789,10 +796,7 @@ const waitingTimeOptions = [
   'Wartezeit über 12 Monate',
   'Wartezeit: 1 Monat',
   'Wartezeit: 2 Monate',
-  'Wartezeit: 3 Monate',
-  'Wartezeit: 4-6 Monate',
-  'Wartezeit: 6-12 Monate',
-  'Eigene Eingabe'
+  'Wartezeit: 4-6 Monate'
 ]
 
 // Load bookmarked therapists from localStorage
@@ -983,6 +987,23 @@ const toggleBookmark = (therapist: TherapistData) => {
   saveBookmarkedTherapists()
 }
 
+// Waiting time selection functions
+const selectWaitingTime = (option: string) => {
+  contactForm.value.waitingTime = option
+  contactForm.value.replyReceived = true
+  customWaitingTime.value = ''
+}
+
+const selectCustomWaitingTime = () => {
+  if (customWaitingTime.value.trim()) {
+    contactForm.value.waitingTime = customWaitingTime.value.trim()
+    contactForm.value.replyReceived = true
+  } else {
+    contactForm.value.waitingTime = ''
+    contactForm.value.replyReceived = false
+  }
+}
+
 // Contact attempt functions
 const getContactAttempts = (therapistId: string) => {
   return contactAttempts.value.filter(attempt => attempt.therapistId === therapistId)
@@ -1010,6 +1031,7 @@ const openContactModal = (therapist?: TherapistData) => {
   contactForm.value.contactTime = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
   contactForm.value.replyReceived = false
   contactForm.value.waitingTime = ''
+  customWaitingTime.value = ''
   
   showContactModal.value = true
 }
@@ -1022,6 +1044,12 @@ const closeContactModal = () => {
 }
 
 const submitContactAttempt = () => {
+  // Validation: require waiting time
+  if (!contactForm.value.waitingTime.trim()) {
+    alert('Bitte wähle ein Ergebnis des Kontaktversuchs aus.')
+    return
+  }
+  
   if (editingAttemptId.value) {
     // Update existing attempt
     const attempt = contactAttempts.value.find(a => a.id === editingAttemptId.value) || 
@@ -1039,6 +1067,28 @@ const submitContactAttempt = () => {
       saveManualContactAttempts()
     }
   } else {
+    // Check for existing contact attempt for this therapist
+    const therapistId = currentTherapist.value?.id
+    if (therapistId) {
+      const existingAttempt = contactAttempts.value.find(a => a.therapistId === therapistId)
+      if (existingAttempt) {
+        alert('Für diesen Therapeuten existiert bereits ein Kontaktversuch. Bitte bearbeite den bestehenden Eintrag.')
+        return
+      }
+    }
+    
+    // Check for duplicate manual entries
+    if (isManualEntry.value) {
+      const duplicate = manualContactAttempts.value.find(a => 
+        a.therapistName.toLowerCase() === contactForm.value.therapistName.toLowerCase() &&
+        a.therapistAddress.toLowerCase() === contactForm.value.therapistAddress.toLowerCase()
+      )
+      if (duplicate) {
+        alert('Für diesen Therapeuten existiert bereits ein manueller Kontaktversuch.')
+        return
+      }
+    }
+    
     // Create new attempt
     const attempt: ContactAttempt = {
       id: Date.now().toString(),
@@ -1092,6 +1142,14 @@ const editContactAttempt = (attemptId: string) => {
       waitingTime: attempt.waitingTime || ''
     }
     
+    // Check if it's a custom waiting time (not in predefined options)
+    if (attempt.waitingTime && !waitingTimeOptions.includes(attempt.waitingTime)) {
+      customWaitingTime.value = attempt.waitingTime
+      contactForm.value.waitingTime = ''
+    } else {
+      customWaitingTime.value = ''
+    }
+    
     // Store the attempt ID for updating
     editingAttemptId.value = attemptId
     
@@ -1128,8 +1186,51 @@ const formatDate = (dateString: string) => {
   })
 }
 
+// Check if a contact attempt qualifies for PDF inclusion
+const qualifiesForPdf = (attempt: ContactAttempt): boolean => {
+  const waitingTime = attempt.waitingTime?.toLowerCase() || ''
+  
+  // Include attempts with no response or long wait times
+  return waitingTime.includes('gar nicht erreichbar') ||
+         waitingTime.includes('keinen behandlungsplatz frei') ||
+         waitingTime.includes('über 3 monate') ||
+         waitingTime.includes('über 6 monate') ||
+         waitingTime.includes('über 12 monate') ||
+         waitingTime.includes('4-6 monate')
+}
+
 const totalContactAttempts = computed(() => {
   return contactAttempts.value.length + manualContactAttempts.value.length
+})
+
+const qualifyingContactAttempts = computed(() => {
+  const qualifying = []
+  
+  // Get one attempt per therapist (most recent qualifying one)
+  const therapistAttempts = new Map()
+  
+  // Process bookmarked therapist attempts
+  contactAttempts.value.forEach(attempt => {
+    if (qualifiesForPdf(attempt)) {
+      const existing = therapistAttempts.get(attempt.therapistId)
+      if (!existing || new Date(attempt.contactDate) > new Date(existing.contactDate)) {
+        therapistAttempts.set(attempt.therapistId, attempt)
+      }
+    }
+  })
+  
+  // Process manual attempts
+  manualContactAttempts.value.forEach(attempt => {
+    if (qualifiesForPdf(attempt)) {
+      const key = `${attempt.therapistName}-${attempt.therapistAddress}`
+      const existing = therapistAttempts.get(key)
+      if (!existing || new Date(attempt.contactDate) > new Date(existing.contactDate)) {
+        therapistAttempts.set(key, attempt)
+      }
+    }
+  })
+  
+  return Array.from(therapistAttempts.values())
 })
 
 const generatePdf = async () => {
@@ -1189,24 +1290,18 @@ const generatePdf = async () => {
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)
       
-      // Collect all contact attempts
-      const allAttempts = []
-      bookmarkedTherapists.value.forEach(therapist => {
-        const attempts = getContactAttempts(therapist.id)
-        attempts.forEach(attempt => {
-          allAttempts.push({
-            therapist,
-            attempt
-          })
-        })
-      })
-      
-      // Add manual contact attempts
-      manualContactAttempts.value.forEach(attempt => {
-        allAttempts.push({
-          therapist: { name: attempt.therapistName, address: attempt.therapistAddress },
-          attempt: attempt
-        })
+      // Use only qualifying contact attempts (one per therapist)
+      const allAttempts = qualifyingContactAttempts.value.map(attempt => {
+        // Find the therapist info for bookmarked therapists
+        const therapist = bookmarkedTherapists.value.find(t => t.id === attempt.therapistId) || {
+          name: attempt.therapistName,
+          address: attempt.therapistAddress
+        }
+        
+        return {
+          therapist,
+          attempt
+        }
       })
       
       // Sort by date
