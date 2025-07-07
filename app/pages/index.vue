@@ -89,7 +89,7 @@ const navigateToApp = () => {
             <div class="text-2xl lg:text-3xl">🗺️</div>
             <span class="text-xs lg:text-sm text-blue-100/90">Durch Prozess leiten</span>
           </div>
-          <div class="flex flex-col items-center text-center space-y-2 lg:space-y-3 p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 col-span-2 lg:col-span-1">
+          <div class="flex flex-col items-center text-center space-y-2 lg:space-y-3 p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 col-span-2 lg:col-span-1 justify-self-center">
             <div class="text-2xl lg:text-3xl">📋</div>
             <span class="text-xs lg:text-sm text-blue-100/90">Papierkram vereinfachen</span>
           </div>
