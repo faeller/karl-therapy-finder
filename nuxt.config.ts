@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   future: { compatibilityVersion: 4 },
-  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui', '@nuxtjs/i18n'],
+  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui', '@nuxtjs/i18n', 'nuxt-auth-utils'],
   css: ['~/assets/css/main.css'],
   app: {
     head: {
@@ -36,6 +36,8 @@ export default defineNuxtConfig({
     vueI18n: './i18n.config.ts'
   },
   runtimeConfig: {
+    // Use NUXT_AUTH_SECRET for session encryption (matches .env.example)
+    authSecret: process.env.NUXT_AUTH_SECRET,
     public: {
       version: pkg.version,
     },
