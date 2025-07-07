@@ -346,11 +346,16 @@ const refreshData = () => {
 
 const logout = async () => {
   try {
+    console.log('Attempting to logout...')
     // Clear session
-    await $fetch('/api/auth/logout', { method: 'POST' })
+    const response = await $fetch('/api/auth/logout', { method: 'POST' })
+    console.log('Logout response:', response)
   } catch (error) {
+    console.error('Logout API failed:', error)
     // Continue logout even if API fails
   }
+  
+  console.log('Redirecting to login...')
   await navigateTo('/admin/login')
 }
 

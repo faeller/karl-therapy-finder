@@ -118,12 +118,18 @@ const handleLogin = async () => {
 // Check if already authenticated and auto-redirect
 onMounted(async () => {
   try {
+    console.log('Login page: Checking session...')
     const session = await $fetch('/api/auth/session')
+    console.log('Login page: Session check result:', session)
+    
     if (session.loggedIn && session.user?.role === 'admin') {
+      console.log('Login page: User is authenticated, redirecting to dashboard')
       await navigateTo('/admin/dashboard')
       return
     }
+    console.log('Login page: User not authenticated, showing login form')
   } catch (error) {
+    console.log('Login page: Session check failed:', error)
     // User not authenticated, continue with login form
   }
   

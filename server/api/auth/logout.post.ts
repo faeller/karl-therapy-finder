@@ -1,8 +1,17 @@
 export default defineEventHandler(async (event) => {
-  await clearUserSession(event)
-
-  return {
-    success: true,
-    message: 'Logged out successfully'
+  try {
+    await clearUserSession(event)
+    console.log('Session cleared successfully')
+    
+    return {
+      success: true,
+      message: 'Logged out successfully'
+    }
+  } catch (error) {
+    console.error('Failed to clear session:', error)
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Failed to logout'
+    })
   }
 })
