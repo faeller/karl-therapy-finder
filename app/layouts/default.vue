@@ -39,7 +39,7 @@
               :class="$route.path === '/' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-home" class="w-4 h-4 mr-2" />
-              Startseite
+              Landing
             </UButton>
             
             <UButton 
@@ -72,7 +72,7 @@
               :class="$route.path === '/therapists' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2" />
-              Therapeuten
+              Therapeuten / Kontaktprotokoll
             </UButton>
           </nav>
 
@@ -153,7 +153,7 @@ const switchLanguage = async (newLocale) => {
 // Mobile menu items (language switcher hidden)
 const mobileMenuItems = computed(() => {
   const baseItems = [{
-    label: 'Startseite',
+    label: 'Landing',
     icon: 'i-heroicons-home',
     to: '/'
   }, {
@@ -165,7 +165,7 @@ const mobileMenuItems = computed(() => {
     icon: 'i-heroicons-map',
     to: '/app'
   }, {
-    label: 'Therapeuten',
+    label: 'Therapeuten / Kontaktprotokoll',
     icon: 'i-heroicons-user-group',
     to: '/therapists'
   }]

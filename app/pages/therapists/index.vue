@@ -567,6 +567,20 @@
           </div>
         </div>
 
+        <!-- Loading State for localStorage data -->
+        <div v-else-if="isLocalStorageLoading" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <div class="w-8 h-8 border-2 border-blue-400/30 rounded-full"></div>
+              <div class="absolute inset-0 w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div>
+              <div class="text-blue-200 font-medium text-sm">Lade gespeicherte Daten...</div>
+              <div class="text-blue-100/60 text-xs">Einen Moment bitte</div>
+            </div>
+          </div>
+        </div>
+        
         <!-- Empty State -->
         <div v-else class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-6 border border-white/20">
           <div class="text-center space-y-3">
@@ -766,23 +780,35 @@ const onboardingStore = useOnboardingStore()
 // Tab management with URL routing
 const activeTab = ref('search')
 
-// Initialize tab from URL
+// Initialize tab from URL path or temporary query parameter
 const initializeTabFromUrl = () => {
-  const tab = route.query.tab
-  if (tab === 'contact-protocol') {
+  const path = route.path
+  const tempTab = route.query._tab
+  
+  // Check if we have a temporary tab parameter (from redirect)
+  if (tempTab === 'contact-protocol') {
+    activeTab.value = 'kontaktprotokoll'
+    // Clean up the URL - remove query param and set proper path
+    if (process.client) {
+      window.history.replaceState({}, '', '/therapists/contact-protocol')
+    }
+  } else if (path === '/therapists/contact-protocol') {
     activeTab.value = 'kontaktprotokoll'
   } else {
     activeTab.value = 'search'
   }
 }
 
-// Update URL when tab changes
+// Update URL when tab changes using history.pushState for clean URLs
 const updateTabUrl = (tab: string) => {
-  const basePath = '/therapists'
-  const newPath = tab === 'kontaktprotokoll' ? `${basePath}?tab=contact-protocol` : basePath
+  const newPath = tab === 'kontaktprotokoll' ? '/therapists/contact-protocol' : '/therapists'
   
-  if (route.fullPath !== newPath) {
-    router.push(newPath)
+  if (process.client) {
+    // Check current browser URL instead of route.path to handle history.pushState changes
+    const currentPath = window.location.pathname
+    if (currentPath !== newPath) {
+      window.history.pushState({}, '', newPath)
+    }
   }
 }
 
@@ -792,12 +818,27 @@ watch(activeTab, (newTab) => {
 })
 
 // Watch for route changes and update tab
-watch(() => route.query, () => {
+watch(() => route.path, (newPath) => {
+  // Initialize tab based on URL when component loads or route changes
   initializeTabFromUrl()
 }, { immediate: true })
 
+// Listen for browser back/forward navigation
+onMounted(() => {
+  if (process.client) {
+    window.addEventListener('popstate', () => {
+      // Update tab when user uses browser back/forward
+      nextTick(() => {
+        initializeTabFromUrl()
+      })
+    })
+  }
+})
+
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
+// Loading state for localStorage data
+const isLocalStorageLoading = ref(true)
 
 // Bookmark management
 const bookmarkedTherapists = ref<TherapistData[]>([])
@@ -981,6 +1022,9 @@ onMounted(() => {
   loadBookmarkedTherapists()
   loadContactAttempts()
   loadManualContactAttempts()
+  
+  // Mark localStorage loading as complete
+  isLocalStorageLoading.value = false
   
   // Try to force German locale for date inputs
   if (process.client) {
