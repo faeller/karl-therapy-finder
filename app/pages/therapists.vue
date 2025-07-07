@@ -407,24 +407,28 @@
                           <span class="text-blue-100/60">{{ attempt.contactTime }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                          <button 
-                            @click="toggleReplyStatus(attempt.id)"
-                            :class="[
-                              'text-xs px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer border',
-                              attempt.replyReceived 
-                                ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30 border-green-500/30 hover:border-green-500/50' 
-                                : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border-yellow-500/30 hover:border-yellow-500/50 shadow-sm hover:shadow-md'
-                            ]"
-                            title="Klicken zum Bearbeiten"
-                          >
+                          <div :class="[
+                            'text-xs px-3 py-1.5 rounded-lg border',
+                            attempt.replyReceived 
+                              ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                              : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                          ]">
                             <div class="flex items-center gap-1">
                               <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
                               {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
                             </div>
+                          </div>
+                          <button 
+                            @click="toggleReplyStatus(attempt.id)"
+                            class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                            title="Bearbeiten"
+                          >
+                            <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
                           </button>
                           <button 
                             @click="removeContactAttempt(attempt.id)"
-                            class="p-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                            class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                            title="Löschen"
                           >
                             <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
                           </button>
@@ -485,24 +489,28 @@
                   </div>
 
                   <div class="flex items-center gap-2 flex-shrink-0">
-                    <button 
-                      @click="toggleReplyStatus(attempt.id)"
-                      :class="[
-                        'text-xs px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer border',
-                        attempt.replyReceived 
-                          ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30 border-green-500/30 hover:border-green-500/50' 
-                          : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border-yellow-500/30 hover:border-yellow-500/50 shadow-sm hover:shadow-md'
-                      ]"
-                      title="Klicken zum Bearbeiten"
-                    >
+                    <div :class="[
+                      'text-xs px-3 py-1.5 rounded-lg border',
+                      attempt.replyReceived 
+                        ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                    ]">
                       <div class="flex items-center gap-1">
                         <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
                         {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
                       </div>
+                    </div>
+                    <button 
+                      @click="toggleReplyStatus(attempt.id)"
+                      class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                      title="Bearbeiten"
+                    >
+                      <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
                     </button>
                     <button 
                       @click="removeContactAttempt(attempt.id)"
-                      class="p-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                      class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                      title="Löschen"
                     >
                       <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
                     </button>
@@ -525,16 +533,28 @@
             <p class="text-blue-100/80 text-sm mb-4">
               Erstelle ein PDF-Dokument mit allen dokumentierten Kontaktversuchen für deine Krankenkasse.
             </p>
-            <button 
-              @click="exportToPdf"
-              :disabled="totalContactAttempts === 0"
-              class="w-full rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div class="flex items-center justify-center gap-2">
-                <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
-                PDF herunterladen
-              </div>
-            </button>
+            <div class="flex gap-3">
+              <button 
+                @click="previewPdf"
+                :disabled="totalContactAttempts === 0"
+                class="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div class="flex items-center justify-center gap-2">
+                  <UIcon name="i-heroicons-eye" class="w-4 h-4" />
+                  PDF in neuem Tab öffnen
+                </div>
+              </button>
+              <button 
+                @click="exportToPdf"
+                :disabled="totalContactAttempts === 0"
+                class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div class="flex items-center justify-center gap-2">
+                  <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
+                  PDF herunterladen
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -568,14 +588,14 @@
 
     <!-- Contact Attempt Modal -->
     <div v-if="showContactModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border-2 border-gray-200 max-h-[90vh] overflow-y-auto">
+      <div class="w-full max-w-lg bg-gray-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <!-- Modal Header -->
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-gray-900">
+            <h3 class="text-lg font-bold text-white">
               {{ editingAttemptId ? 'Kontaktversuch bearbeiten' : (isManualEntry ? 'Manueller Kontaktversuch' : 'Kontaktversuch hinzufügen') }}
             </h3>
-            <button @click="closeContactModal" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+            <button @click="closeContactModal" class="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">
               <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
             </button>
           </div>
@@ -584,14 +604,14 @@
           <div class="space-y-4">
             <!-- Therapist Name -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-blue-200 mb-2">
                 Name des Therapeuten *
               </label>
               <input 
                 v-model="contactForm.therapistName"
                 :disabled="!isManualEntry"
                 type="text"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-white/5 disabled:text-white/50 text-white placeholder-white/40"
                 placeholder="Dr. Max Mustermann"
                 required
               />
@@ -599,14 +619,14 @@
 
             <!-- Therapist Address -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-blue-200 mb-2">
                 Adresse / Ort *
               </label>
               <input 
                 v-model="contactForm.therapistAddress"
                 :disabled="!isManualEntry"
                 type="text"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-white/5 disabled:text-white/50 text-white placeholder-white/40"
                 placeholder="Musterstraße 123, 12345 Musterstadt"
                 required
               />
@@ -614,26 +634,26 @@
 
             <!-- Contact Date -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-blue-200 mb-2">
                 Kontaktdatum *
               </label>
               <input 
                 v-model="contactForm.contactDate"
                 type="date"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                 required
               />
             </div>
 
             <!-- Contact Time -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-blue-200 mb-2">
                 Uhrzeit *
               </label>
               <input 
                 v-model="contactForm.contactTime"
                 type="time"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                 required
               />
             </div>
@@ -644,9 +664,9 @@
                 <input 
                   v-model="contactForm.replyReceived"
                   type="checkbox"
-                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  class="w-4 h-4 text-blue-600 bg-white/5 border-white/20 rounded focus:ring-blue-500"
                 />
-                <span class="text-sm font-medium text-gray-700">
+                <span class="text-sm font-medium text-blue-200">
                   Rückmeldung bereits erhalten
                 </span>
               </label>
@@ -654,15 +674,15 @@
 
             <!-- Waiting Time (if reply received) -->
             <div v-if="contactForm.replyReceived">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="block text-sm font-medium text-blue-200 mb-2">
                 Wartezeit / Status
               </label>
               <select 
                 v-model="contactForm.waitingTime"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
               >
-                <option value="" class="text-gray-500">Bitte wählen...</option>
-                <option v-for="option in waitingTimeOptions" :key="option" :value="option" class="text-gray-900">
+                <option value="" class="text-gray-500 bg-gray-900">Bitte wählen...</option>
+                <option v-for="option in waitingTimeOptions" :key="option" :value="option" class="text-white bg-gray-900">
                   {{ option }}
                 </option>
               </select>
@@ -672,7 +692,7 @@
                 v-if="contactForm.waitingTime === 'Eigene Eingabe'"
                 v-model="contactForm.waitingTime"
                 type="text"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2 bg-white text-gray-900"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mt-2 text-white placeholder-white/40"
                 placeholder="Eigene Wartezeit eingeben..."
               />
             </div>
@@ -682,7 +702,7 @@
           <div class="flex gap-3 mt-6">
             <button 
               @click="closeContactModal"
-              class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              class="flex-1 px-4 py-2 text-white/80 bg-white/10 rounded-lg hover:bg-white/20 hover:text-white transition-colors"
             >
               Abbrechen
             </button>
@@ -1112,13 +1132,11 @@ const totalContactAttempts = computed(() => {
   return contactAttempts.value.length + manualContactAttempts.value.length
 })
 
-const exportToPdf = async () => {
-  if (process.client) {
-    try {
-      // Dynamically import jsPDF
-      const { jsPDF } = await import('jspdf')
-      
-      const pdf = new jsPDF()
+const generatePdf = async () => {
+  // Dynamically import jsPDF
+  const { jsPDF } = await import('jspdf')
+  
+  const pdf = new jsPDF()
       
       // Title
       pdf.setFontSize(18)
@@ -1250,12 +1268,37 @@ const exportToPdf = async () => {
       pdf.text('* „Aktuell keine Behandlungsplätze verfügbar" = Es wird gar keine Warteliste aus', 20, yPosition)
       pdf.text('Mangel an Plätzen geführt oder die Wartezeit beträgt über sechs Monate.', 20, yPosition + 8)
       
+  return pdf
+}
+
+const exportToPdf = async () => {
+  if (process.client) {
+    try {
+      const pdf = await generatePdf()
+      
       // Save the PDF
       const fileName = `Kontaktprotokoll_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
       
     } catch (error) {
       console.error('PDF export failed:', error)
+      alert('Fehler beim Erstellen des PDFs. Bitte versuche es erneut.')
+    }
+  }
+}
+
+const previewPdf = async () => {
+  if (process.client) {
+    try {
+      const pdf = await generatePdf()
+      
+      // Open PDF in new tab
+      const pdfBlob = pdf.output('blob')
+      const pdfUrl = URL.createObjectURL(pdfBlob)
+      window.open(pdfUrl, '_blank')
+      
+    } catch (error) {
+      console.error('PDF preview failed:', error)
       alert('Fehler beim Erstellen des PDFs. Bitte versuche es erneut.')
     }
   }
