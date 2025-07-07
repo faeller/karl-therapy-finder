@@ -32,8 +32,47 @@
         </p>
       </div>
 
-      <!-- Filters -->
+      <!-- Tab Navigation -->
       <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 mb-4">
+          <div class="flex gap-2">
+            <button 
+              @click="activeTab = 'search'"
+              :class="[
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === 'search' 
+                  ? 'bg-blue-500 text-white shadow-lg' 
+                  : 'text-blue-200 hover:text-white hover:bg-white/10'
+              ]"
+            >
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
+                Therapeuten suchen
+              </div>
+            </button>
+            <button 
+              @click="activeTab = 'kontaktprotokoll'"
+              :class="[
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === 'kontaktprotokoll' 
+                  ? 'bg-blue-500 text-white shadow-lg' 
+                  : 'text-blue-200 hover:text-white hover:bg-white/10'
+              ]"
+            >
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
+                Kontaktprotokoll
+                <UBadge v-if="bookmarkedTherapists.length > 0" color="white" variant="solid" size="xs">
+                  {{ bookmarkedTherapists.length }}
+                </UBadge>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters (only show on search tab) -->
+      <div v-if="!isPiniaLoading && onboardingStore.formData.location && activeTab === 'search'" class="w-full">
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3">
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-blue-300" />
@@ -135,8 +174,10 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isPiniaLoading || pending" class="w-full space-y-4">
+      <!-- Search Tab Content -->
+      <div v-if="activeTab === 'search'">
+        <!-- Loading State -->
+        <div v-if="isPiniaLoading || pending" class="w-full space-y-4">
         <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
           <div class="flex items-center gap-3">
             <div class="relative">
@@ -213,8 +254,7 @@
           <div 
             v-for="therapist in therapistData.therapists" 
             :key="therapist.id"
-            class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
-            @click="openTherapistProfile(therapist.profileUrl)"
+            class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20 hover:bg-white/15 transition-colors group"
           >
             <div class="flex items-start gap-3">
               <!-- Profile Image -->
@@ -230,7 +270,7 @@
               </div>
 
               <!-- Therapist Info -->
-              <div class="flex-1 min-w-0">
+              <div class="flex-1 min-w-0 cursor-pointer" @click="openTherapistProfile(therapist.profileUrl)">
                 <h4 class="font-semibold text-white text-sm group-hover:text-blue-200 transition-colors">
                   {{ therapist.name }}
                 </h4>
@@ -249,23 +289,185 @@
                 </div>
               </div>
 
-              <!-- Arrow -->
-              <div class="flex-shrink-0 text-blue-100/40 group-hover:text-blue-200 transition-colors">
-                <span class="text-sm">→</span>
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button 
+                  @click="toggleBookmark(therapist)"
+                  :class="[
+                    'p-2 rounded-lg transition-all',
+                    isBookmarked(therapist.id) 
+                      ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30' 
+                      : 'bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200'
+                  ]"
+                >
+                  <UIcon :name="isBookmarked(therapist.id) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'" class="w-4 h-4" />
+                </button>
+                <button 
+                  @click="openTherapistProfile(therapist.profileUrl)"
+                  class="p-2 rounded-lg bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200 transition-all"
+                >
+                  <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- No Results State -->
-      <div v-else-if="!isPiniaLoading && therapistData && therapistData.therapists.length === 0" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
-        <div class="text-center space-y-3">
-          <div class="text-blue-300 text-lg">🔍</div>
-          <h3 class="font-bold text-blue-300 text-base">Keine Therapeuten gefunden</h3>
-          <p class="text-blue-100/80 text-sm">
-            In PLZ {{ therapistData.plz }} wurden keine passenden Therapeuten gefunden.
-          </p>
+        <!-- No Results State -->
+        <div v-else-if="!isPiniaLoading && therapistData && therapistData.therapists.length === 0" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="text-center space-y-3">
+            <div class="text-blue-300 text-lg">🔍</div>
+            <h3 class="font-bold text-blue-300 text-base">Keine Therapeuten gefunden</h3>
+            <p class="text-blue-100/80 text-sm">
+              In PLZ {{ therapistData.plz }} wurden keine passenden Therapeuten gefunden.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kontaktprotokoll Tab Content -->
+      <div v-if="activeTab === 'kontaktprotokoll'" class="w-full space-y-4">
+        <!-- Bookmarked Therapists -->
+        <div v-if="bookmarkedTherapists.length > 0" class="space-y-3">
+          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-blue-300 text-base">Gespeicherte Therapeuten</h3>
+              <UBadge color="blue" variant="soft">{{ bookmarkedTherapists.length }}</UBadge>
+            </div>
+            
+            <div class="space-y-3">
+              <div 
+                v-for="therapist in bookmarkedTherapists" 
+                :key="therapist.id"
+                class="rounded-lg bg-white/5 p-3 border border-white/10"
+              >
+                <div class="flex items-start gap-3">
+                  <!-- Profile Image -->
+                  <div class="flex-shrink-0">
+                    <div v-if="therapist.image" class="w-10 h-10 rounded-lg overflow-hidden">
+                      <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
+                    </div>
+                    <div v-else class="w-10 h-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Therapist Info -->
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-white text-sm">{{ therapist.name }}</h4>
+                    <p class="text-blue-100/80 text-xs mt-1">{{ therapist.qualification }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
+                      <div class="flex items-center gap-1">
+                        <span>📍</span>
+                        <span>{{ therapist.distance }}km</span>
+                      </div>
+                      <div v-if="therapist.phone" class="flex items-center gap-1">
+                        <span>📞</span>
+                        <span>{{ therapist.phone }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                      @click="addContactAttempt(therapist)"
+                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                    >
+                      <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                    </button>
+                    <button 
+                      @click="toggleBookmark(therapist)"
+                      class="p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all"
+                    >
+                      <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Contact Attempts -->
+                <div v-if="getContactAttempts(therapist.id).length > 0" class="mt-3 pt-3 border-t border-white/10">
+                  <h5 class="text-xs font-medium text-blue-200 mb-2">Kontaktversuche</h5>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="attempt in getContactAttempts(therapist.id)" 
+                      :key="attempt.id"
+                      class="p-2 rounded bg-white/5 text-xs"
+                    >
+                      <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2">
+                          <div :class="[
+                            'w-2 h-2 rounded-full',
+                            attempt.replyReceived ? 'bg-green-400' : 'bg-yellow-400'
+                          ]"></div>
+                          <span class="text-blue-100">{{ formatDate(attempt.contactDate) }}</span>
+                          <span class="text-blue-100/60">{{ attempt.contactTime }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span :class="[
+                            'text-xs px-2 py-1 rounded',
+                            attempt.replyReceived ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
+                          ]">
+                            {{ attempt.replyReceived ? 'Antwort erhalten' : 'Ausstehend' }}
+                          </span>
+                          <button 
+                            @click="removeContactAttempt(attempt.id)"
+                            class="p-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
+                          >
+                            <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div v-if="attempt.waitingTime" class="text-blue-100/80 text-xs">
+                        Wartezeit: {{ attempt.waitingTime }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PDF Export -->
+          <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-blue-300 text-base">Kontaktprotokoll exportieren</h3>
+              <UBadge color="green" variant="soft">{{ totalContactAttempts }} Versuche</UBadge>
+            </div>
+            <p class="text-blue-100/80 text-sm mb-4">
+              Erstelle ein PDF-Dokument mit allen dokumentierten Kontaktversuchen für deine Krankenkasse.
+            </p>
+            <button 
+              @click="exportToPdf"
+              :disabled="totalContactAttempts === 0"
+              class="w-full rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
+                PDF herunterladen
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-6 border border-white/20">
+          <div class="text-center space-y-3">
+            <div class="text-blue-300 text-lg">📋</div>
+            <h3 class="font-bold text-blue-300 text-base">Keine Therapeuten gespeichert</h3>
+            <p class="text-blue-100/80 text-sm">
+              Speichere Therapeuten im "Therapeuten suchen" Tab, um hier deine Kontaktversuche zu dokumentieren.
+            </p>
+            <button 
+              @click="activeTab = 'search'"
+              class="mt-3 rounded-lg bg-blue-500 px-4 py-2 text-white text-sm font-medium transition-colors hover:bg-blue-600"
+            >
+              Therapeuten suchen
+            </button>
+          </div>
         </div>
       </div>
       
@@ -300,10 +502,77 @@ interface TherapistSearchResult {
   therapists: TherapistData[]
 }
 
+interface ContactAttempt {
+  id: string
+  therapistId: string
+  contactDate: string
+  contactTime: string
+  replyReceived: boolean
+  replyDate?: string
+  waitingTime?: string
+}
+
 const onboardingStore = useOnboardingStore()
+
+// Tab management
+const activeTab = ref('search')
 
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
+
+// Bookmark management
+const bookmarkedTherapists = ref<TherapistData[]>([])
+const contactAttempts = ref<ContactAttempt[]>([])
+
+// Load bookmarked therapists from localStorage
+const loadBookmarkedTherapists = () => {
+  if (process.client) {
+    try {
+      const stored = localStorage.getItem('bookmarked-therapists')
+      if (stored) {
+        bookmarkedTherapists.value = JSON.parse(stored)
+      }
+    } catch (error) {
+      console.warn('Failed to load bookmarked therapists:', error)
+    }
+  }
+}
+
+// Save bookmarked therapists to localStorage
+const saveBookmarkedTherapists = () => {
+  if (process.client) {
+    try {
+      localStorage.setItem('bookmarked-therapists', JSON.stringify(bookmarkedTherapists.value))
+    } catch (error) {
+      console.warn('Failed to save bookmarked therapists:', error)
+    }
+  }
+}
+
+// Load contact attempts from localStorage
+const loadContactAttempts = () => {
+  if (process.client) {
+    try {
+      const stored = localStorage.getItem('contact-attempts')
+      if (stored) {
+        contactAttempts.value = JSON.parse(stored)
+      }
+    } catch (error) {
+      console.warn('Failed to load contact attempts:', error)
+    }
+  }
+}
+
+// Save contact attempts to localStorage
+const saveContactAttempts = () => {
+  if (process.client) {
+    try {
+      localStorage.setItem('contact-attempts', JSON.stringify(contactAttempts.value))
+    } catch (error) {
+      console.warn('Failed to save contact attempts:', error)
+    }
+  }
+}
 
 // Load filters from localStorage or use defaults
 const getStoredFilters = () => {
@@ -370,6 +639,10 @@ watch(filters, (newFilters) => {
 
 // Check if Pinia data is loaded
 onMounted(() => {
+  // Load persisted data
+  loadBookmarkedTherapists()
+  loadContactAttempts()
+  
   // Simulate loading delay for persisted state
   const checkPiniaLoaded = () => {
     if (onboardingStore.$state) {
@@ -396,6 +669,155 @@ onUnmounted(() => {
 const extractPlz = (location: string): string | null => {
   const plzMatch = location.match(/\b(\d{5})\b/)
   return plzMatch ? plzMatch[1] : null
+}
+
+// Bookmark functions
+const isBookmarked = (therapistId: string) => {
+  return bookmarkedTherapists.value.some(t => t.id === therapistId)
+}
+
+const toggleBookmark = (therapist: TherapistData) => {
+  const index = bookmarkedTherapists.value.findIndex(t => t.id === therapist.id)
+  if (index >= 0) {
+    bookmarkedTherapists.value.splice(index, 1)
+  } else {
+    bookmarkedTherapists.value.push(therapist)
+  }
+  saveBookmarkedTherapists()
+}
+
+// Contact attempt functions
+const getContactAttempts = (therapistId: string) => {
+  return contactAttempts.value.filter(attempt => attempt.therapistId === therapistId)
+}
+
+const addContactAttempt = (therapist: TherapistData) => {
+  const now = new Date()
+  const replyReceived = confirm('Hast du bereits eine Antwort von diesem Therapeuten erhalten?')
+  
+  let waitingTime = ''
+  if (replyReceived) {
+    waitingTime = prompt('Wie lange ist die Wartezeit auf einen Behandlungsplatz? (z.B. "3 Monate", "Keine Plätze verfügbar")') || ''
+  }
+  
+  const attempt: ContactAttempt = {
+    id: Date.now().toString(),
+    therapistId: therapist.id,
+    contactDate: now.toISOString().split('T')[0],
+    contactTime: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    replyReceived,
+    waitingTime
+  }
+  contactAttempts.value.push(attempt)
+  saveContactAttempts()
+}
+
+const removeContactAttempt = (attemptId: string) => {
+  const index = contactAttempts.value.findIndex(attempt => attempt.id === attemptId)
+  if (index >= 0) {
+    contactAttempts.value.splice(index, 1)
+    saveContactAttempts()
+  }
+}
+
+// Utility functions
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('de-DE', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  })
+}
+
+const totalContactAttempts = computed(() => {
+  return contactAttempts.value.length
+})
+
+const exportToPdf = async () => {
+  if (process.client) {
+    try {
+      // Dynamically import jsPDF
+      const { jsPDF } = await import('jspdf')
+      
+      const pdf = new jsPDF()
+      
+      // Title
+      pdf.setFontSize(16)
+      pdf.text('Kontaktprotokoll für Psychotherapieplätze', 20, 20)
+      
+      // Patient info
+      pdf.setFontSize(12)
+      pdf.text(`Name: ${onboardingStore.formData.nickname || 'Nicht angegeben'}`, 20, 40)
+      pdf.text(`PLZ: ${userPlz.value || 'Nicht angegeben'}`, 20, 50)
+      pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, 20, 60)
+      
+      // Table headers
+      pdf.setFontSize(10)
+      const headers = [
+        'Name des kassenzugelassenen Psychotherapeuten, Ort',
+        'Datum und Uhrzeit der Kontaktaufnahme',
+        'Auskunft über Wartezeit auf Behandlungsplatz'
+      ]
+      
+      let yPosition = 80
+      
+      // Draw table header
+      pdf.rect(20, yPosition, 170, 10)
+      pdf.text(headers[0], 22, yPosition + 7)
+      pdf.text(headers[1], 90, yPosition + 7)
+      pdf.text(headers[2], 140, yPosition + 7)
+      
+      yPosition += 10
+      
+      // Table rows
+      bookmarkedTherapists.value.forEach(therapist => {
+        const attempts = getContactAttempts(therapist.id)
+        
+        if (attempts.length > 0) {
+          attempts.forEach(attempt => {
+            // Check if we need a new page
+            if (yPosition > 270) {
+              pdf.addPage()
+              yPosition = 20
+            }
+            
+            pdf.rect(20, yPosition, 170, 10)
+            
+            // Therapist name and location
+            const therapistInfo = `${therapist.name}, ${therapist.address || 'Adresse nicht verfügbar'}`
+            pdf.text(therapistInfo.substring(0, 35), 22, yPosition + 7)
+            
+            // Contact date and time
+            const contactInfo = `${formatDate(attempt.contactDate)} ${attempt.contactTime}`
+            pdf.text(contactInfo, 90, yPosition + 7)
+            
+            // Waiting time info
+            const waitingInfo = attempt.replyReceived 
+              ? (attempt.waitingTime || 'Wartezeit erhalten')
+              : 'Aktuell keine Behandlungsplätze verfügbar*'
+            pdf.text(waitingInfo.substring(0, 30), 140, yPosition + 7)
+            
+            yPosition += 10
+          })
+        }
+      })
+      
+      // Footer note
+      yPosition += 10
+      pdf.setFontSize(8)
+      pdf.text('* „Aktuell keine Behandlungsplätze verfügbar" = Es wird gar keine Warteliste aus', 20, yPosition)
+      pdf.text('Mangel an Plätzen geführt oder die Wartezeit beträgt über sechs Monate.', 20, yPosition + 10)
+      
+      // Save the PDF
+      const fileName = `Kontaktprotokoll_${new Date().toISOString().split('T')[0]}.pdf`
+      pdf.save(fileName)
+      
+    } catch (error) {
+      console.error('PDF export failed:', error)
+      alert('Fehler beim Erstellen des PDFs. Bitte versuche es erneut.')
+    }
+  }
 }
 
 // Get greeting based on time of day
