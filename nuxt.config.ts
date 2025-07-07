@@ -36,8 +36,6 @@ export default defineNuxtConfig({
     vueI18n: './i18n.config.ts'
   },
   runtimeConfig: {
-    // Use NUXT_AUTH_SECRET for session encryption (matches .env.example)
-    authSecret: process.env.NUXT_AUTH_SECRET,
     public: {
       version: pkg.version,
     },
