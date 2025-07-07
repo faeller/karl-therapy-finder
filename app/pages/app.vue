@@ -208,7 +208,7 @@
 
                 <!-- PLZ Display and Edit -->
                 <div class="bg-white/5 p-4 lg:p-5 rounded-lg border border-white/10">
-                  <div class="flex items-center justify-between gap-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                     <div class="flex items-center gap-3">
                       <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-blue-300" />
                       <span class="text-blue-200 text-sm">Verfügbarkeit geprüft für PLZ:</span>
@@ -228,15 +228,15 @@
                         />
                       </template>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 shrink-0">
                       <template v-if="!isEditingPlz">
                         <button 
                           @click="startEditingPlz"
-                          class="text-xs text-blue-300 hover:text-blue-200 transition-colors"
+                          class="text-xs text-blue-300 hover:text-blue-200 transition-colors whitespace-nowrap"
                         >
                           ändern
                         </button>
-                        <span class="text-blue-300/50 text-xs">(e.g. Berlin: 10115)</span>
+                        <span class="text-blue-300/50 text-xs hidden sm:inline">(e.g. Berlin: 10115)</span>
                       </template>
                       <template v-else>
                         <button 

@@ -4,7 +4,7 @@
     <div class="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"></div>
     
     <!-- Navigation Header -->
-    <header class="relative z-50 sticky top-0 backdrop-blur-lg border-b border-white/10 bg-white/5 mb-6">
+    <header class="relative z-50 sticky top-0 backdrop-blur-lg border-b border-white/10 bg-white/5 mb-1">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <!-- Logo/Brand -->
