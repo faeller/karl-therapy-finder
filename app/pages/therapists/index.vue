@@ -292,6 +292,14 @@
               <!-- Action Buttons -->
               <div class="flex items-center gap-2 flex-shrink-0">
                 <button 
+                  v-if="therapist.phone"
+                  @click="callTherapist(therapist.phone)"
+                  class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                  title="Anrufen"
+                >
+                  <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                </button>
+                <button 
                   @click="toggleBookmark(therapist)"
                   :class="[
                     'p-2 rounded-lg transition-all',
@@ -494,12 +502,21 @@
                   <!-- Action Buttons -->
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
+                      v-if="therapist.phone"
+                      @click="callTherapist(therapist.phone)"
+                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                      title="Anrufen"
+                    >
+                      <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                    </button>
+                    <button 
                       v-if="!getContactAttempts(therapist.id).length"
                       @click="addContactAttempt(therapist)"
-                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
                       title="Kontaktversuch hinzufügen"
                     >
                       <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                      <span>Kontaktversuch hinzufügen</span>
                     </button>
                     <div 
                       v-else
@@ -509,7 +526,7 @@
                       Bereits kontaktiert
                     </div>
                     <button 
-                      @click="toggleBookmark(therapist)"
+                      @click="confirmRemoveBookmark(therapist)"
                       class="p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all"
                       title="Therapeut merken/entfernen"
                     >
@@ -566,7 +583,7 @@
                         </div>
                       </div>
                       <div v-if="attempt.waitingTime" class="text-blue-100/80 text-xs">
-                        Wartezeit: {{ attempt.waitingTime }}
+                        Abgespeichert: {{ attempt.waitingTime }}
                       </div>
                     </div>
                   </div>
@@ -645,7 +662,7 @@
                               Letzter Kontakt: {{ formatDate(getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].contactDate) }}
                             </div>
                             <div v-if="getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime" class="text-xs text-blue-100/70">
-                              <span class="text-blue-200/80">Wartezeit:</span> {{ getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime }}
+                              <span class="text-blue-200/80">Abgespeichert:</span> {{ getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime }}
                             </div>
                           </div>
                         </div>
@@ -653,6 +670,14 @@
 
                       <!-- Action Buttons -->
                       <div class="flex items-center gap-2 flex-shrink-0">
+                        <button 
+                          v-if="therapist.phone"
+                          @click="callTherapist(therapist.phone)"
+                          class="p-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                          title="Anrufen"
+                        >
+                          <UIcon name="i-heroicons-phone" class="w-3 h-3" />
+                        </button>
                         <button 
                           v-if="getContactAttempts(therapist.id).length > 0"
                           @click="editCompletedTherapist(therapist)"
@@ -662,7 +687,7 @@
                           <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
                         </button>
                         <button 
-                          @click="toggleBookmark(therapist)"
+                          @click="confirmRemoveBookmark(therapist)"
                           class="p-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 hover:text-yellow-200 transition-all"
                           title="Therapeut entfernen"
                         >
@@ -805,6 +830,24 @@
               <label class="block text-sm font-medium text-blue-200 mb-3">
                 Ergebnis des Kontaktversuchs *
               </label>
+              
+              <!-- Primary option: Warte noch auf Rückmeldung -->
+              <div class="mb-3">
+                <button
+                  type="button"
+                  @click="selectWaitingTime(primaryWaitingOption)"
+                  :class="[
+                    'w-full p-3 rounded-lg border transition-all text-sm text-left',
+                    contactForm.waitingTime === primaryWaitingOption
+                      ? 'bg-yellow-500/30 border-yellow-500 text-yellow-200'
+                      : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/10 hover:border-white/30'
+                  ]"
+                >
+                  {{ primaryWaitingOption }}
+                </button>
+              </div>
+              
+              <!-- Other options in grid -->
               <div class="grid grid-cols-2 gap-2">
                 <button
                   v-for="option in waitingTimeOptions"
@@ -987,15 +1030,17 @@ const contactForm = ref({
 const customWaitingTime = ref('')
 
 // Predefined waiting time options (these automatically set replyReceived = true)
+const primaryWaitingOption = 'Warte noch auf Rückmeldung'
+
 const waitingTimeOptions = [
   'Gar nicht erreichbar',
   'Keinen Behandlungsplatz frei',
-  'Wartezeit über 3 Monate',
-  'Wartezeit über 6 Monate', 
-  'Wartezeit über 12 Monate',
   'Wartezeit: 1 Monat',
   'Wartezeit: 2 Monate',
-  'Wartezeit: 4-6 Monate'
+  'Wartezeit über 3 Monate',
+  'Wartezeit: 4-6 Monate',
+  'Wartezeit über 6 Monate',
+  'Wartezeit über 12 Monate'
 ]
 
 // Load bookmarked therapists from localStorage
@@ -1242,7 +1287,8 @@ const toggleBookmark = (therapist: TherapistData) => {
 // Waiting time selection functions
 const selectWaitingTime = (option: string) => {
   contactForm.value.waitingTime = option
-  contactForm.value.replyReceived = true
+  // Set replyReceived based on the option
+  contactForm.value.replyReceived = option !== 'Warte noch auf Rückmeldung'
   customWaitingTime.value = ''
   
   // Auto-save when selecting a predefined option
@@ -1404,8 +1450,9 @@ const editContactAttempt = (attemptId: string) => {
       waitingTime: attempt.waitingTime || ''
     }
     
-    // Check if it's a custom waiting time (not in predefined options)
-    if (attempt.waitingTime && !waitingTimeOptions.includes(attempt.waitingTime)) {
+    // Check if it's a custom waiting time (not in predefined options or primary option)
+    const allPredefinedOptions = [...waitingTimeOptions, primaryWaitingOption]
+    if (attempt.waitingTime && !allPredefinedOptions.includes(attempt.waitingTime)) {
       customWaitingTime.value = attempt.waitingTime
       contactForm.value.waitingTime = ''
     } else {
@@ -1539,7 +1586,7 @@ const isTherapistCompleted = (therapistId: string) => {
 
 // Collapsible state for completed therapists
 const collapsedCompletedTherapists = ref(new Set<string>())
-const showAllCompleted = ref(false)
+const showAllCompleted = ref(true) // Auto-expand on page load
 
 const toggleTherapistCollapse = (therapistId: string) => {
   if (collapsedCompletedTherapists.value.has(therapistId)) {
@@ -1568,13 +1615,41 @@ const isTherapistIncludedInPdf = (therapistId: string) => {
   return attempts.some(attempt => qualifiesForPdf(attempt))
 }
 
+// Call therapist function
+const callTherapist = (phoneNumber: string) => {
+  if (process.client) {
+    window.location.href = `tel:${phoneNumber}`
+  }
+}
+
+// Confirm bookmark removal
+const confirmRemoveBookmark = (therapist: TherapistData) => {
+  if (process.client) {
+    const confirmed = confirm(`Möchtest du ${therapist.name} wirklich aus deinen gespeicherten Therapeuten entfernen?`)
+    if (confirmed) {
+      toggleBookmark(therapist)
+    }
+  }
+}
+
 // Get completed and incomplete therapists separately
 const incompleteTherapists = computed(() => {
   return sortedBookmarkedTherapists.value.filter(t => !isTherapistCompleted(t.id))
 })
 
 const completedTherapists = computed(() => {
-  return sortedBookmarkedTherapists.value.filter(t => isTherapistCompleted(t.id))
+  return sortedBookmarkedTherapists.value
+    .filter(t => isTherapistCompleted(t.id))
+    .sort((a, b) => {
+      // Sort by PDF inclusion first (Im PDF first)
+      const aIncluded = isTherapistIncludedInPdf(a.id)
+      const bIncluded = isTherapistIncludedInPdf(b.id)
+      
+      if (aIncluded && !bIncluded) return -1
+      if (!aIncluded && bIncluded) return 1
+      
+      return 0
+    })
 })
 
 // Display therapists - incomplete ones in main section, completed ones only in completed section
