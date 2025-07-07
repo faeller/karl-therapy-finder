@@ -16,6 +16,20 @@
           <div class="space-y-4">
             <div>
               <label class="block text-white text-sm font-medium mb-2">
+                Admin E-Mail
+              </label>
+              <input
+                v-model="email"
+                type="email"
+                placeholder="admin@karl-helps.org"
+                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all"
+                required
+                :disabled="isLoading"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-white text-sm font-medium mb-2">
                 Admin Passwort
               </label>
               <input
@@ -34,7 +48,7 @@
               size="lg"
               class="w-full"
               :loading="isLoading"
-              :disabled="!password.trim() || isLoading"
+              :disabled="!email.trim() || !password.trim() || isLoading"
             >
               {{ isLoading ? 'Wird angemeldet...' : 'Anmelden' }}
             </UButton>
@@ -47,12 +61,6 @@
         </div>
       </div>
 
-      <!-- Info -->
-      <div class="text-center">
-        <p class="text-blue-200/60 text-xs">
-          Nur für autorisierte Karl-Administratoren
-        </p>
-      </div>
     </div>
   </PageCard>
 </template>
@@ -62,46 +70,54 @@ definePageMeta({
   layout: 'default'
 })
 
+const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
 const handleLogin = async () => {
-  if (!password.value.trim()) return
+  if (!email.value.trim() || !password.value.trim()) return
 
   isLoading.value = true
   errorMessage.value = ''
 
   try {
-    const response = await $fetch('/api/admin/login', {
+    const response = await $fetch('/api/auth/login', {
       method: 'POST',
-      credentials: 'include', // Ensure cookies are included in requests
       body: {
+        email: email.value,
         password: password.value
       }
     })
 
     if (response.success) {
-      // Give browser time to process Set-Cookie header before redirect
-      await new Promise(resolve => setTimeout(resolve, 100))
       // Redirect to admin dashboard
       await navigateTo('/admin/dashboard')
-    } else {
-      errorMessage.value = response.message
     }
   } catch (error: any) {
     console.error('Login error:', error)
-    errorMessage.value = error.data?.message || 'Login fehlgeschlagen'
+    errorMessage.value = error.data?.message || error.statusMessage || 'Login fehlgeschlagen'
   } finally {
     isLoading.value = false
   }
 }
 
-// Auto-focus password field
-onMounted(() => {
-  const passwordInput = document.querySelector('input[type="password"]') as HTMLInputElement
-  if (passwordInput) {
-    passwordInput.focus()
+// Check if already authenticated and auto-redirect
+onMounted(async () => {
+  try {
+    const session = await $fetch('/api/auth/session')
+    if (session.loggedIn && session.user?.role === 'admin') {
+      await navigateTo('/admin/dashboard')
+      return
+    }
+  } catch (error) {
+    // User not authenticated, continue with login form
+  }
+  
+  // Auto-focus email field after auth check
+  const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement
+  if (emailInput) {
+    emailInput.focus()
   }
 })
 </script>

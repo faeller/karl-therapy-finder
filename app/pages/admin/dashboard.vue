@@ -1,6 +1,23 @@
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-7xl flex-col items-center gap-6">
+    <!-- Authentication Loading State -->
+    <div v-if="authLoading" class="relative z-10 flex w-full max-w-7xl flex-col items-center gap-6">
+      <div class="w-full text-center space-y-4">
+        <div class="flex h-12 w-12 items-center justify-center mx-auto rounded-2xl border-2 border-blue-500/30 bg-gradient-to-br from-blue-400/80 to-blue-600/80 text-xl font-bold text-white shadow-lg backdrop-blur-sm">
+          🔐
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-center gap-2">
+            <div class="w-4 h-4 border-2 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-white">Authentifizierung prüfen...</span>
+          </div>
+          <p class="text-blue-100/60 text-sm">Einen Moment bitte</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Dashboard Content (only shown when authenticated) -->
+    <div v-else-if="isAuthenticated" class="relative z-10 flex w-full max-w-7xl flex-col items-center gap-6">
       <!-- Admin Header -->
       <div class="w-full text-center space-y-3">
         <div class="flex items-center justify-between">
@@ -295,6 +312,10 @@ const isLoading = ref(true)
 const showDetailModal = ref(false)
 const selectedEntry = ref<any>(null)
 
+// Authentication state
+const isAuthenticated = ref(false)
+const authLoading = ref(true)
+
 const pendingCount = computed(() => {
   return waitlistData.value?.entries?.filter((e: any) => e.status === 'pending').length || 0
 })
@@ -325,8 +346,8 @@ const refreshData = () => {
 
 const logout = async () => {
   try {
-    // Clear admin cookie
-    await $fetch('/api/admin/logout', { method: 'POST' })
+    // Clear session
+    await $fetch('/api/auth/logout', { method: 'POST' })
   } catch (error) {
     // Continue logout even if API fails
   }
@@ -343,7 +364,24 @@ const formatDate = (date: any) => {
 }
 
 // Check authentication and load data on mount
-onMounted(() => {
-  fetchWaitlistData()
+onMounted(async () => {
+  try {
+    // First check authentication
+    const session = await $fetch('/api/auth/session')
+    if (session.loggedIn && session.user?.role === 'admin') {
+      isAuthenticated.value = true
+      // Only load data after authentication is confirmed
+      await fetchWaitlistData()
+    } else {
+      // Not authenticated, redirect to login
+      await navigateTo('/admin/login')
+    }
+  } catch (error) {
+    console.error('Authentication check failed:', error)
+    // On any error, redirect to login
+    await navigateTo('/admin/login')
+  } finally {
+    authLoading.value = false
+  }
 })
 </script>
