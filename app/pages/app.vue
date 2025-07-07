@@ -888,81 +888,25 @@
         <div class="text-center space-y-3">
           <h3 class="text-lg font-semibold text-purple-200 flex items-center justify-center gap-2">
             <UIcon name="i-heroicons-sparkles" class="w-5 h-5" />
-            Lass Karl für dich anrufen (Für Warteliste Anmelden)
+            Lass Karl für dich anrufen
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-600/20 text-purple-300 border border-purple-500/30 rounded-full">
+              Warteliste bald verfügbar
+            </span>
           </h3>
           <p class="text-purple-100/90 text-sm leading-relaxed">
-            KARL AI kann für dich anrufen und einen Termin vereinbaren.
+            KARL AI wird bald für dich anrufen und einen Termin vereinbaren können.
           </p>
           
-          <!-- Privacy Notice -->
-          <div class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 text-left">
-            <h4 class="text-purple-200 font-medium text-sm mb-2 flex items-center gap-2">
-              <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
-              Datenschutz & Verschlüsselung
-            </h4>
-            <ul class="text-purple-100/80 text-xs space-y-1.5">
-              <li class="flex items-start gap-2">
-                <span class="text-purple-300 mt-0.5">•</span>
-                <span>Deine Profildaten werden mit AES-256 verschlüsselt gespeichert</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-purple-300 mt-0.5">•</span>
-                <span>Nur deine PLZ wird unverschlüsselt für regionale Zuordnung gespeichert</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-purple-300 mt-0.5">•</span>
-                <span>Daten werden nur zur Terminvermittlung verwendet und nach Erfolg gelöscht</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-purple-300 mt-0.5">•</span>
-                <span>Du kannst jederzeit per E-Mail die Löschung deiner Daten verlangen</span>
-              </li>
-            </ul>
+          <!-- Coming Soon Notice -->
+          <div class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <div class="flex items-center justify-center gap-2 mb-2">
+              <UIcon name="i-heroicons-clock" class="w-5 h-5 text-purple-300" />
+              <h4 class="text-purple-200 font-medium text-sm">Bald verfügbar</h4>
+            </div>
+            <p class="text-purple-100/80 text-xs">
+              Diese Funktion befindet sich noch in der Entwicklung. Wir arbeiten daran, dir bald einen automatisierten Service anzubieten, der für dich Termine bei Therapeuten vereinbart.
+            </p>
           </div>
-          
-          <!-- Email Input -->
-          <div class="space-y-3">
-            <label class="block text-purple-200 text-sm font-medium">
-              E-Mail für Kontakt
-            </label>
-            <input
-              v-model="waitlistEmail"
-              type="email"
-              placeholder="deine.email@example.com"
-              class="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition-all"
-              required
-            />
-          </div>
-
-          <!-- Waitlist Button -->
-          <div class="flex justify-center">
-            <UButton
-              @click="joinKarlWaitlist"
-              :disabled="isJoiningWaitlist || !isProfileCompleteForWaitlist || !waitlistEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)"
-              :loading="isJoiningWaitlist"
-              color="purple"
-              size="lg"
-              icon="i-heroicons-phone"
-              class="px-6 py-3"
-            >
-              {{ isJoiningWaitlist ? 'Wird hinzugefügt...' : 'Zur Karl-Warteliste hinzufügen' }}
-            </UButton>
-          </div>
-          
-          <!-- Status message -->
-          <div v-if="waitlistStatus" :class="[
-            'text-sm p-3 rounded-lg',
-            waitlistStatus.success 
-              ? 'bg-green-500/10 border border-green-500/20 text-green-200' 
-              : 'bg-red-500/10 border border-red-500/20 text-red-200'
-          ]">
-            {{ waitlistStatus.message }}
-          </div>
-          
-          <!-- Requirements notice -->
-          <p v-if="!isProfileCompleteForWaitlist || !waitlistEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)" class="text-purple-200/60 text-xs italic">
-            Bitte gib eine gültige PLZ in deinem Profil und eine E-Mail-Adresse an.
-          </p>
         </div>
       </div>
 
@@ -1137,23 +1081,12 @@ const tempPlz = ref('')
 
 // Note: Email functionality disabled due to eterminservice.de anti-bot protection
 
-// Karl waitlist functionality
-const isJoiningWaitlist = ref(false)
-const waitlistStatus = ref<{success: boolean, message: string} | null>(null)
-const waitlistEmail = ref('')
 
 // Get current PLZ for display and checks
 const currentPlz = computed(() => {
   return onboardingStore?.formData?.location || ''
 })
 
-// Check if profile is complete for waitlist (only PLZ required)
-const isProfileCompleteForWaitlist = computed(() => {
-  const hasLocation = !!(onboardingStore?.formData?.location)
-  const isValidPlz = hasLocation && /^\d{5}$/.test(onboardingStore.formData.location)
-  
-  return hasLocation && isValidPlz
-})
 
 // Check regional service availability
 const checkRegionalServices = async (plz?: string) => {
@@ -1402,68 +1335,4 @@ const resetGuide = () => {
 
 // Email functionality removed due to eterminservice.de access restrictions
 
-// Join Karl waitlist with encrypted profile storage
-const joinKarlWaitlist = async () => {
-  if (!onboardingStore?.formData || isJoiningWaitlist.value) {
-    return
-  }
-  
-  // Validate required profile data (PLZ and email required)
-  if (!onboardingStore.formData.location || !/^\d{5}$/.test(onboardingStore.formData.location)) {
-    waitlistStatus.value = {
-      success: false,
-      message: 'Bitte gib eine gültige PLZ in deinem Profil an.'
-    }
-    return
-  }
-
-  if (!waitlistEmail.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail.value)) {
-    waitlistStatus.value = {
-      success: false,
-      message: 'Bitte gib eine gültige E-Mail-Adresse an.'
-    }
-    return
-  }
-  
-  try {
-    isJoiningWaitlist.value = true
-    waitlistStatus.value = null
-    
-    const response = await $fetch('/api/karl-waitlist', {
-      method: 'POST',
-      body: {
-        profile: onboardingStore.formData,
-        email: waitlistEmail.value.trim(),
-        consent: true // User has seen privacy notice and clicked button
-      }
-    })
-    
-    waitlistStatus.value = {
-      success: response.success,
-      message: response.message
-    }
-    
-    if (response.success) {
-      const toast = useToast()
-      toast.add({
-        title: 'Erfolgreich hinzugefügt! 🎉',
-        description: 'Du bist jetzt auf der Karl-Warteliste. Wir melden uns!',
-        color: 'green',
-        timeout: 5000
-      })
-      
-      // Clear email field after successful submission
-      waitlistEmail.value = ''
-    }
-    
-  } catch (error: any) {
-    console.error('Failed to join Karl waitlist:', error)
-    waitlistStatus.value = {
-      success: false,
-      message: error?.data?.message || 'Es gab einen Fehler. Bitte versuche es später erneut.'
-    }
-  } finally {
-    isJoiningWaitlist.value = false
-  }
-}
 </script>
