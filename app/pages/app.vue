@@ -472,72 +472,14 @@
             </div>
           </div>
 
-          <!-- Step 2: Probatorik -->
-          <div v-if="currentStep === 2" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Terminservicestelle: Probatorik</h3>
-            </div>
-            
-            <div class="space-y-3 text-sm">
-              <p class="text-blue-100/90">
-                Nach dem Erstgespräch erhältst Du über die Terminservicestelle zudem eine probatorische Sitzung. Hierzu brauchst Du einen Dringlichkeitscode, den Du auf der Individuellen Patienteninformation aus dem Erstgespräch findest.
-              </p>
-              
-              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-                <h4 class="text-amber-200 font-medium">📋 Dringlichkeitscode benötigt</h4>
-                <p class="text-amber-100/80 text-xs mt-1">
-                  Den Code findest Du auf der "Individuellen Patienteninformation" aus dem Erstgespräch
-                </p>
-              </div>
-
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zur Probatorik:</h4>
-                <p class="text-blue-100/80 text-xs">
-                  Den Dringlichkeitscode erhältst Du im vorherigen Erstgespräch nur, wenn eine Dringlichkeit vom Therapeuten oder der Therapeutin festgestellt wird (= "zeitnah erforderlich" ist angekreuzt).
-                </p>
-              </div>
-            </div>
-
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
-              <UButton 
-                @click="prevStep" 
-                color="gray"
-                size="sm"
-                variant="ghost"
-                leading-icon="i-heroicons-chevron-left"
-              >
-                Zurück
-              </UButton>
-              
-              <UButton 
-                @click="completeStep(2)" 
-                :color="stepProgress[2] ? 'green' : 'blue'" 
-                size="sm"
-                variant="outline"
-              >
-                {{ stepProgress[2] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
-              </UButton>
-              
-              <UButton 
-                @click="nextStep" 
-                color="primary"
-                size="sm"
-                trailing-icon="i-heroicons-chevron-right"
-              >
-                Weiter
-              </UButton>
-            </div>
-          </div>
-
-          <!-- Step 3: Kontaktprotokoll -->
-          <div v-if="currentStep === 3" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+          <!-- Step 2: Kontaktprotokoll -->
+          <div v-if="currentStep === 2" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-500/30">
                 <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
               </div>
               <div>
-                <h3 class="text-xl font-semibold text-white">Schritt 3: Kontaktprotokoll erstellen</h3>
+                <h3 class="text-xl font-semibold text-white">Schritt 2: Kontaktprotokoll erstellen</h3>
                 <p class="text-blue-200/80 text-sm">Dokumentiere deine Bemühungen um einen Therapieplatz</p>
               </div>
             </div>
@@ -618,6 +560,64 @@
                     </UButton>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="sm"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(2)" 
+                :color="stepProgress[2] ? 'green' : 'blue'" 
+                size="sm"
+                variant="outline"
+              >
+                {{ stepProgress[2] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="sm"
+                trailing-icon="i-heroicons-chevron-right"
+              >
+                Weiter
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 3: Probatorik -->
+          <div v-if="currentStep === 3" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
+              <h3 class="text-lg font-semibold text-white">Terminservicestelle: Probatorik</h3>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+              <p class="text-blue-100/90">
+                Nach dem Erstgespräch erhältst Du über die Terminservicestelle zudem eine probatorische Sitzung. Hierzu brauchst Du einen Dringlichkeitscode, den Du auf der Individuellen Patienteninformation aus dem Erstgespräch findest.
+              </p>
+              
+              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium">📋 Dringlichkeitscode benötigt</h4>
+                <p class="text-amber-100/80 text-xs mt-1">
+                  Den Code findest Du auf der "Individuellen Patienteninformation" aus dem Erstgespräch
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zur Probatorik:</h4>
+                <p class="text-blue-100/80 text-xs">
+                  Den Dringlichkeitscode erhältst Du im vorherigen Erstgespräch nur, wenn eine Dringlichkeit vom Therapeuten oder der Therapeutin festgestellt wird (= "zeitnah erforderlich" ist angekreuzt).
+                </p>
               </div>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
@@ -1096,17 +1096,17 @@ const stepperItems = ref<StepperItem[]>([
     value: 0
   },
   {
-    slot: 'probatorik',
-    title: 'Probatorik',
-    description: 'Dringlichkeitscode',
-    icon: 'i-heroicons-document-text',
-    value: 1
-  },
-  {
     slot: 'kontaktprotokoll',
     title: 'Kontaktprotokoll',
     description: '6-10 Therapeuten',
     icon: 'i-heroicons-clipboard-document-list',
+    value: 1
+  },
+  {
+    slot: 'probatorik',
+    title: 'Probatorik',
+    description: 'Dringlichkeitscode',
+    icon: 'i-heroicons-document-text',
     value: 2
   },
   {
@@ -1354,7 +1354,7 @@ const completeStep = (step: number) => {
   
   // Show toast
   const toast = useToast()
-  const stepNames = ['Erstgespräch', 'Probatorik', 'Kontaktprotokoll', 'Hausarzt', 'Kostenerstattung', 'Widerspruch', 'Private Therapeuten']
+  const stepNames = ['Erstgespräch', 'Kontaktprotokoll', 'Probatorik', 'Hausarzt', 'Kostenerstattung', 'Widerspruch', 'Private Therapeuten']
   
   if (stepProgress.value[step]) {
     toast.add({
