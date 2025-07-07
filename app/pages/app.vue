@@ -203,8 +203,16 @@
               
               <div class="space-y-4 text-sm lg:text-base">
                 <p class="text-blue-100/90 leading-relaxed">
-                  Bei der <strong>Terminservicestelle</strong> erhältst du ohne großen Aufwand direkt einen Termin für ein psychotherapeutisches Erstgespräch. In diesem Gespräch wird geklärt, ob eine Therapie für dich geeignet ist.
+                  Kontaktiere die <strong>Terminservicestelle</strong> über Telefon oder online, um ein psychotherapeutisches Erstgespräch zu vereinbaren. Dieses Gespräch dient der ersten Einschätzung deiner Situation.
                 </p>
+                
+                <!-- Quick Action Note -->
+                <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-forward" class="w-4 h-4 text-green-300" />
+                    <p class="text-green-200 text-sm font-medium">Du kannst bereits zum nächsten Schritt, sobald du einen Termin vereinbart hast</p>
+                  </div>
+                </div>
 
                 <!-- PLZ Display and Edit -->
                 <div class="bg-white/5 p-4 lg:p-5 rounded-lg border border-white/10">
@@ -395,19 +403,23 @@
                   <div class="flex items-start gap-3">
                     <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300 mt-0.5 flex-shrink-0" />
                     <div class="space-y-2">
-                      <h4 class="text-amber-200 font-semibold">Wichtig für spätere Kostenerstattung:</h4>
+                      <h4 class="text-amber-200 font-semibold">Nach dem Erstgespräch beachten:</h4>
                       <ul class="text-amber-100/90 text-sm space-y-1.5">
                         <li class="flex items-start gap-2">
                           <span class="text-amber-300 mt-1">•</span>
-                          <span><strong>Behandlungsbedarf</strong> muss vom Therapeuten festgestellt werden</span>
+                          <span>Du bekommst ein Formular (<strong>"Individuelle Patienteninformation"</strong>) mit wichtigen Informationen</span>
                         </li>
                         <li class="flex items-start gap-2">
                           <span class="text-amber-300 mt-1">•</span>
-                          <span>Auf der <strong>"Individuellen Patienteninformation"</strong> muss angekreuzt sein: <em>"Therapie zeitnah erforderlich"</em></span>
+                          <span>Prüfe, ob ein <strong>Dringlichkeitscode</strong> darauf vermerkt ist - dieser ist wichtig für weitere Schritte</span>
                         </li>
                         <li class="flex items-start gap-2">
                           <span class="text-amber-300 mt-1">•</span>
-                          <span>Nur dann ist später ein Kostenerstattungsverfahren möglich</span>
+                          <span>Falls der Code fehlt, bitte den Therapeuten darum</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                          <span class="text-amber-300 mt-1">•</span>
+                          <span>Für ein Kostenerstattungsverfahren muss <strong>"Therapie dringend zeitnah erforderlich"</strong> angekreuzt sein</span>
                         </li>
                       </ul>
                     </div>
@@ -519,30 +531,93 @@
           </div>
 
           <!-- Step 3: Kontaktprotokoll -->
-          <div v-if="currentStep === 3" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Kontaktprotokoll erstellen</h3>
+          <div v-if="currentStep === 3" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-500/30">
+                <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 3: Kontaktprotokoll erstellen</h3>
+                <p class="text-blue-200/80 text-sm">Dokumentiere deine Bemühungen um einen Therapieplatz</p>
+              </div>
             </div>
-            <div class="space-y-3 text-sm">
-              <p class="text-blue-100/90">
-                Zudem solltest Du Dich selbständig (oder mit Hilfe von Freunden oder Bekannten) bei Psychotherapeuten um einen Therapieplatz bemüht haben. Deine Bemühungen der Kontaktaufnahme solltest Du in einem Kontaktprotokoll niederschreiben.
+            
+            <div class="space-y-4 text-sm lg:text-base">
+              <p class="text-blue-100/90 leading-relaxed">
+                Kontaktiere selbständig mehrere Psychotherapeuten und dokumentiere alle Versuche in einem Kontaktprotokoll. Dies ist wichtig für das spätere Kostenerstattungsverfahren.
               </p>
               
-              <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
-                <h4 class="text-blue-200 font-medium">💡 Therapeuten finden</h4>
-                <p class="text-blue-100/80 text-xs mt-1">
-                  Zum Beispiel findest Du erreichbare Psychotherapeuten im Internet auf therapie.de.
+              <!-- Important Requirements -->
+              <div class="bg-amber-500/10 p-4 lg:p-5 rounded-xl border border-amber-500/20">
+                <div class="flex items-start gap-3">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300 mt-0.5 flex-shrink-0" />
+                  <div class="space-y-2">
+                    <h4 class="text-amber-200 font-semibold">Was muss ins Kontaktprotokoll:</h4>
+                    <ul class="text-amber-100/90 text-sm space-y-1.5">
+                      <li class="flex items-start gap-2">
+                        <span class="text-amber-300 mt-1">•</span>
+                        <span>Name des Therapeuten, Datum und Uhrzeit des Kontakts</span>
+                      </li>
+                      <li class="flex items-start gap-2">
+                        <span class="text-amber-300 mt-1">•</span>
+                        <span>Antwort: Ist ein Therapieplatz in unter 3 Monaten verfügbar?</span>
+                      </li>
+                      <li class="flex items-start gap-2">
+                        <span class="text-amber-300 mt-1">•</span>
+                        <span>Auch Therapeuten notieren, die nicht ans Telefon gehen</span>
+                      </li>
+                      <li class="flex items-start gap-2">
+                        <span class="text-amber-300 mt-1">•</span>
+                        <span>Insgesamt 6-10 Therapeuten kontaktieren (je nach Region)</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Quick Tip -->
+              <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <UIcon name="i-heroicons-light-bulb" class="w-4 h-4 text-blue-300" />
+                  <h4 class="text-blue-200 font-medium text-sm">Therapeuten finden</h4>
+                </div>
+                <p class="text-blue-100/80 text-xs">
+                  Nutze Plattformen wie therapie.de oder die Therapeutensuche deiner Krankenkasse. Auch Empfehlungen von Hausärzten können hilfreich sein.
                 </p>
               </div>
 
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Kontaktprotokoll:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Es sollte jeweils den Namen der Therapeuten, das Datum und die Uhrzeit des Kontakts sowie eine Aussage der Therapeuten darüber enthalten, ob ein Therapieplatz in absehbarer Zeit (= in unter drei Monaten) verfügbar ist oder nicht.</li>
-                  <li>• Notiere bitte auch die Psychotherapeuten, die nicht ans Telefon gehen!</li>
-                  <li>• Insgesamt solltest Du je nach lokaler Verfügbarkeit zwischen sechs und zehn Therapeuten im Protokoll aufführen.</li>
-                </ul>
+              <!-- Progress Tracking -->
+              <div class="bg-white/5 p-4 lg:p-5 rounded-xl border border-white/10">
+                <h4 class="text-blue-200 font-semibold mb-3 flex items-center gap-2">
+                  <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
+                  Fortschritt verfolgen
+                </h4>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-blue-100/80 text-sm">Überweisungscode vom Therapeuten erhalten</span>
+                    <UButton
+                      @click="toggleUberweisungscode"
+                      :color="hasUberweisungscode ? 'green' : 'gray'"
+                      size="xs"
+                      variant="outline"
+                      :icon="hasUberweisungscode ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
+                    >
+                      {{ hasUberweisungscode ? 'Ja' : 'Nein' }}
+                    </UButton>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-blue-100/80 text-sm">Auf Diagnosebogen steht "Therapie dringend zeitnah erforderlich"</span>
+                    <UButton
+                      @click="toggleDringendErforderlich"
+                      :color="hasDringendErforderlich ? 'green' : 'gray'"
+                      size="xs"
+                      variant="outline"
+                      :icon="hasDringendErforderlich ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
+                    >
+                      {{ hasDringendErforderlich ? 'Ja' : 'Nein' }}
+                    </UButton>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-white/10">
@@ -1081,6 +1156,20 @@ const tempPlz = ref('')
 
 // Note: Email functionality disabled due to eterminservice.de anti-bot protection
 
+// Progress tracking toggles for Step 3
+const hasUberweisungscode = ref(false)
+const hasDringendErforderlich = ref(false)
+
+// Toggle functions
+const toggleUberweisungscode = () => {
+  hasUberweisungscode.value = !hasUberweisungscode.value
+  saveGuideState()
+}
+
+const toggleDringendErforderlich = () => {
+  hasDringendErforderlich.value = !hasDringendErforderlich.value
+  saveGuideState()
+}
 
 // Get current PLZ for display and checks
 const currentPlz = computed(() => {
@@ -1163,7 +1252,9 @@ const getStoredGuideState = () => {
     protocolEntries: [],
     hausarztCompleted: false,
     antragCompleted: false,
-    antragStatus: ''
+    antragStatus: '',
+    hasUberweisungscode: false,
+    hasDringendErforderlich: false
   }
 }
 
@@ -1171,6 +1262,10 @@ const storedState = getStoredGuideState()
 
 // State with persistence
 const currentStep = ref(storedState.currentStep)
+
+// Initialize toggle states from stored data
+hasUberweisungscode.value = storedState.hasUberweisungscode || false
+hasDringendErforderlich.value = storedState.hasDringendErforderlich || false
 
 // Template refs
 const stepperContainer = ref<HTMLElement>()
@@ -1288,7 +1383,9 @@ const saveGuideState = () => {
         protocolEntries: [],
         hausarztCompleted: false,
         antragCompleted: false,
-        antragStatus: ''
+        antragStatus: '',
+        hasUberweisungscode: hasUberweisungscode.value,
+        hasDringendErforderlich: hasDringendErforderlich.value
       }
       localStorage.setItem('therapist-guide-state', JSON.stringify(state))
     } catch (error) {
@@ -1318,6 +1415,8 @@ const resetGuide = () => {
   stepProgress.value = {
     1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false
   }
+  hasUberweisungscode.value = false
+  hasDringendErforderlich.value = false
   
   // Clear localStorage
   if (process.client) {
