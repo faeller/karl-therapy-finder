@@ -644,13 +644,15 @@
             <!-- Contact Date -->
             <div>
               <label class="block text-sm font-medium text-blue-200 mb-2">
-                Kontaktdatum *
+                Kontaktdatum * <span class="text-white/40 text-xs">(TT.MM.JJJJ)</span>
               </label>
               <input 
                 v-model="contactForm.contactDate"
                 type="date"
-                lang="de"
-                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
+                lang="de-DE"
+                locale="de-DE"
+                :data-locale="'de-DE'"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert"
                 required
               />
             </div>
@@ -727,6 +729,8 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
+const router = useRouter()
 interface TherapistData {
   id: string
   name: string
@@ -759,8 +763,38 @@ interface ContactAttempt {
 
 const onboardingStore = useOnboardingStore()
 
-// Tab management
+// Tab management with URL routing
 const activeTab = ref('search')
+
+// Initialize tab from URL
+const initializeTabFromUrl = () => {
+  const tab = route.query.tab
+  if (tab === 'contact-protocol') {
+    activeTab.value = 'kontaktprotokoll'
+  } else {
+    activeTab.value = 'search'
+  }
+}
+
+// Update URL when tab changes
+const updateTabUrl = (tab: string) => {
+  const basePath = '/therapists'
+  const newPath = tab === 'kontaktprotokoll' ? `${basePath}?tab=contact-protocol` : basePath
+  
+  if (route.fullPath !== newPath) {
+    router.push(newPath)
+  }
+}
+
+// Watch for tab changes and update URL
+watch(activeTab, (newTab) => {
+  updateTabUrl(newTab)
+})
+
+// Watch for route changes and update tab
+watch(() => route.query, () => {
+  initializeTabFromUrl()
+}, { immediate: true })
 
 // Loading state for Pinia data
 const isPiniaLoading = ref(true)
@@ -940,10 +974,60 @@ watch(filters, (newFilters) => {
 
 // Check if Pinia data is loaded
 onMounted(() => {
+  // Initialize tab from URL
+  initializeTabFromUrl()
+  
   // Load persisted data
   loadBookmarkedTherapists()
   loadContactAttempts()
   loadManualContactAttempts()
+  
+  // Try to force German locale for date inputs
+  if (process.client) {
+    try {
+      // Set document language
+      document.documentElement.lang = 'de-DE'
+      document.documentElement.setAttribute('locale', 'de-DE')
+      
+      // Try to set browser locale preference
+      if (navigator.language !== 'de-DE') {
+        console.log('Browser locale:', navigator.language, '- trying to apply German formatting')
+      }
+      
+      // Enhanced CSS for date inputs
+      const style = document.createElement('style')
+      style.textContent = `
+        input[type="date"] {
+          color-scheme: dark;
+          font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        input[type="date"]::-webkit-datetime-edit {
+          color: white;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+        }
+        /* Try to influence locale presentation */
+        input[type="date"][lang="de-DE"] {
+          writing-mode: initial;
+          direction: ltr;
+        }
+      `
+      document.head.appendChild(style)
+      
+      // Try to apply locale to existing inputs
+      nextTick(() => {
+        const dateInputs = document.querySelectorAll('input[type="date"]')
+        dateInputs.forEach(input => {
+          input.setAttribute('lang', 'de-DE')
+          input.setAttribute('locale', 'de-DE')
+        })
+      })
+    } catch (error) {
+      console.warn('Could not set date locale styling:', error)
+    }
+  }
   
   // Simulate loading delay for persisted state
   const checkPiniaLoaded = () => {

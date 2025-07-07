@@ -10,8 +10,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'KARL - Therapieplatz-Finder für Deutschland',
+      htmlAttrs: {
+        lang: 'de-DE'
+      },
       meta: [
-        { name: 'description', content: 'KARL hilft dir dabei, einen Therapieplatz in Deutschland zu finden - mit einem geleiteten Prozess und Therapeutensuche.' }
+        { name: 'description', content: 'KARL hilft dir dabei, einen Therapieplatz in Deutschland zu finden - mit einem geleiteten Prozess und Therapeutensuche.' },
+        { 'http-equiv': 'Content-Language', content: 'de-DE' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
