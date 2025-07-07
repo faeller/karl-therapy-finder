@@ -410,11 +410,17 @@
                           <button 
                             @click="toggleReplyStatus(attempt.id)"
                             :class="[
-                              'text-xs px-2 py-1 rounded transition-all',
-                              attempt.replyReceived ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                              'text-xs px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer border',
+                              attempt.replyReceived 
+                                ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30 border-green-500/30 hover:border-green-500/50' 
+                                : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border-yellow-500/30 hover:border-yellow-500/50 shadow-sm hover:shadow-md'
                             ]"
+                            title="Klicken zum Bearbeiten"
                           >
-                            {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                            <div class="flex items-center gap-1">
+                              <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
+                              {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                            </div>
                           </button>
                           <button 
                             @click="removeContactAttempt(attempt.id)"
@@ -482,13 +488,17 @@
                     <button 
                       @click="toggleReplyStatus(attempt.id)"
                       :class="[
-                        'p-2 rounded-lg transition-all text-xs px-3 py-1',
+                        'text-xs px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer border',
                         attempt.replyReceived 
-                          ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
-                          : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                          ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30 border-green-500/30 hover:border-green-500/50' 
+                          : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border-yellow-500/30 hover:border-yellow-500/50 shadow-sm hover:shadow-md'
                       ]"
+                      title="Klicken zum Bearbeiten"
                     >
-                      {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                      <div class="flex items-center gap-1">
+                        <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
+                        {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                      </div>
                     </button>
                     <button 
                       @click="removeContactAttempt(attempt.id)"
@@ -557,13 +567,13 @@
     </div>
 
     <!-- Contact Attempt Modal -->
-    <div v-if="showContactModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl">
+    <div v-if="showContactModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border-2 border-gray-200 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <!-- Modal Header -->
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-gray-900">
-              {{ isManualEntry ? 'Manueller Kontaktversuch' : 'Kontaktversuch hinzufügen' }}
+              {{ editingAttemptId ? 'Kontaktversuch bearbeiten' : (isManualEntry ? 'Manueller Kontaktversuch' : 'Kontaktversuch hinzufügen') }}
             </h3>
             <button @click="closeContactModal" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
               <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
@@ -581,7 +591,7 @@
                 v-model="contactForm.therapistName"
                 :disabled="!isManualEntry"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 bg-white text-gray-900"
                 placeholder="Dr. Max Mustermann"
                 required
               />
@@ -596,7 +606,7 @@
                 v-model="contactForm.therapistAddress"
                 :disabled="!isManualEntry"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 bg-white text-gray-900"
                 placeholder="Musterstraße 123, 12345 Musterstadt"
                 required
               />
@@ -610,7 +620,7 @@
               <input 
                 v-model="contactForm.contactDate"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 required
               />
             </div>
@@ -623,7 +633,7 @@
               <input 
                 v-model="contactForm.contactTime"
                 type="time"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 required
               />
             </div>
@@ -649,10 +659,10 @@
               </label>
               <select 
                 v-model="contactForm.waitingTime"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
               >
-                <option value="">Bitte wählen...</option>
-                <option v-for="option in waitingTimeOptions" :key="option" :value="option">
+                <option value="" class="text-gray-500">Bitte wählen...</option>
+                <option v-for="option in waitingTimeOptions" :key="option" :value="option" class="text-gray-900">
                   {{ option }}
                 </option>
               </select>
@@ -662,7 +672,7 @@
                 v-if="contactForm.waitingTime === 'Eigene Eingabe'"
                 v-model="contactForm.waitingTime"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2 bg-white text-gray-900"
                 placeholder="Eigene Wartezeit eingeben..."
               />
             </div>
@@ -681,7 +691,7 @@
               :disabled="!contactForm.therapistName || !contactForm.therapistAddress"
               class="flex-1 px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Hinzufügen
+              {{ editingAttemptId ? 'Aktualisieren' : 'Hinzufügen' }}
             </button>
           </div>
         </div>
@@ -738,6 +748,7 @@ const manualContactAttempts = ref<ContactAttempt[]>([])
 const showContactModal = ref(false)
 const currentTherapist = ref<TherapistData | null>(null)
 const isManualEntry = ref(false)
+const editingAttemptId = ref<string | null>(null)
 
 // Contact attempt form data
 const contactForm = ref({
@@ -958,6 +969,9 @@ const getContactAttempts = (therapistId: string) => {
 }
 
 const openContactModal = (therapist?: TherapistData) => {
+  // Reset editing state
+  editingAttemptId.value = null
+  
   if (therapist) {
     currentTherapist.value = therapist
     isManualEntry.value = false
@@ -984,26 +998,46 @@ const closeContactModal = () => {
   showContactModal.value = false
   currentTherapist.value = null
   isManualEntry.value = false
+  editingAttemptId.value = null
 }
 
 const submitContactAttempt = () => {
-  const attempt: ContactAttempt = {
-    id: Date.now().toString(),
-    therapistId: currentTherapist.value?.id || 'manual-' + Date.now(),
-    contactDate: contactForm.value.contactDate,
-    contactTime: contactForm.value.contactTime,
-    replyReceived: contactForm.value.replyReceived,
-    waitingTime: contactForm.value.waitingTime,
-    therapistName: contactForm.value.therapistName,
-    therapistAddress: contactForm.value.therapistAddress
-  }
-  
-  if (isManualEntry.value) {
-    manualContactAttempts.value.push(attempt)
-    saveManualContactAttempts()
+  if (editingAttemptId.value) {
+    // Update existing attempt
+    const attempt = contactAttempts.value.find(a => a.id === editingAttemptId.value) || 
+                   manualContactAttempts.value.find(a => a.id === editingAttemptId.value)
+    
+    if (attempt) {
+      attempt.contactDate = contactForm.value.contactDate
+      attempt.contactTime = contactForm.value.contactTime
+      attempt.replyReceived = contactForm.value.replyReceived
+      attempt.waitingTime = contactForm.value.waitingTime
+      attempt.therapistName = contactForm.value.therapistName
+      attempt.therapistAddress = contactForm.value.therapistAddress
+      
+      saveContactAttempts()
+      saveManualContactAttempts()
+    }
   } else {
-    contactAttempts.value.push(attempt)
-    saveContactAttempts()
+    // Create new attempt
+    const attempt: ContactAttempt = {
+      id: Date.now().toString(),
+      therapistId: currentTherapist.value?.id || 'manual-' + Date.now(),
+      contactDate: contactForm.value.contactDate,
+      contactTime: contactForm.value.contactTime,
+      replyReceived: contactForm.value.replyReceived,
+      waitingTime: contactForm.value.waitingTime,
+      therapistName: contactForm.value.therapistName,
+      therapistAddress: contactForm.value.therapistAddress
+    }
+    
+    if (isManualEntry.value) {
+      manualContactAttempts.value.push(attempt)
+      saveManualContactAttempts()
+    } else {
+      contactAttempts.value.push(attempt)
+      saveContactAttempts()
+    }
   }
   
   closeContactModal()
@@ -1013,18 +1047,40 @@ const addContactAttempt = (therapist: TherapistData) => {
   openContactModal(therapist)
 }
 
-const toggleReplyStatus = (attemptId: string) => {
+const editContactAttempt = (attemptId: string) => {
   const attempt = contactAttempts.value.find(a => a.id === attemptId) || 
                  manualContactAttempts.value.find(a => a.id === attemptId)
   
   if (attempt) {
-    attempt.replyReceived = !attempt.replyReceived
-    if (!attempt.replyReceived) {
-      attempt.waitingTime = ''
+    // Determine if it's a manual entry
+    isManualEntry.value = manualContactAttempts.value.some(a => a.id === attemptId)
+    
+    // Find the associated therapist if it's not a manual entry
+    if (!isManualEntry.value) {
+      currentTherapist.value = bookmarkedTherapists.value.find(t => t.id === attempt.therapistId) || null
+    } else {
+      currentTherapist.value = null
     }
-    saveContactAttempts()
-    saveManualContactAttempts()
+    
+    // Set up form with existing data
+    contactForm.value = {
+      therapistName: attempt.therapistName || currentTherapist.value?.name || '',
+      therapistAddress: attempt.therapistAddress || currentTherapist.value?.address || '',
+      contactDate: attempt.contactDate,
+      contactTime: attempt.contactTime,
+      replyReceived: attempt.replyReceived,
+      waitingTime: attempt.waitingTime || ''
+    }
+    
+    // Store the attempt ID for updating
+    editingAttemptId.value = attemptId
+    
+    showContactModal.value = true
   }
+}
+
+const toggleReplyStatus = (attemptId: string) => {
+  editContactAttempt(attemptId)
 }
 
 const removeContactAttempt = (attemptId: string) => {
