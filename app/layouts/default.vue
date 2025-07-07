@@ -65,22 +65,22 @@
             </UButton>
             
             <UButton 
-              to="/therapists" 
+              @click="handleTherapistsNavClick"
               variant="ghost" 
               color="blue"
               size="sm"
-              :class="$route.path === '/therapists' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+              :class="currentNavItem === 'therapists' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2" />
               Therapeuten
             </UButton>
             
             <UButton 
-              to="/therapists/contact-protocol" 
+              @click="handleKontaktprotokollNavClick"
               variant="ghost" 
               color="blue"
               size="sm"
-              :class="$route.path === '/therapists/contact-protocol' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
+              :class="currentNavItem === 'kontaktprotokoll' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-document-text" class="w-4 h-4 mr-2" />
               Kontaktprotokoll
@@ -127,6 +127,52 @@
 <script setup>
 const route = useRoute()
 const { locale, locales, setLocale } = useI18n()
+
+// Use navigation state management
+const { currentNavItem, setNavFromPath } = useNavigation()
+
+// Handle navbar clicks for therapists page
+const handleTherapistsNavClick = () => {
+  // If we're on a therapists page, emit an event to switch tabs instead of navigating
+  if (route.path.startsWith('/therapists')) {
+    // Use a custom event to communicate with the therapists page
+    if (process.client) {
+      window.dispatchEvent(new CustomEvent('navbar-therapists-click'))
+    }
+  } else {
+    // Normal navigation
+    navigateTo('/therapists')
+  }
+}
+
+const handleKontaktprotokollNavClick = () => {
+  // If we're on a therapists page, emit an event to switch tabs instead of navigating
+  if (route.path.startsWith('/therapists')) {
+    // Use a custom event to communicate with the therapists page
+    if (process.client) {
+      window.dispatchEvent(new CustomEvent('navbar-kontaktprotokoll-click'))
+    }
+  } else {
+    // Normal navigation
+    navigateTo('/therapists/contact-protocol')
+  }
+}
+
+// Initialize navigation state on first load
+onMounted(() => {
+  const currentPath = route.path
+  // Set initial navigation state for all routes
+  setNavFromPath(currentPath)
+})
+
+// Watch for route changes
+// Only set navigation state for routes that don't manage their own navigation
+watch(() => route.path, (newPath) => {
+  // Don't override navigation state for therapists pages - they manage their own nav state
+  if (!newPath.startsWith('/therapists')) {
+    setNavFromPath(newPath)
+  }
+})
 
 // Language configuration
 const languageConfig = {

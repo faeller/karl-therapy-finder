@@ -943,6 +943,9 @@ interface ContactAttempt {
 
 const onboardingStore = useOnboardingStore()
 
+// Use navigation state management
+const { setNavItem } = useNavigation()
+
 // Tab management with URL routing
 const activeTab = ref('search')
 
@@ -954,14 +957,17 @@ const initializeTabFromUrl = () => {
   // Check if we have a temporary tab parameter (from redirect)
   if (tempTab === 'contact-protocol') {
     activeTab.value = 'kontaktprotokoll'
+    setNavItem('kontaktprotokoll')
     // Clean up the URL - remove query param and set proper path
     if (process.client) {
       window.history.replaceState({}, '', '/therapists/contact-protocol')
     }
   } else if (path === '/therapists/contact-protocol') {
     activeTab.value = 'kontaktprotokoll'
+    setNavItem('kontaktprotokoll')
   } else {
     activeTab.value = 'search'
+    setNavItem('therapists')
   }
 }
 
@@ -978,9 +984,11 @@ const updateTabUrl = (tab: string) => {
   }
 }
 
-// Watch for tab changes and update URL
+// Watch for tab changes and update URL + navigation state
 watch(activeTab, (newTab) => {
   updateTabUrl(newTab)
+  // Update navigation state to keep navbar in sync
+  setNavItem(newTab === 'kontaktprotokoll' ? 'kontaktprotokoll' : 'therapists')
 })
 
 // Watch for route changes and update tab
@@ -989,14 +997,34 @@ watch(() => route.path, (newPath) => {
   initializeTabFromUrl()
 }, { immediate: true })
 
-// Listen for browser back/forward navigation
+// Listen for browser back/forward navigation and navbar clicks
 onMounted(() => {
   if (process.client) {
-    window.addEventListener('popstate', () => {
+    const handlePopState = () => {
       // Update tab when user uses browser back/forward
       nextTick(() => {
         initializeTabFromUrl()
       })
+    }
+
+    const handleNavbarTherapistsClick = () => {
+      activeTab.value = 'search'
+    }
+
+    const handleNavbarKontaktprotokollClick = () => {
+      activeTab.value = 'kontaktprotokoll'
+    }
+
+    // Add event listeners
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('navbar-therapists-click', handleNavbarTherapistsClick)
+    window.addEventListener('navbar-kontaktprotokoll-click', handleNavbarKontaktprotokollClick)
+
+    // Cleanup on unmount
+    onBeforeUnmount(() => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('navbar-therapists-click', handleNavbarTherapistsClick)
+      window.removeEventListener('navbar-kontaktprotokoll-click', handleNavbarKontaktprotokollClick)
     })
   }
 })
