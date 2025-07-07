@@ -316,8 +316,8 @@ const getStoredFilters = () => {
           gender: 'Egal',
           problem: 'Alle Probleme',
           ageGroup: 'Alle Altersgruppen',
-          billing: 'Alle Abrechnungsarten',
-          freePlaces: 'Egal',
+          billing: 'Gesetzliche Krankenversicherung',
+          freePlaces: 'Nur freie Plätze',
           specialization: ''
         }, ...JSON.parse(stored) }
       }
@@ -330,8 +330,8 @@ const getStoredFilters = () => {
     gender: 'Egal',
     problem: 'Alle Probleme',
     ageGroup: 'Alle Altersgruppen',
-    billing: 'Alle Abrechnungsarten',
-    freePlaces: 'Egal',
+    billing: 'Gesetzliche Krankenversicherung',
+    freePlaces: 'Nur freie Plätze',
     specialization: ''
   }
 }
@@ -547,8 +547,8 @@ const clearFilters = () => {
     gender: 'Egal',
     problem: 'Alle Probleme',
     ageGroup: 'Alle Altersgruppen',
-    billing: 'Alle Abrechnungsarten',
-    freePlaces: 'Egal',
+    billing: 'Gesetzliche Krankenversicherung',
+    freePlaces: 'Nur freie Plätze',
     specialization: ''
   }
   
@@ -568,8 +568,8 @@ const hasActiveFilters = computed(() => {
          filters.value.gender !== 'Egal' ||
          filters.value.problem !== 'Alle Probleme' ||
          filters.value.ageGroup !== 'Alle Altersgruppen' ||
-         filters.value.billing !== 'Alle Abrechnungsarten' ||
-         filters.value.freePlaces !== 'Egal' ||
+         filters.value.billing !== 'Gesetzliche Krankenversicherung' ||
+         filters.value.freePlaces !== 'Nur freie Plätze' ||
          filters.value.specialization !== ''
 })
 
@@ -580,8 +580,8 @@ const activeFiltersCount = computed(() => {
     filters.value.gender !== 'Egal',
     filters.value.problem !== 'Alle Probleme',
     filters.value.ageGroup !== 'Alle Altersgruppen',
-    filters.value.billing !== 'Alle Abrechnungsarten',
-    filters.value.freePlaces !== 'Egal',
+    filters.value.billing !== 'Gesetzliche Krankenversicherung',
+    filters.value.freePlaces !== 'Nur freie Plätze',
     filters.value.specialization !== ''
   ].filter(Boolean).length
 })
