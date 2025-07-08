@@ -71,7 +71,7 @@
             </div>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
             <button 
               @click="loadStorageData"
               class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all text-sm"
@@ -88,13 +88,34 @@
               Clear All
             </button>
             
-            <button 
-              @click="exportStorageData"
-              class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
-            >
-              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
-              Export Data
-            </button>
+            <div class="flex flex-col gap-2">
+              <button 
+                @click="exportStorageData"
+                class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
+              >
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+                Export JSON
+              </button>
+              <button 
+                @click="exportAsBase64"
+                class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition-all text-sm"
+              >
+                <UIcon name="i-heroicons-code-bracket" class="w-4 h-4" />
+                Export Base64
+              </button>
+              <div class="relative">
+                <button 
+                  @click="exportEncrypted"
+                  class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all text-sm w-full"
+                >
+                  <UIcon name="i-heroicons-lock-closed" class="w-4 h-4" />
+                  Export Encrypted
+                </button>
+                <div v-if="!isSecureEncryptionAvailable" class="absolute -top-1 -right-1">
+                  <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" title="Insecure encryption warning"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="space-y-2 max-h-64 overflow-y-auto">
@@ -104,6 +125,133 @@
                 <UBadge color="gray" size="xs">{{ getDataSize(value) }}</UBadge>
               </div>
               <pre class="text-xs text-green-300 bg-black/20 p-2 rounded overflow-x-auto">{{ formatStorageValue(value) }}</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import Data Section -->
+        <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-orange-300 text-base">Import Data</h3>
+            <UBadge color="orange" variant="soft">JSON/Base64/Encrypted</UBadge>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-orange-200 mb-2">
+                Select import format:
+              </label>
+              <div class="flex gap-2 mb-4">
+                <button 
+                  @click="importFormat = 'json'"
+                  :class="[
+                    'px-3 py-1 rounded text-xs font-medium transition-all',
+                    importFormat === 'json' 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30'
+                  ]"
+                >
+                  JSON
+                </button>
+                <button 
+                  @click="importFormat = 'base64'"
+                  :class="[
+                    'px-3 py-1 rounded text-xs font-medium transition-all',
+                    importFormat === 'base64' 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30'
+                  ]"
+                >
+                  Base64
+                </button>
+                <div class="relative">
+                  <button 
+                    @click="importFormat = 'encrypted'"
+                    :class="[
+                      'px-3 py-1 rounded text-xs font-medium transition-all',
+                      importFormat === 'encrypted' 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30'
+                    ]"
+                  >
+                    Encrypted
+                  </button>
+                  <div v-if="!isSecureEncryptionAvailable" class="absolute -top-1 -right-1">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Insecure encryption warning"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-orange-200 mb-2">
+                    Upload file:
+                  </label>
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    @change="handleFileUpload"
+                    accept=".karl,.karl.encrypted,.json,.base64,.encrypted,.txt"
+                    class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-500/20 file:text-orange-300 hover:file:bg-orange-500/30 file:cursor-pointer cursor-pointer"
+                  />
+                </div>
+                
+                <div class="text-center text-orange-300 text-sm">
+                  or
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-orange-200 mb-2">
+                    Paste data:
+                  </label>
+                  <textarea
+                    v-model="importData"
+                    rows="4"
+                    placeholder="Paste your exported data here..."
+                    class="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="importFormat === 'encrypted'" class="space-y-2">
+              <div v-if="!isSecureEncryptionAvailable" class="p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-yellow-400" />
+                  <span class="text-sm font-medium text-yellow-400">Security Warning</span>
+                </div>
+                <p class="text-xs text-yellow-300">
+                  Your browser doesn't support secure encryption. Data will be encrypted using crypto-js (a discontinued library). While more secure than basic encryption, this is not recommended for sensitive information. Please use a modern browser (Chrome, Firefox, Safari, Edge) for proper security.
+                </p>
+              </div>
+              
+              <label class="block text-sm font-medium text-orange-200">
+                Password:
+              </label>
+              <input
+                v-model="importPassword"
+                type="password"
+                placeholder="Enter password for encrypted data"
+                class="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+              />
+            </div>
+            
+            <div class="flex gap-2">
+              <button 
+                @click="importStorageData"
+                :disabled="!importData.trim()"
+                class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4" />
+                Import Data
+              </button>
+              <button 
+                @click="clearImportForm"
+                class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 transition-all text-sm"
+              >
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+                Clear
+              </button>
             </div>
           </div>
         </div>
@@ -132,6 +280,22 @@ definePageMeta({
 
 // Storage data for debugging
 const storageData = ref<Record<string, any>>({})
+
+// Import/Export reactive variables
+const importFormat = ref<'json' | 'base64' | 'encrypted'>('json')
+const importData = ref('')
+const importPassword = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
+
+// Check if secure encryption is available
+const isSecureEncryptionAvailable = ref(false)
+
+// Check encryption support
+const checkEncryptionSupport = () => {
+  if (process.client) {
+    isSecureEncryptionAvailable.value = !!(crypto && crypto.subtle)
+  }
+}
 
 // Load localStorage data
 const loadStorageData = () => {
@@ -162,7 +326,180 @@ const clearAllStorage = () => {
   }
 }
 
-// Export storage data
+// Import crypto-js for fallback encryption
+import CryptoJS from 'crypto-js'
+
+// Crypto-js based encryption as fallback (DEPRECATED LIBRARY - use with caution!)
+const cryptoJsEncrypt = (data: string, password: string): string => {
+  console.warn('⚠️ SECURITY WARNING: Using crypto-js fallback encryption!')
+  console.warn('📚 crypto-js is a discontinued library - please use a modern browser for proper security!')
+  console.warn('🔒 While more secure than XOR, this is still not recommended for sensitive data')
+  console.warn('📱 Consider using Chrome, Firefox, Safari, or Edge for secure Web Crypto API support')
+  
+  const encrypted = CryptoJS.AES.encrypt(data, password).toString()
+  return encrypted
+}
+
+const cryptoJsDecrypt = (encryptedData: string, password: string): string => {
+  console.warn('⚠️ SECURITY WARNING: Using crypto-js fallback decryption!')
+  console.warn('📚 crypto-js is a discontinued library - please use a modern browser for proper security!')
+  console.warn('🔓 While more secure than XOR, this is still not recommended for sensitive data')
+  
+  try {
+    const decrypted = CryptoJS.AES.decrypt(encryptedData, password)
+    const decryptedString = decrypted.toString(CryptoJS.enc.Utf8)
+    
+    // Check if decryption actually worked (empty string means wrong password)
+    if (!decryptedString) {
+      throw new Error('Wrong password')
+    }
+    
+    return decryptedString
+  } catch (error) {
+    throw new Error('Wrong password')
+  }
+}
+
+// Encryption/decryption utilities with fallback
+const encryptData = async (data: string, password: string): Promise<string> => {
+  try {
+    // Try Web Crypto API first
+    if (crypto.subtle) {
+      console.log('🔐 Using Web Crypto API (AES-GCM) for encryption')
+      const encoder = new TextEncoder()
+      const dataBuffer = encoder.encode(data)
+      
+      // Create a simple key from password (fixed length)
+      const passwordBuffer = encoder.encode(password.padEnd(32, '0').substring(0, 32))
+      
+      // Import the key directly
+      const key = await crypto.subtle.importKey(
+        'raw',
+        passwordBuffer,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+      )
+      
+      // Generate IV
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+      
+      // Encrypt the data
+      const encryptedData = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        dataBuffer
+      )
+      
+      // Combine IV and encrypted data
+      const combined = new Uint8Array(iv.length + encryptedData.byteLength)
+      combined.set(iv)
+      combined.set(new Uint8Array(encryptedData), iv.length)
+      
+      return 'webcrypto:' + btoa(String.fromCharCode(...combined))
+    } else {
+      console.warn('⚠️ Web Crypto API not available, falling back to crypto-js encryption')
+      alert('🔒 SECURITY WARNING: Your browser does not support secure encryption!\n\n' +
+            'The data will be encrypted using crypto-js (a discontinued library).\n' +
+            'While more secure than basic encryption, this is not recommended for sensitive data.\n' +
+            'Please use a modern browser (Chrome, Firefox, Safari, Edge) for proper security.\n\n' +
+            'Continue only if you understand the security limitations.')
+      // Fallback to crypto-js encryption
+      return 'cryptojs:' + cryptoJsEncrypt(data, password)
+    }
+  } catch (error) {
+    console.error('❌ Web Crypto API failed:', error)
+    console.warn('⚠️ Falling back to crypto-js encryption')
+    alert('🔒 SECURITY WARNING: Secure encryption failed!\n\n' +
+          'The data will be encrypted using crypto-js (a discontinued library).\n' +
+          'While more secure than basic encryption, this is not recommended for sensitive data.\n' +
+          'Please use a modern browser (Chrome, Firefox, Safari, Edge) for proper security.\n\n' +
+          'Continue only if you understand the security limitations.')
+    // Fallback to crypto-js encryption
+    return 'cryptojs:' + cryptoJsEncrypt(data, password)
+  }
+}
+
+const decryptData = async (encryptedData: string, password: string): Promise<string> => {
+  try {
+    if (encryptedData.startsWith('webcrypto:')) {
+      // Web Crypto API decryption
+      const data = encryptedData.substring(10)
+      const encoder = new TextEncoder()
+      
+      // Decode the base64 data
+      const combined = new Uint8Array(atob(data).split('').map(c => c.charCodeAt(0)))
+      const iv = combined.slice(0, 12)
+      const encryptedBytes = combined.slice(12)
+      
+      // Create the same key
+      const passwordBuffer = encoder.encode(password.padEnd(32, '0').substring(0, 32))
+      
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        'raw',
+        passwordBuffer,
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+      )
+      
+      // Decrypt the data
+      try {
+        const decryptedData = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          encryptedBytes
+        )
+        
+        return new TextDecoder().decode(decryptedData)
+      } catch (cryptoError) {
+        throw new Error('Wrong password')
+      }
+    } else if (encryptedData.startsWith('cryptojs:')) {
+      // Crypto-js decryption
+      const data = encryptedData.substring(9)
+      return cryptoJsDecrypt(data, password)
+    } else if (encryptedData.startsWith('simple:')) {
+      // Legacy simple XOR decryption (if any old data exists)
+      const data = encryptedData.substring(7)
+      console.warn('⚠️ SECURITY WARNING: Decrypting legacy simple XOR data - not secure!')
+      console.warn('🔓 Please re-export your data for better security')
+      // Simple fallback for legacy data
+      const passwordBytes = new TextEncoder().encode(password)
+      const encryptedBytes = new Uint8Array(atob(data).split('').map(c => c.charCodeAt(0)))
+      const decrypted = new Uint8Array(encryptedBytes.length)
+      
+      for (let i = 0; i < encryptedBytes.length; i++) {
+        decrypted[i] = encryptedBytes[i] ^ passwordBytes[i % passwordBytes.length]
+      }
+      
+      return new TextDecoder().decode(decrypted)
+    } else if (encryptedData.startsWith('rc4:')) {
+      // Legacy RC4 support (if any old data exists)
+      const data = encryptedData.substring(4)
+      console.warn('⚠️ SECURITY WARNING: Decrypting legacy RC4 data - not secure!')
+      console.warn('🔓 Please re-export your data for better security')
+      return cryptoJsDecrypt(data, password) // Use crypto-js for better compatibility
+    } else {
+      // Try to detect format and decrypt with crypto-js
+      try {
+        console.warn('⚠️ SECURITY WARNING: Attempting to decrypt unknown format with crypto-js!')
+        return cryptoJsDecrypt(encryptedData, password)
+      } catch {
+        throw new Error('Invalid encrypted data format')
+      }
+    }
+  } catch (error) {
+    // Check if it's a wrong password error
+    if (error instanceof Error && error.message === 'Wrong password') {
+      throw new Error('Wrong password')
+    }
+    throw new Error(`Decryption failed: ${error}`)
+  }
+}
+
+// Export storage data as JSON
 const exportStorageData = () => {
   if (process.client) {
     const dataStr = JSON.stringify(storageData.value, null, 2)
@@ -170,9 +507,156 @@ const exportStorageData = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `karl-storage-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `karl-backup-${new Date().toISOString().split('T')[0]}.karl`
     a.click()
     URL.revokeObjectURL(url)
+  }
+}
+
+// Export storage data as Base64
+const exportAsBase64 = () => {
+  if (process.client) {
+    const dataStr = JSON.stringify(storageData.value)
+    const base64Data = btoa(dataStr)
+    const blob = new Blob([base64Data], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `karl-backup-${new Date().toISOString().split('T')[0]}.karl`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+}
+
+// Export storage data as encrypted
+const exportEncrypted = async () => {
+  if (process.client) {
+    const password = prompt('Enter password for encryption:')
+    if (!password) return
+    
+    try {
+      const dataStr = JSON.stringify(storageData.value)
+      const encryptedData = await encryptData(dataStr, password)
+      const blob = new Blob([encryptedData], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `karl-backup-${new Date().toISOString().split('T')[0]}.karl.encrypted`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      alert('Encryption failed: ' + error)
+    }
+  }
+}
+
+// Import storage data
+const importStorageData = async () => {
+  if (!process.client || !importData.value.trim()) return
+  
+  try {
+    let parsedData: Record<string, any>
+    
+    if (importFormat.value === 'json') {
+      parsedData = JSON.parse(importData.value)
+    } else if (importFormat.value === 'base64') {
+      const decodedData = atob(importData.value)
+      parsedData = JSON.parse(decodedData)
+    } else if (importFormat.value === 'encrypted') {
+      if (!importPassword.value) {
+        alert('Password is required for encrypted data')
+        return
+      }
+      const decryptedData = await decryptData(importData.value, importPassword.value)
+      parsedData = JSON.parse(decryptedData)
+    }
+    
+    const confirmation = confirm(
+      `Are you sure you want to import this data? This will overwrite your current localStorage data.\n\nKeys to import: ${Object.keys(parsedData).join(', ')}`
+    )
+    
+    if (confirmation) {
+      for (const [key, value] of Object.entries(parsedData)) {
+        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
+      }
+      loadStorageData()
+      clearImportForm()
+      alert('Data imported successfully!')
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Wrong password') {
+      alert('❌ Wrong password! Please check your password and try again.')
+    } else {
+      alert('Import failed: ' + error)
+    }
+  }
+}
+
+// Handle file upload
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+  
+  try {
+    const content = await file.text()
+    importData.value = content
+    
+    // Auto-detect format based on file extension
+    const fileName = file.name.toLowerCase()
+    
+    if (fileName.endsWith('.karl.encrypted')) {
+      importFormat.value = 'encrypted'
+    } else if (fileName.endsWith('.karl')) {
+      // For .karl files, try to detect content type
+      try {
+        JSON.parse(content)
+        importFormat.value = 'json'
+      } catch {
+        // Check if it looks like base64
+        if (/^[A-Za-z0-9+/]*={0,2}$/.test(content.trim())) {
+          importFormat.value = 'base64'
+        } else {
+          importFormat.value = 'encrypted'
+        }
+      }
+    } else {
+      // Legacy extension handling
+      const extension = file.name.split('.').pop()?.toLowerCase()
+      if (extension === 'json') {
+        importFormat.value = 'json'
+      } else if (extension === 'base64') {
+        importFormat.value = 'base64'
+      } else if (extension === 'encrypted') {
+        importFormat.value = 'encrypted'
+      } else if (extension === 'txt' || !extension) {
+        // Try to auto-detect format based on content
+        try {
+          JSON.parse(content)
+          importFormat.value = 'json'
+        } catch {
+          // Check if it looks like base64
+          if (/^[A-Za-z0-9+/]*={0,2}$/.test(content.trim())) {
+            importFormat.value = 'base64'
+          } else {
+            importFormat.value = 'encrypted'
+          }
+        }
+      }
+    }
+  } catch (error) {
+    alert('Error reading file: ' + error)
+  }
+}
+
+// Clear import form
+const clearImportForm = () => {
+  importData.value = ''
+  importPassword.value = ''
+  importFormat.value = 'json'
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
@@ -267,5 +751,6 @@ const generateSpecialCharsPdf = async () => {
 // Initialize on mount
 onMounted(() => {
   loadStorageData()
+  checkEncryptionSupport()
 })
 </script>
