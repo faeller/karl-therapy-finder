@@ -205,14 +205,6 @@
                 <p class="text-blue-100/90 leading-relaxed">
                   Kontaktiere die <strong>Terminservicestelle</strong> über Telefon oder online, um ein psychotherapeutisches Erstgespräch zu vereinbaren. Dieses Gespräch dient der ersten Einschätzung deiner Situation.
                 </p>
-                
-                <!-- Quick Action Note -->
-                <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
-                  <div class="flex items-center gap-2">
-                    <UIcon name="i-heroicons-forward" class="w-4 h-4 text-green-300" />
-                    <p class="text-green-200 text-sm font-medium">Du kannst bereits zum nächsten Schritt, sobald du einen Termin vereinbart hast</p>
-                  </div>
-                </div>
 
                 <!-- PLZ Display and Edit -->
                 <div class="bg-white/5 p-4 lg:p-5 rounded-lg border border-white/10">
@@ -446,6 +438,14 @@
                       <span>Du erhältst eine "Individuelle Patienteninformation" mit Dringlichkeitscode</span>
                     </li>
                   </ul>
+                </div>
+              </div>
+                              
+              <!-- Quick Action Note -->
+              <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-forward" class="w-4 h-4 text-green-300" />
+                  <p class="text-green-200 text-sm font-medium">Du kannst bereits zum nächsten Schritt, sobald du einen Termin vereinbart hast</p>
                 </div>
               </div>
 
@@ -866,38 +866,38 @@
           </div>
 
           <!-- Step 3: Probatorik -->
-          <div v-if="currentStep === 3" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Terminservicestelle: Probatorik</h3>
+          <div v-if="currentStep === 3" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-500/30">
+                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 3: Probatorik vereinbaren</h3>
+                <p class="text-blue-200/80 text-sm">Vertiefende Sitzung zur Therapiebedarfsklärung</p>
+              </div>
             </div>
             
-            <div class="space-y-3 text-sm">
+            <div class="space-y-4 text-sm lg:text-base">
               <p class="text-blue-100/90">
-                Nach dem Erstgespräch erhältst Du über die Terminservicestelle zudem eine probatorische Sitzung. Hierzu brauchst Du einen Dringlichkeitscode, den Du auf der Individuellen Patienteninformation aus dem Erstgespräch findest.
+                Nach dem Erstgespräch kannst du über die Terminservicestelle eine <strong>probatorische Sitzung</strong> vereinbaren. Diese hilft, den Therapiebedarf zu klären.
               </p>
               
-              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-                <h4 class="text-amber-200 font-medium">📋 Dringlichkeitscode benötigt</h4>
-                <p class="text-amber-100/80 text-xs mt-1">
-                  Den Code findest Du auf der "Individuellen Patienteninformation" aus dem Erstgespräch
-                </p>
-              </div>
-
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zur Probatorik:</h4>
-                <p class="text-blue-100/80 text-xs">
-                  Den Dringlichkeitscode erhältst Du im vorherigen Erstgespräch nur, wenn eine Dringlichkeit vom Therapeuten oder der Therapeutin festgestellt wird (= "zeitnah erforderlich" ist angekreuzt).
+              <div class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium mb-2">📋 Du benötigst den Dringlichkeitscode</h4>
+                <p class="text-amber-100/90 text-sm">
+                  Den findest du auf der "Individuellen Patienteninformation" aus dem Erstgespräch. <strong>Kein Code erhalten?</strong> Dann kannst du diesen Schritt überspringen.
                 </p>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
-                size="sm"
+                size="md"
                 variant="ghost"
                 leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
               >
                 Zurück
               </UButton>
@@ -905,8 +905,9 @@
               <UButton 
                 @click="completeStep(3)" 
                 :color="stepProgress[3] ? 'green' : 'blue'" 
-                size="sm"
+                size="md"
                 variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
               >
                 {{ stepProgress[3] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
               </UButton>
@@ -914,40 +915,55 @@
               <UButton 
                 @click="nextStep" 
                 color="primary"
-                size="sm"
+                size="md"
                 trailing-icon="i-heroicons-chevron-right"
+                class="w-full sm:w-auto order-3"
               >
-                Weiter
+                Weiter zu Schritt 4
               </UButton>
             </div>
           </div>
 
           <!-- Step 4: Hausarzt -->
-          <div v-if="currentStep === 4" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Hausarzt Bescheinigung</h3>
-            </div>
-            <div class="space-y-3 text-sm">
-              <p class="text-blue-100/90">
-                Vereinbare bitte einen Termin bei Deinem Hausarzt. Du brauchst eine Bescheinigung über die Notwendigkeit einer Psychotherapie.
-              </p>
-              
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Hausarzt:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Sprich offen mit Deinem Hausarzt, dass Du diese Bescheinigung für ein Kostenerstattungsverfahren benötigst.</li>
-                  <li>• Gib Deinem Hausarzt auch zu erkennen, dass Du Deine Psychotherapie für nötig hältst, dass sie Dir sehr helfen würde und dass Du Dich bereits sehr um einen Therapieplatz bemüht hast und damit keinen Erfolg hattest.</li>
-                </ul>
+          <div v-if="currentStep === 4" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/20 border border-green-500/30">
+                <UIcon name="i-heroicons-user" class="w-5 h-5 text-green-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 4: Hausarzt konsultieren</h3>
+                <p class="text-blue-200/80 text-sm">Bescheinigung über die Notwendigkeit einer Psychotherapie</p>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            
+            <div class="space-y-4 text-sm lg:text-base">
+              <p class="text-blue-100/90">
+                Vereinbare einen Termin bei deinem <strong>Hausarzt</strong> und bitte um eine Bescheinigung über die Notwendigkeit einer Psychotherapie.
+              </p>
+              
+              <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                <h4 class="text-blue-200 font-medium mb-2">📄 Attest oder formloses Schreiben</h4>
+                <p class="text-blue-100/90 text-sm">
+                  Wichtig ist, dass eine Psychotherapie als <strong>zeitnah empfohlen</strong> wird. Die genaue Form ist nebensächlich.
+                </p>
+              </div>
+
+              <div class="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                <h4 class="text-green-200 font-medium mb-2">💬 Was du sagen kannst</h4>
+                <p class="text-green-100/90 text-sm">
+                  "Ich brauche diese Bescheinigung für ein Kostenerstattungsverfahren. Ich halte eine Psychotherapie für notwendig, habe aber trotz intensiver Suche keinen Therapieplatz gefunden."
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
-                size="sm"
+                size="md"
                 variant="ghost"
                 leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
               >
                 Zurück
               </UButton>
@@ -955,8 +971,9 @@
               <UButton 
                 @click="completeStep(4)" 
                 :color="stepProgress[4] ? 'green' : 'blue'" 
-                size="sm"
+                size="md"
                 variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
               >
                 {{ stepProgress[4] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
               </UButton>
@@ -964,48 +981,64 @@
               <UButton 
                 @click="nextStep" 
                 color="primary"
-                size="sm"
+                size="md"
                 trailing-icon="i-heroicons-chevron-right"
+                class="w-full sm:w-auto order-3"
               >
-                Weiter
+                Weiter zu Schritt 5
               </UButton>
             </div>
           </div>
 
           <!-- Step 5: Kostenerstattung -->
-          <div v-if="currentStep === 5" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-300" />
-              <h3 class="text-lg font-semibold text-white">Kostenerstattungsantrag</h3>
+          <div v-if="currentStep === 5" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-500/30">
+                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-purple-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 5: Kostenerstattungsantrag einreichen</h3>
+                <p class="text-blue-200/80 text-sm">Antrag auf Übernahme der Kosten für private Psychotherapie</p>
+              </div>
             </div>
-            <div class="space-y-3 text-sm">
+            
+            <div class="space-y-4 text-sm lg:text-base">
               <p class="text-blue-100/90">
-                Wenn Du bis hierhin noch keinen Therapiebeginn in absehbarer Zeit in Sicht hast, kannst Du einen Antrag auf Kostenerstattung an Deine Krankenkasse senden. In diesem solltest Du schreiben, dass Deine bisherigen Bemühungen nicht zu einem Therapieplatz geführt haben, diese Therapie aber nachweisbar dringend und zeitnah erforderlich ist.
+                Wenn du trotz allem noch keinen Therapieplatz hast, kannst du einen <strong>Kostenerstattungsantrag</strong> bei deiner Krankenkasse stellen.
               </p>
               
-              <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-                <h4 class="text-amber-200 font-medium">📋 Rechtsnorm beachten</h4>
-                <p class="text-amber-100/80 text-xs mt-1">
-                  Du solltest Dich dabei auf die Rechtsnorm zur Kostenerstattung § 13 Abs. 3 SGB V beziehen und im Schreiben um die Kostenübernahme einer privaten Psychotherapie bitten.
+              <div class="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                <h4 class="text-red-200 font-medium mb-2">📎 Diese Unterlagen brauchst du (als Kopie)</h4>
+                <p class="text-red-100/90 text-sm">
+                  • Diagnosebogen aus dem Erstgespräch<br>
+                  • Hausarzt-Bescheinigung<br>  
+                  • Kontaktprotokoll deiner Suche
                 </p>
               </div>
 
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Kostenerstattungsantrag:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Ein solcher Antrag kann komplex sein und wird häufig abgelehnt.</li>
-                  <li>• Die Krankenkassen entscheiden in aller Regel in zwei bis fünf Wochen über Deinen Antrag auf Kostenerstattung.</li>
-                  <li>• Du findest auch im Internet einige Musterschreiben, die Du eigenständig anpassen und individualisieren kannst.</li>
-                </ul>
+              <div class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium mb-2">⚖️ Beziehe dich auf § 13 Abs. 3 SGB V</h4>
+                <p class="text-amber-100/90 text-sm">
+                  Bitte um Kostenübernahme einer privaten Psychotherapie wegen unzureichender Versorgungslage.
+                </p>
+              </div>
+
+              <div class="bg-slate-500/10 p-4 rounded-lg border border-slate-500/20">
+                <h4 class="text-slate-200 font-medium mb-2">⏱️ Gut zu wissen</h4>
+                <p class="text-slate-100/90 text-sm">
+                  Entscheidung meist in 2-5 Wochen. Anträge werden oft erst abgelehnt, aber Widerspruch lohnt sich.
+                </p>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
-                size="sm"
+                size="md"
                 variant="ghost"
                 leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
               >
                 Zurück
               </UButton>
@@ -1013,8 +1046,9 @@
               <UButton 
                 @click="completeStep(5)" 
                 :color="stepProgress[5] ? 'green' : 'blue'" 
-                size="sm"
+                size="md"
                 variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
               >
                 {{ stepProgress[5] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
               </UButton>
@@ -1022,41 +1056,55 @@
               <UButton 
                 @click="nextStep" 
                 color="primary"
-                size="sm"
+                size="md"
                 trailing-icon="i-heroicons-chevron-right"
+                class="w-full sm:w-auto order-3"
               >
-                Weiter
+                Weiter zu Schritt 6
               </UButton>
             </div>
           </div>
 
           <!-- Step 6: Widerspruch -->
-          <div v-if="currentStep === 6" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300" />
-              <h3 class="text-lg font-semibold text-white">Widerspruch einlegen</h3>
-            </div>
-            <div class="space-y-3 text-sm">
-              <p class="text-blue-100/90">
-                Sollte Deine Krankenkasse den Antrag auf Kostenerstattung ablehnen, empfehlen wir Dir, einen Widerspruch zu schreiben. Erfahrungsgemäß hat ein solcher Widerspruch oftmals Erfolg, denn in vielen Fällen lehnen die Krankenkassen derlei Anträge zu Unrecht ab.
-              </p>
-              
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig zum Widerspruch:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Der Widerspruch sollte sehr zielgenau und treffend formuliert sein.</li>
-                  <li>• Aus rechtlichen Gründen sollte das Schreiben individuell angepasst werden – so, wie es für Dich am besten passt.</li>
-                  <li>• Alternativ findest Du auch zum Widerspruchsschreiben einige Muster im Internet, die Du verwenden könntest.</li>
-                </ul>
+          <div v-if="currentStep === 6" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 border border-amber-500/30">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 6: Widerspruch einreichen</h3>
+                <p class="text-blue-200/80 text-sm">Falls der Kostenerstattungsantrag abgelehnt wurde</p>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            
+            <div class="space-y-4 text-sm lg:text-base">
+              <p class="text-blue-100/90">
+                Falls deine Krankenkasse den Antrag ablehnt, schreibe einen <strong>Widerspruch</strong>. Krankenkassen lehnen oft zu Unrecht ab - ein Widerspruch hat gute Erfolgschancen.
+              </p>
+              
+              <div class="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                <h4 class="text-green-200 font-medium mb-2">✅ Lass dich nicht entmutigen</h4>
+                <p class="text-green-100/90 text-sm">
+                  Ein gut formulierter Widerspruch führt häufig zur nachträglichen Genehmigung. Viele Ablehnungen sind nicht rechtmäßig.
+                </p>
+              </div>
+
+              <div class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+                <h4 class="text-amber-200 font-medium mb-2">💡 So machst du es richtig</h4>
+                <p class="text-amber-100/90 text-sm">
+                  Gehe konkret auf die Ablehnungsgründe ein und passe den Widerspruch an deine Situation an. Nutze gerne Vorlagen als Orientierung, aber individualisiere sie.
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
-                size="sm"
+                size="md"
                 variant="ghost"
                 leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
               >
                 Zurück
               </UButton>
@@ -1064,8 +1112,9 @@
               <UButton 
                 @click="completeStep(6)" 
                 :color="stepProgress[6] ? 'green' : 'blue'" 
-                size="sm"
+                size="md"
                 variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
               >
                 {{ stepProgress[6] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
               </UButton>
@@ -1073,49 +1122,62 @@
               <UButton 
                 @click="nextStep" 
                 color="primary"
-                size="sm"
+                size="md"
                 trailing-icon="i-heroicons-chevron-right"
+                class="w-full sm:w-auto order-3"
               >
-                Weiter
+                Weiter zu Schritt 7
               </UButton>
             </div>
           </div>
 
           <!-- Step 7: Private Therapeuten -->
-          <div v-if="currentStep === 7" class="space-y-4 p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-green-300" />
-              <h3 class="text-lg font-semibold text-white">Private Therapeuten</h3>
+          <div v-if="currentStep === 7" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/20 border border-green-500/30">
+                <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-green-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 7: Privaten Psychotherapeuten finden</h3>
+                <p class="text-blue-200/80 text-sm">Nach erfolgreicher Kostenübernahme-Zusage</p>
+              </div>
             </div>
-            <div class="space-y-3 text-sm">
+            
+            <div class="space-y-4 text-sm lg:text-base">
               <p class="text-blue-100/90">
-                Nachdem die Krankenkasse Deinem Antrag zugestimmt hat, kannst Du Dir einen privaten Psychotherapeuten oder eine private Psychotherapeutin suchen und einen individuellen Behandlungsbeginn vereinbaren. Solche Psychotherapeuten sind oft viel schneller verfügbar.
+                Nach der Zusage deiner Krankenkasse kannst du dir einen <strong>privaten Psychotherapeuten</strong> suchen. Private Therapeuten sind oft schneller verfügbar.
               </p>
               
-              <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
-                <h4 class="text-blue-200 font-medium">🔍 Private Therapeuten finden</h4>
-                <p class="text-blue-100/80 text-xs mt-1">
-                  Im Internet über Google oder auf therapie.de findest Du Psychotherapeuten in Deinem Umfeld. Du kannst hier auch die Suche einschränken, indem Du in der Navigation die Wartezeit auf "verfügbar" oder "bis drei Monate" umstellst.
+              <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                <h4 class="text-blue-200 font-medium mb-2">🔍 Auf therapie.de suchen</h4>
+                <p class="text-blue-100/90 text-sm">
+                  Gib deine PLZ ein und markiere "freie Therapieplätze" oder "Wartezeit bis 3 Monate" in den Filtern.
                 </p>
               </div>
 
-              <div class="space-y-2">
-                <h4 class="text-blue-200 font-medium">⚠️ Wichtig hierzu:</h4>
-                <ul class="text-blue-100/80 text-xs space-y-1 ml-4">
-                  <li>• Teile Deinem Wunschtherapeuten beim Erstkontakt mit, dass Du das Kostenerstattungsverfahren nutzen möchtest und die Zusage zu den ersten Sitzungen von Deiner Krankenkasse erhalten hast.</li>
-                  <li>• Dein Therapeut wird Dir bei der Beantragung weiterer Sitzungen oder bei weiteren Fragen gerne helfen.</li>
-                  <li>• Achtung vor Heilpraktikern: Diese sind sehr häufig zu finden. Dies sind keine Psychotherapeuten und sie können nicht mit Deiner Krankenkasse abrechnen!</li>
-                  <li>• Beachte bitte auch, dass je nach örtlicher Verfügbarkeit auch bei privaten Psychotherapeuten die Kapazitäten ausgelastet sein können.</li>
-                </ul>
+              <div class="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                <h4 class="text-red-200 font-medium mb-2">⚠️ Achtung vor Heilpraktikern</h4>
+                <p class="text-red-100/90 text-sm">
+                  Diese sind <strong>keine Psychotherapeuten</strong> und können nicht mit der Krankenkasse abrechnen. Achte auf approbierte Psychotherapeuten.
+                </p>
+              </div>
+
+              <div class="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                <h4 class="text-green-200 font-medium mb-2">💬 Beim Erstkontakt sagen</h4>
+                <p class="text-green-100/90 text-sm">
+                  "Ich habe eine Zusage meiner Krankenkasse für das Kostenerstattungsverfahren. Unterstützen Sie das?" Warte mit dem Start bis zur finalen Bewilligung.
+                </p>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
-                size="sm"
+                size="md"
                 variant="ghost"
                 leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
               >
                 Zurück
               </UButton>
@@ -1123,13 +1185,118 @@
               <UButton 
                 @click="completeStep(7)" 
                 :color="stepProgress[7] ? 'green' : 'blue'" 
-                size="sm"
+                size="md"
                 variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
               >
                 {{ stepProgress[7] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
               </UButton>
               
-              <div class="flex items-center gap-2 text-green-400 text-sm font-medium">
+              <UButton 
+                @click="nextStep" 
+                color="primary"
+                size="md"
+                trailing-icon="i-heroicons-chevron-right"
+                class="w-full sm:w-auto order-3"
+              >
+                Weiter zu Schritt 8
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Step 8: Abschluss -->
+          <div v-if="currentStep === 8" class="space-y-6 p-6 lg:p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30">
+                <UIcon name="i-heroicons-trophy" class="w-5 h-5 text-emerald-300" />
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-white">Schritt 8: Geschafft!</h3>
+                <p class="text-blue-200/80 text-sm">Du hast den Weg zum Therapieplatz erfolgreich gemeistert</p>
+              </div>
+            </div>
+            
+            <div class="space-y-4 text-sm lg:text-base">
+              <!-- Congratulations -->
+              <div class="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 p-6 lg:p-8 rounded-xl border border-emerald-500/20">
+                <div class="text-center space-y-4">
+                  <div class="w-16 h-16 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <UIcon name="i-heroicons-check-circle" class="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h4 class="text-2xl font-bold text-white">Herzlichen Glückwunsch! 🎉</h4>
+                  <p class="text-emerald-200 leading-relaxed">
+                    Du hast alle Schritte gemeistert! Die Therapiesuche ist oft ein Marathon, aber du hast durchgehalten. Das zeigt echte Stärke und du kannst stolz auf dich sein.
+                  </p>
+                </div>
+              </div>
+
+              <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                <h4 class="text-blue-200 font-medium mb-2">➡️ Wie es weitergeht</h4>
+                <p class="text-blue-100/90 text-sm">
+                  Weitere Anträge machst du gemeinsam mit deinem Therapeuten. Er wird dich bei allem unterstützen.
+                </p>
+              </div>
+
+              <div class="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+                <h4 class="text-purple-200 font-medium mb-2">💜 Du bist auf dem richtigen Weg</h4>
+                <p class="text-purple-100/90 text-sm">
+                  Der schwierigste Teil liegt hinter dir. Jetzt kannst du dich voll auf deine Therapie konzentrieren. Wir wünschen dir alles Gute!
+                </p>
+              </div>
+
+              <div class="bg-slate-500/10 p-4 rounded-lg border border-slate-500/20">
+                <h4 class="text-slate-200 font-medium mb-2">🤝 KARL hat geholfen?</h4>
+                <p class="text-slate-100/90 text-sm mb-3">
+                  Freut uns! Über Feedback oder Unterstützung würden wir uns riesig freuen.
+                </p>
+                <div class="flex gap-2">
+                  <UButton 
+                    to="https://github.com/faeller/karl-therapy-finder"
+                    target="_blank"
+                    size="sm"
+                    color="gray"
+                    variant="outline"
+                    leading-icon="i-simple-icons-github"
+                  >
+                    GitHub
+                  </UButton>
+                  <UButton 
+                    to="https://www.patreon.com/karlhelps"
+                    target="_blank"
+                    size="sm"
+                    color="orange"
+                    variant="outline"
+                    leading-icon="i-simple-icons-patreon"
+                  >
+                    Unterstützen
+                  </UButton>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-white/10">
+              <UButton 
+                @click="prevStep" 
+                color="gray"
+                size="md"
+                variant="ghost"
+                leading-icon="i-heroicons-chevron-left"
+                class="w-full sm:w-auto order-2 sm:order-1"
+              >
+                Zurück
+              </UButton>
+              
+              <UButton 
+                @click="completeStep(8)" 
+                :color="stepProgress[8] ? 'green' : 'blue'" 
+                size="md"
+                variant="outline"
+                class="w-full sm:w-auto order-1 sm:order-2"
+              >
+                {{ stepProgress[8] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+              </UButton>
+              
+              <div class="flex items-center gap-2 text-emerald-400 text-sm font-medium order-3">
                 <UIcon name="i-heroicons-check-circle" class="w-5 h-5" />
                 Guide abgeschlossen!
               </div>
@@ -1407,6 +1574,13 @@ const stepperItems = ref<StepperItem[]>([
     description: 'Schneller verfügbar',
     icon: 'i-heroicons-user-group',
     value: 6
+  },
+  {
+    slot: 'abschluss',
+    title: 'Abschluss',
+    description: 'Geschafft! 🎉',
+    icon: 'i-heroicons-trophy',
+    value: 7
   }
 ])
 
@@ -1753,7 +1927,7 @@ const completeStep = (step: number) => {
   
   // Show toast
   const toast = useToast()
-  const stepNames = ['Erstgespräch', 'Kontaktprotokoll', 'Probatorik', 'Hausarzt', 'Kostenerstattung', 'Widerspruch', 'Private Therapeuten']
+  const stepNames = ['Erstgespräch', 'Kontaktprotokoll', 'Probatorik', 'Hausarzt', 'Kostenerstattung', 'Widerspruch', 'Private Therapeuten', 'Abschluss']
   
   if (stepProgress.value[step]) {
     toast.add({
