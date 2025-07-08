@@ -76,11 +76,13 @@ billingMap['9'] = '22';   // Selbstzahler -> self-payers (same as private in TK)
 
 // Gender mapping for TK API
 const genderMap: Record<string, string> = {};
-genderMap['weiblich'] = '2';     // Female
-genderMap['männlich'] = '1';     // Male
+genderMap['weiblich'] = '2';     // Female (German)
+genderMap['männlich'] = '1';     // Male (German)  
 genderMap['w'] = '2';            // Female (short form)
 genderMap['m'] = '1';            // Male (short form)
-// No mapping for 'egal' - omit Sl parameter for all genders
+genderMap['2'] = '2';            // Female (frontend sends this)
+genderMap['1'] = '1';            // Male (frontend sends this)
+// No mapping for 'egal' or null - omit Sl parameter for all genders
 
 
 // --- HELPER FUNCTIONS FOR CLEANING DATA ---
