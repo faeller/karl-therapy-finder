@@ -144,6 +144,62 @@ const completeOnboarding = () => {
   console.log('Onboarding completed:', formData.value)
   navigateTo('/app')
 }
+
+// Location detection
+const isGettingLocation = ref(false)
+const locationError = ref('')
+
+const getLocationAndPLZ = async () => {
+  if (!navigator.geolocation) {
+    locationError.value = 'Geolocation wird von diesem Browser nicht unterstützt'
+    return
+  }
+
+  isGettingLocation.value = true
+  locationError.value = ''
+
+  try {
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      })
+    })
+
+    const { latitude, longitude } = position.coords
+
+    // Use reverse geocoding to get PLZ
+    const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=de`)
+    
+    if (!response.ok) {
+      throw new Error('Geocoding-Service nicht verfügbar')
+    }
+
+    const data = await response.json()
+    
+    if (data.postcode && /^\d{5}$/.test(data.postcode)) {
+      onboardingStore.updateFormData({ location: data.postcode })
+      locationError.value = ''
+    } else {
+      throw new Error('Keine gültige deutsche PLZ gefunden')
+    }
+  } catch (error: any) {
+    console.error('Location error:', error)
+    
+    if (error.code === 1) {
+      locationError.value = 'Standort-Berechtigung verweigert'
+    } else if (error.code === 2) {
+      locationError.value = 'Standort nicht verfügbar'
+    } else if (error.code === 3) {
+      locationError.value = 'Standort-Anfrage dauerte zu lange'
+    } else {
+      locationError.value = error.message || 'Fehler beim Ermitteln des Standorts'
+    }
+  } finally {
+    isGettingLocation.value = false
+  }
+}
 </script>
 
 <template>
@@ -251,15 +307,44 @@ const completeOnboarding = () => {
         <div class="space-y-6 text-center">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold text-white">Wo suchst du? 📍</h2>
-            <p class="text-blue-100/80">Deine Postleitzahl eingeben</p>
+            <p class="text-blue-100/80">Deine Postleitzahl eingeben oder automatisch ermitteln</p>
           </div>
           
           <div class="space-y-4 max-w-sm mx-auto">
+            <!-- Location detection button -->
+            <button
+              @click="getLocationAndPLZ"
+              :disabled="isGettingLocation"
+              class="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed"
+            >
+              <UIcon 
+                :name="isGettingLocation ? 'i-heroicons-arrow-path' : 'i-heroicons-map-pin'" 
+                :class="['w-5 h-5', isGettingLocation && 'animate-spin']" 
+              />
+              {{ isGettingLocation ? 'Ermittle Standort...' : 'Standort automatisch ermitteln' }}
+            </button>
+            
+            <!-- Error message -->
+            <div v-if="locationError" class="text-red-300 text-sm bg-red-500/20 rounded-lg p-3 border border-red-500/30">
+              {{ locationError }}
+            </div>
+            
+            <!-- Divider -->
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-white/20"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="bg-transparent px-2 text-blue-200/60">oder</span>
+              </div>
+            </div>
+            
+            <!-- Manual input -->
             <UInput
               :model-value="formData.location"
               @update:model-value="(value) => onboardingStore.updateFormData({ location: value })"
               placeholder="z.B. 10115"
-              icon="i-heroicons-map-pin"
+              icon="i-heroicons-pencil"
               pattern="[0-9]{5}"
               maxlength="5"
               @keyup.enter="canProceed && nextStep()"
@@ -460,7 +545,7 @@ const completeOnboarding = () => {
         color="white"
         icon="i-heroicons-arrow-left"
       >
-        {{ currentStep === 0 ? 'Startseite' : 'Zurück' }}
+        {{ currentStep === 0 ? 'Nächste Schritte' : 'Zurück' }}
       </UButton>
       
       <UButton
