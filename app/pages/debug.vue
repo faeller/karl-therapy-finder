@@ -226,8 +226,12 @@ const generateMaxLengthPdf = async () => {
   const testData = Array.from({ length: 50 }, (_, i) => ({
     name: `Dr. Therapeut ${i + 1}`,
     address: `Praxis für Psychotherapie, Teststraße ${i + 1}, 12345 Berlin`,
-    date: new Date(2024, 11, i % 30 + 1).toLocaleDateString('de-DE'),
-    time: `${9 + (i % 8)}:${(i % 4) * 15 || '00'}`,
+    date: new Date(2024, 11, i % 30 + 1).toLocaleDateString('de-DE', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }),
+    time: `${(9 + (i % 8)).toString().padStart(2, '0')}:${((i % 4) * 15).toString().padStart(2, '0')}`,
     waitingTime: i % 3 === 0 ? 'Über 6 Monate' : i % 3 === 1 ? 'Aktuell keine Behandlungsplätze verfügbar' : 'Über 3 Monate'
   }))
   await previewPdf(testData)
