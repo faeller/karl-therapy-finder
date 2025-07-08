@@ -21,9 +21,9 @@
           <template v-if="!isPiniaLoading">
             {{ therapistData && therapistData.therapists.length > 0 
               ? `${therapistData.therapists.length} Therapeuten in ${therapistData.plz} gefunden`
-              : onboardingStore.formData.location 
+              : onboardingStore.formData.location && userPlz
                 ? 'Suche Therapeuten in deiner Nähe...'
-                : 'Bitte vervollständige dein Profil im Onboarding.'
+                : 'Bitte gib deine Postleitzahl an, um zu starten.'
             }}
           </template>
           <template v-else>
@@ -33,7 +33,7 @@
       </div>
 
       <!-- Tab Navigation -->
-      <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
+      <div v-if="!isPiniaLoading && onboardingStore.formData.location && userPlz" class="w-full">
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 mb-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button 
@@ -72,7 +72,7 @@
       </div>
 
       <!-- Filters (only show on search tab) -->
-      <div v-if="!isPiniaLoading && onboardingStore.formData.location && activeTab === 'search'" class="w-full">
+      <div v-if="!isPiniaLoading && onboardingStore.formData.location && userPlz && activeTab === 'search'" class="w-full">
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3">
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-blue-300" />
@@ -169,6 +169,22 @@
               >
                 <div class="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Disclaimers -->
+        <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+          <div class="flex items-start gap-2">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
+            <div class="space-y-1">
+              <p class="text-amber-200 text-xs font-medium">
+                Wichtige Hinweise zu den Suchergebnissen:
+              </p>
+              <p class="text-amber-100/90 text-xs">
+                • <strong>Keine Garantie für Richtigkeit der Daten</strong> - Bitte prüfe Kontaktdaten und Verfügbarkeit direkt beim Therapeuten<br>
+                • <strong>Achtung vor Heilpraktikern:</strong> Diese können nicht mit der Krankenkasse abrechnen. Achte auf approbierte Psychotherapeuten
+              </p>
             </div>
           </div>
         </div>
@@ -1019,6 +1035,26 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Profile completion UI when PLZ is missing -->
+    <div v-if="!isPiniaLoading && (!onboardingStore.formData.location || !userPlz)" class="text-center space-y-4 mt-8">
+      <div class="w-full max-w-md mx-auto">
+        <UIcon name="i-heroicons-map-pin" class="w-12 h-12 text-blue-300 mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-white mb-2">Postleitzahl erforderlich</h3>
+        <p class="text-blue-100/80 text-sm mb-4">
+          Bitte gib deine Postleitzahl an, um Therapeuten in deiner Nähe zu finden.
+        </p>
+        <UButton 
+          to="/onboarding" 
+          color="primary" 
+          size="lg"
+          icon="i-heroicons-arrow-right"
+          class="w-full"
+        >
+          Profil vervollständigen
+        </UButton>
       </div>
     </div>
   </PageCard>
