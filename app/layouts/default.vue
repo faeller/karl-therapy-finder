@@ -212,6 +212,8 @@ const switchLanguage = async (newLocale) => {
 
 // Mobile menu items (language switcher hidden)
 const mobileMenuItems = computed(() => {
+  const isOnTherapistsPage = route.path.startsWith('/therapists')
+  
   const baseItems = [{
     label: 'Landing',
     icon: 'i-heroicons-home',
@@ -227,11 +229,11 @@ const mobileMenuItems = computed(() => {
   }, {
     label: 'Therapeuten',
     icon: 'i-heroicons-user-group',
-    click: handleTherapistsNavClick
+    ...(isOnTherapistsPage ? { onClick: handleTherapistsNavClick } : { to: '/therapists' })
   }, {
     label: 'Kontaktprotokoll',
     icon: 'i-heroicons-document-text',
-    click: handleKontaktprotokollNavClick
+    ...(isOnTherapistsPage ? { onClick: handleKontaktprotokollNavClick } : { to: '/therapists/contact-protocol' })
   }]
 
   const githubItem = {
