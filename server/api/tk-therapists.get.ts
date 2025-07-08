@@ -126,36 +126,59 @@ function cleanOpeningStatus(status: string): string {
 function cleanPhoneNumber(phone: string): string {
   if (!phone) return '';
   
-  // Remove "Telefon:" and "Telefax:" prefixes
-  let cleaned = phone.replace(/Telefon:\s*/g, '').replace(/Telefax:\s*/g, '');
+  // Remove "Telefon:" and "Telefax:" prefixes and clean whitespace
+  let cleaned = phone.replace(/Telefon:\s*/g, '').replace(/Telefax:\s*/g, '').replace(/\s+/g, ' ').trim();
   
-  // Extract German phone number pattern like "0911 / 12345678"
-  const phonePattern = /(\d{4})\s*\/\s*(\d[\d\s]*\d)/;
-  let match = cleaned.match(phonePattern);
+  // Remove duplicate phone numbers - take only the first occurrence
+  if (cleaned.includes('030') && cleaned.split('030').length > 2) {
+    // For Berlin numbers, extract first complete number
+    const berlinMatch = cleaned.match(/030\s*\/?\s*[\d\s\/]+/);
+    if (berlinMatch) {
+      cleaned = berlinMatch[0];
+    }
+  }
   
+  // Pattern 1: "0XXX / XXXXXXX" or "0XXX/XXXXXXX"
+  let match = cleaned.match(/(\d{3,4})\s*\/\s*(\d[\d\s]+)/);
   if (match) {
-    // Format as "0911 / digits"
-    let digits = match[2].replace(/\s/g, '');
-    return `${match[1]} / ${digits}`;
+    let areaCode = match[1];
+    let number = match[2].replace(/\s/g, '');
+    return `${areaCode} / ${number}`;
   }
   
-  // Try pattern like "09 11 / 12345" and fix to "0911 / 12345"  
-  const splitPattern = /(\d{2})\s+(\d{2})\s*\/\s*(\d[\d\s]*\d)/;
-  match = cleaned.match(splitPattern);
-  
+  // Pattern 2: "03 0 / XXXXXXX" -> "030 / XXXXXXX"
+  match = cleaned.match(/(\d{2})\s+(\d{1})\s*\/\s*(\d[\d\s]+)/);
   if (match) {
-    let digits = match[3].replace(/\s/g, '');
-    return `${match[1]}${match[2]} / ${digits}`;
+    let areaCode = match[1] + match[2];
+    let number = match[3].replace(/\s/g, '');
+    return `${areaCode} / ${number}`;
   }
   
-  // Simple pattern for any phone-like number
-  const simplePattern = /(\d{3,})/;
-  const simpleMatch = cleaned.match(simplePattern);
-  if (simpleMatch) {
-    return simpleMatch[1];
+  // Pattern 3: "09 11 / XXXXXXX" -> "0911 / XXXXXXX"
+  match = cleaned.match(/(\d{2})\s+(\d{2})\s*\/\s*(\d[\d\s]+)/);
+  if (match) {
+    let areaCode = match[1] + match[2];
+    let number = match[3].replace(/\s/g, '');
+    return `${areaCode} / ${number}`;
   }
   
-  return '';
+  // Pattern 4: Just digits with spaces, try to format
+  match = cleaned.match(/(\d{3,4})\s+([\d\s]+)/);
+  if (match) {
+    let areaCode = match[1];
+    let number = match[2].replace(/\s/g, '');
+    if (number.length >= 6) {
+      return `${areaCode} / ${number}`;
+    }
+  }
+  
+  // Fallback: return first complete number sequence
+  const fallbackMatch = cleaned.match(/\d{6,}/);
+  if (fallbackMatch) {
+    return fallbackMatch[0];
+  }
+  
+  return cleaned.replace(/\s+/g, ' ').trim();
 }
 
 // --- HELPER FUNCTIONS FOR SPLITTING MULTIPLE THERAPISTS ---
