@@ -1,4 +1,5 @@
-import { load } from 'cheerio'
+// Unified Therapists API Adapter
+// Combines results from therapie.de and TK-Ärzte and provides health checks
 
 interface TherapistData {
   id: string
@@ -9,6 +10,7 @@ interface TherapistData {
   distance: number
   profileUrl: string
   image?: string
+  source?: 'therapie.de' | 'tk'
 }
 
 interface TherapistSearchResult {
@@ -16,23 +18,139 @@ interface TherapistSearchResult {
   totalResults: number
   radius: number
   therapists: TherapistData[]
+  sources: {
+    'therapie.de': { status: 'success' | 'error' | 'timeout'; results: number; error?: string }
+    'tk': { status: 'success' | 'error' | 'timeout'; results: number; error?: string }
+  }
 }
 
 // Simple in-memory cache with expiration
 const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
 const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
 
+async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+  )
+  
+  return Promise.race([promise, timeoutPromise])
+}
+
+async function callTherapieDeApi(query: Record<string, any>): Promise<{ status: 'success' | 'error' | 'timeout'; data?: any; error?: string; results: number }> {
+  try {
+    console.log('📞 Calling therapie.de API...')
+    const response = await fetchWithTimeout(
+      $fetch('/api/th-de-therapists', { query }),
+      15000
+    )
+    
+    const results = response?.therapists?.length || 0
+    console.log(`✅ therapie.de API success: ${results} results`)
+    return { status: 'success', data: response, results }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ therapie.de API failed:', errorMessage)
+    
+    if (errorMessage.includes('timeout')) {
+      return { status: 'timeout', error: errorMessage, results: 0 }
+    }
+    return { status: 'error', error: errorMessage, results: 0 }
+  }
+}
+
+async function callTkApi(query: Record<string, any>): Promise<{ status: 'success' | 'error' | 'timeout'; data?: any; error?: string; results: number }> {
+  try {
+    console.log('📞 Calling TK API...')
+    const tkQuery = { ...query, compatible: 'true' }
+    const response = await fetchWithTimeout(
+      $fetch('/api/tk-therapists', { query: tkQuery }),
+      15000
+    )
+    
+    const results = response?.therapists?.length || 0
+    console.log(`✅ TK API success: ${results} results`)
+    return { status: 'success', data: response, results }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ TK API failed:', errorMessage)
+    
+    if (errorMessage.includes('timeout')) {
+      return { status: 'timeout', error: errorMessage, results: 0 }
+    }
+    return { status: 'error', error: errorMessage, results: 0 }
+  }
+}
+
+function combineResults(
+  therapieDeResult: { status: string; data?: any; results: number; error?: string },
+  tkResult: { status: string; data?: any; results: number; error?: string },
+  plz: string
+): TherapistSearchResult {
+  const combinedTherapists: TherapistData[] = []
+  let totalResults = 0
+  let radius = 10
+
+  // Add therapie.de results
+  if (therapieDeResult.status === 'success' && therapieDeResult.data) {
+    const therapieDeTherapists = therapieDeResult.data.therapists || []
+    therapieDeTherapists.forEach((therapist: any) => {
+      combinedTherapists.push({
+        ...therapist,
+        source: 'therapie.de' as const
+      })
+    })
+    totalResults += therapieDeResult.data.totalResults || 0
+    radius = therapieDeResult.data.radius || radius
+  }
+
+  // Add TK results
+  if (tkResult.status === 'success' && tkResult.data) {
+    const tkTherapists = tkResult.data.therapists || []
+    tkTherapists.forEach((therapist: any) => {
+      // Check for duplicates based on name and address similarity
+      const isDuplicate = combinedTherapists.some(existing => {
+        const nameMatch = existing.name.toLowerCase().includes(therapist.name.toLowerCase()) ||
+                         therapist.name.toLowerCase().includes(existing.name.toLowerCase())
+        const addressMatch = existing.address.toLowerCase() === therapist.address.toLowerCase()
+        return nameMatch && addressMatch
+      })
+
+      if (!isDuplicate) {
+        combinedTherapists.push({
+          ...therapist,
+          source: 'tk' as const
+        })
+      }
+    })
+    totalResults += tkResult.data.totalResults || 0
+  }
+
+  // Sort by distance
+  combinedTherapists.sort((a, b) => a.distance - b.distance)
+
+  return {
+    plz,
+    totalResults,
+    radius,
+    therapists: combinedTherapists,
+    sources: {
+      'therapie.de': {
+        status: therapieDeResult.status as 'success' | 'error' | 'timeout',
+        results: therapieDeResult.results,
+        error: therapieDeResult.error
+      },
+      'tk': {
+        status: tkResult.status as 'success' | 'error' | 'timeout',
+        results: tkResult.results,
+        error: tkResult.error
+      }
+    }
+  }
+}
+
 export default defineEventHandler(async (event): Promise<TherapistSearchResult> => {
   const query = getQuery(event)
   const plz = query.plz as string
-  const specialization = query.specialization as string
-  const maxDistance = query.maxDistance ? parseFloat(query.maxDistance as string) : null
-  const therapyType = query.therapyType as string
-  const gender = query.gender as string
-  const problem = query.problem as string
-  const ageGroup = query.ageGroup as string
-  const billing = query.billing as string
-  const freePlaces = query.freePlaces as string
 
   if (!plz) {
     throw createError({
@@ -41,200 +159,49 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
     })
   }
 
-  // Create cache key based on filters
-  const cacheKey = `${plz}-${specialization || ''}-${maxDistance || ''}-${therapyType || ''}-${gender || ''}-${problem || ''}-${ageGroup || ''}-${billing || ''}-${freePlaces || ''}`
+  // Create cache key based on all query parameters
+  const cacheKey = JSON.stringify(query)
   
   // Check cache first
   const cached = cache.get(cacheKey)
   if (cached && Date.now() < cached.expires) {
-    console.log(`✅ Cache hit for: ${cacheKey.substring(0, 50)}...`)
+    console.log(`✅ Unified cache hit for PLZ: ${plz}`)
     return cached.data
   }
   
-  console.log(`🔄 Cache miss, fetching from therapie.de for: ${cacheKey.substring(0, 50)}...`)
+  console.log(`🔄 Unified cache miss, fetching from both APIs for PLZ: ${plz}`)
 
-  try {
-    // Fetch first 5 pages to get more comprehensive results
-    const pages = [1, 2, 3, 4, 5]
-    const allTherapists: TherapistData[] = []
-    let totalResults = 0
-    let radius = 10
-    let extractedPlz = plz
+  // Call both APIs in parallel
+  const [therapieDeResult, tkResult] = await Promise.all([
+    callTherapieDeApi(query),
+    callTkApi(query)
+  ])
 
-    for (const page of pages) {
-      // Construct the URL for therapie.de with all filter parameters
-      const params = new URLSearchParams()
-      params.set('ort', plz)
-      
-      if (page > 1) {
-        params.set('page', page.toString())
-      }
-      
-      if (gender) {
-        params.set('geschlecht', gender)
-      }
-      
-      if (billing) {
-        params.set('abrechnungsverfahren', billing)
-      }
-      
-      if (freePlaces) {
-        params.set('terminzeitraum', freePlaces)
-      }
-      
-      // Add more parameters as needed for other filters
-      if (therapyType) {
-        // Map therapy types to therapie.de parameters if needed
-        // This might need specific parameter names from therapie.de
-      }
-      
-      const url = `https://www.therapie.de/therapeutensuche/ergebnisse/?${params.toString()}`
-      
-      // Debug: Log the constructed URL
-      console.log(`Fetching URL: ${url}`)
-    
-      // Fetch the HTML content
-      const response = await $fetch<string>(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      })
-
-      // Parse HTML with Cheerio
-      const $ = load(response)
-
-      // Extract metadata (only on first page)
-      if (page === 1) {
-        const plzText = $('h1').text().trim()
-        const subheaderText = $('.subheader').text().trim()
-        
-        // Extract PLZ from title
-        const plzMatch = plzText.match(/PLZ (\d+):/)
-        extractedPlz = plzMatch ? plzMatch[1] : plz
-
-        // Extract total results and radius
-        const resultsMatch = subheaderText.match(/(\d+)\s+Treffer\s+im\s+Umkreis\s+von\s+(\d+)/)
-        totalResults = resultsMatch ? parseInt(resultsMatch[1]) : 0
-        radius = resultsMatch ? parseInt(resultsMatch[2]) : 10
-      }
-
-      // Extract therapist data from this page
-      const pageTherapists: TherapistData[] = []
-    
-      $('.search-results-list li').each((index, element) => {
-        const $li = $(element)
-        const $link = $li.find('a').first()
-        
-        if (!$link.length) return
-        
-        const profileUrl = $link.attr('href') || ''
-        const id = profileUrl.replace(/^\/profil\//, '').replace(/\/$/, '')
-        
-        const name = $li.find('.search-results-name').text().trim()
-        const addressText = $li.find('.search-results-address').html() || ''
-        
-        // Split address by <br> tags and clean up
-        const addressParts = addressText
-          .split('<br>')
-          .map(part => part.replace(/<[^>]*>/g, '').trim())
-          .filter(part => part.length > 0)
-        
-        const qualification = addressParts[0] || ''
-        const addressLine = addressParts[1] || ''
-        
-        // Extract phone number from address line
-        const phoneMatch = addressLine.match(/,\s*([0-9\/\-\+\s]+)$/)
-        const phone = phoneMatch ? phoneMatch[1].trim() : ''
-        const address = phoneMatch ? addressLine.replace(/,\s*[0-9\/\-\+\s]+$/, '') : addressLine
-        
-        const distanceText = $li.find('.search-results-distance').text().trim()
-        const distance = parseFloat(distanceText.replace('km', '')) || 0
-        
-        // Get image URL
-        const $img = $li.find('.search-results-thumbnail img')
-        const imageSrc = $img.attr('src') || $img.attr('srcset')?.split(' ')[0]
-        const image = imageSrc && !imageSrc.includes('default_small.png') ? 
-          `https://www.therapie.de${imageSrc}` : undefined
-
-        // Filter out Heilpraktiker entries
-        const fullText = `${name} ${qualification} ${address}`.toLowerCase()
-        if (fullText.includes('heilpr')) {
-          return // Skip this entry
-        }
-
-        // Apply additional filters
-        if (specialization && !fullText.includes(specialization.toLowerCase())) {
-          return // Skip if doesn't match specialization
-        }
-
-        if (maxDistance && distance > maxDistance) {
-          return // Skip if too far
-        }
-
-        if (therapyType) {
-          const therapyTypeMap: Record<string, string[]> = {
-            'verhaltenstherapie': ['verhaltenstherapie', 'kognitive'],
-            'tiefenpsychologie': ['tiefenpsychologie', 'psychodynamisch', 'psychoanalyse'],
-            'systemisch': ['systemisch', 'familientherapie'],
-            'kinder': ['kinder', 'jugend'],
-          }
-          
-          const searchTerms = therapyTypeMap[therapyType.toLowerCase()] || [therapyType.toLowerCase()]
-          const hasMatch = searchTerms.some(term => fullText.includes(term))
-          
-          if (!hasMatch) {
-            return // Skip if doesn't match therapy type
-          }
-        }
-
-        pageTherapists.push({
-          id,
-          name,
-          qualification,
-          address,
-          phone,
-          distance,
-          profileUrl: `https://www.therapie.de${profileUrl}`,
-          image
-        })
-      })
-
-      // Add this page's therapists to the total, avoiding duplicates
-      pageTherapists.forEach(therapist => {
-        if (!allTherapists.find(existing => existing.id === therapist.id)) {
-          allTherapists.push(therapist)
-        }
-      })
-
-      // If this page has no results, stop fetching more pages
-      if (pageTherapists.length === 0) {
-        break
-      }
-    }
-
-    // Sort therapists by distance
-    allTherapists.sort((a, b) => a.distance - b.distance)
-
-    const result: TherapistSearchResult = {
-      plz: extractedPlz,
-      totalResults,
-      radius,
-      therapists: allTherapists
-    }
-
-    // Cache the result
-    cache.set(cacheKey, {
-      data: result,
-      expires: Date.now() + CACHE_DURATION
-    })
-
-    return result
-
-  } catch (error) {
-    console.error('Error fetching therapist data:', error)
+  // Check if at least one API succeeded
+  const hasResults = therapieDeResult.status === 'success' || tkResult.status === 'success'
+  
+  if (!hasResults) {
+    console.error('❌ Both APIs failed')
     throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch therapist data'
+      statusCode: 503,
+      statusMessage: 'All therapist APIs are currently unavailable'
     })
   }
+
+  // Combine results from both sources
+  const result = combineResults(therapieDeResult, tkResult, plz)
+
+  // Log summary
+  console.log(`📊 Combined results for PLZ ${plz}:`)
+  console.log(`   therapie.de: ${therapieDeResult.status} (${therapieDeResult.results} results)`)
+  console.log(`   TK: ${tkResult.status} (${tkResult.results} results)`)
+  console.log(`   Combined: ${result.therapists.length} unique therapists`)
+
+  // Cache the result
+  cache.set(cacheKey, {
+    data: result,
+    expires: Date.now() + CACHE_DURATION
+  })
+
+  return result
 })
