@@ -100,6 +100,18 @@
             >
               <UIcon name="i-simple-icons-github" class="w-4 h-4" />
             </UButton>
+            
+            <!-- Patreon Link -->
+            <UButton 
+              to="https://www.patreon.com/karlhelps"
+              target="_blank"
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              class="text-blue-100/80 hover:text-blue-200 hover:bg-white/10"
+            >
+              <UIcon name="i-simple-icons-patreon" class="w-4 h-4" />
+            </UButton>
           </div>
 
           <!-- Mobile Navigation -->
@@ -243,7 +255,14 @@ const mobileMenuItems = computed(() => {
     target: '_blank'
   }
 
-  return [...baseItems, githubItem]
+  const patreonItem = {
+    label: 'Patreon',
+    icon: 'i-simple-icons-patreon',
+    to: 'https://www.patreon.com/karlhelps',
+    target: '_blank'
+  }
+
+  return [...baseItems, githubItem, patreonItem]
 })
 
 // Load persisted language on mount
