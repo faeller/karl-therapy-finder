@@ -69,6 +69,11 @@ billingMap['privat'] = '22';       // Private insurance
 billingMap['selbstzahler'] = '22'; // Self-payers (same as privat in TK system)
 billingMap['tk'] = '127';          // Backwards compatibility
 
+// Frontend billing code mapping (from therapie.de format)
+billingMap['7'] = '127';  // Gesetzliche Krankenversicherung -> statutory insurance
+billingMap['8'] = '22';   // Private Krankenversicherung -> private insurance
+billingMap['9'] = '22';   // Selbstzahler -> self-payers (same as private in TK)
+
 
 // --- HELPER FUNCTIONS FOR SPLITTING MULTIPLE THERAPISTS ---
 function splitMultipleTherapists(therapistName: string): string[] {
@@ -166,7 +171,8 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
 
     // Construct URL based on billing type
     let url: string;
-    if (billing === 'privat' || billing === 'selbstzahler') {
+    const isPrivateBilling = billing === 'privat' || billing === 'selbstzahler' || billing === '8' || billing === '9';
+    if (isPrivateBilling) {
       // Use the Privat URL format you provided
       const params = new URLSearchParams({
         a: 'DL',
