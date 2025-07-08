@@ -74,6 +74,14 @@ billingMap['7'] = '127';  // Gesetzliche Krankenversicherung -> statutory insura
 billingMap['8'] = '22';   // Private Krankenversicherung -> private insurance
 billingMap['9'] = '22';   // Selbstzahler -> self-payers (same as private in TK)
 
+// Gender mapping for TK API
+const genderMap: Record<string, string> = {};
+genderMap['weiblich'] = '2';     // Female
+genderMap['männlich'] = '1';     // Male
+genderMap['w'] = '2';            // Female (short form)
+genderMap['m'] = '1';            // Male (short form)
+// No mapping for 'egal' - omit Sl parameter for all genders
+
 
 // --- HELPER FUNCTIONS FOR CLEANING DATA ---
 function cleanTherapistName(name: string): string {
@@ -273,6 +281,7 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
   const plz = query.plz as string
   const specialization = (query.specialization as string) || 'psychotherapeut'
   const billing = (query.billing as string) || 'gesetzlich'
+  const gender = query.gender as string
   const maxDistance = query.maxDistance ? parseFloat(query.maxDistance as string) : null
   
   // The new compatibility parameter
@@ -283,7 +292,7 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
   }
 
   // Add the compatibility flag to the cache key to store different versions
-  const cacheKey = `tk-${plz}-${specialization}-${billing}-${maxDistance || ''}-${compatible ? 'compat' : 'native'}`
+  const cacheKey = `tk-${plz}-${specialization}-${billing}-${gender || ''}-${maxDistance || ''}-${compatible ? 'compat' : 'native'}`
 
   // Check cache first
   const cached = cache.get(cacheKey)
@@ -297,6 +306,8 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
   try {
     const selectedSpecialization = specializationMap[specialization];
     const selectedBilling = billingMap[billing];
+    const selectedGender = gender ? genderMap[gender] : undefined;
+    
     if (!selectedSpecialization || !selectedBilling) {
        throw createError({ statusCode: 400, statusMessage: 'Invalid specialization or billing type.' })
     }
@@ -312,7 +323,7 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
         Ft_e: selectedSpecialization.Ft_e,
         Ftg: plz,
         Ftg_e: `CatId10%3A%3A${plz}%3A%3A49.455554758963%3A%3A11.0795135645595%3B`, // This would need proper geocoding
-        Sl: '',
+        Sl: selectedGender || '',
         Lng: '',
         Otn1: '',
         ic1: selectedBilling,
@@ -333,6 +344,12 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
         Ft_e: selectedSpecialization.Ft_e, 
         ic1: selectedBilling 
       });
+      
+      // Add gender parameter if specified
+      if (selectedGender) {
+        params.set('Sl', selectedGender);
+      }
+      
       url = `https://www.tk-aerztefuehrer.de/TK/Suche_SN/index.js?${params.toString()}`;
     }
     
