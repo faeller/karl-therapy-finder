@@ -35,36 +35,34 @@
       <!-- Tab Navigation -->
       <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 mb-4">
-          <div class="flex flex-col sm:flex-row gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button 
               @click="activeTab = 'search'"
               :class="[
-                'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none',
+                'px-3 py-2 rounded-lg text-sm font-medium transition-all',
                 activeTab === 'search' 
                   ? 'bg-blue-500 text-white shadow-lg' 
                   : 'text-blue-200 hover:text-white hover:bg-white/10'
               ]"
             >
               <div class="flex items-center justify-center gap-2">
-                <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
-                <span class="hidden sm:inline">Therapeuten suchen</span>
-                <span class="sm:hidden">Suchen</span>
+                <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4 flex-shrink-0" />
+                <span class="truncate">Therapeuten suchen</span>
               </div>
             </button>
             <button 
               @click="activeTab = 'kontaktprotokoll'"
               :class="[
-                'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none',
+                'px-3 py-2 rounded-lg text-sm font-medium transition-all',
                 activeTab === 'kontaktprotokoll' 
                   ? 'bg-blue-500 text-white shadow-lg' 
                   : 'text-blue-200 hover:text-white hover:bg-white/10'
               ]"
             >
               <div class="flex items-center justify-center gap-2">
-                <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
-                <span class="hidden sm:inline">Kontaktprotokoll</span>
-                <span class="sm:hidden">Protokoll</span>
-                <UBadge v-if="bookmarkedTherapists.length > 0" color="white" variant="solid" size="xs">
+                <UIcon name="i-heroicons-document-text" class="w-4 h-4 flex-shrink-0" />
+                <span class="truncate">Kontaktprotokoll</span>
+                <UBadge v-if="bookmarkedTherapists.length > 0" color="white" variant="solid" size="xs" class="ml-1 flex-shrink-0">
                   {{ bookmarkedTherapists.length }}
                 </UBadge>
               </div>
@@ -491,44 +489,49 @@
               :key="attempt.id"
               class="rounded-lg bg-white/5 p-3 border border-white/10"
             >
-              <div class="flex items-start gap-3">
-                <div class="flex-1 min-w-0">
-                  <h4 class="font-semibold text-white text-sm">{{ attempt.therapistName }}</h4>
-                  <p class="text-blue-100/80 text-xs mt-1">{{ attempt.therapistAddress }}</p>
-                  <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
-                    <div class="flex items-center gap-1">
-                      <span>📅</span>
-                      <span>{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
+              <div class="space-y-3">
+                <div class="flex items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-white text-sm">{{ attempt.therapistName }}</h4>
+                    <p class="text-blue-100/80 text-xs mt-1">{{ attempt.therapistAddress }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
+                      <div class="flex items-center gap-1">
+                        <span>📅</span>
+                        <span>{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                   <div :class="[
-                    'text-xs px-3 py-1.5 rounded-lg border',
+                    'text-xs px-3 py-1.5 rounded-lg border flex-1 sm:flex-none',
                     attempt.replyReceived 
                       ? 'bg-green-500/20 text-green-300 border-green-500/30' 
                       : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                   ]">
                     <div class="flex items-center gap-1">
-                      <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
-                      {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                      <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3 flex-shrink-0" />
+                      <span class="sm:hidden">{{ attempt.replyReceived ? 'Antwort' : 'Wartet' }}</span>
+                      <span class="hidden sm:inline">{{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}</span>
                     </div>
                   </div>
-                  <button 
-                    @click="toggleReplyStatus(attempt.id)"
-                    class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
-                    title="Bearbeiten"
-                  >
-                    <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
-                  </button>
-                  <button 
-                    @click="removeContactAttempt(attempt.id)"
-                    class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
-                    title="Löschen"
-                  >
-                    <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
-                  </button>
+                  <div class="flex gap-2">
+                    <button 
+                      @click="toggleReplyStatus(attempt.id)"
+                      class="flex-1 sm:flex-none p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all flex items-center justify-center"
+                      title="Bearbeiten"
+                    >
+                      <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
+                    </button>
+                    <button 
+                      @click="removeContactAttempt(attempt.id)"
+                      class="flex-1 sm:flex-none p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all flex items-center justify-center"
+                      title="Löschen"
+                    >
+                      <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -575,53 +578,64 @@
 
                   <!-- Therapist Info -->
                   <div class="flex-1 min-w-0">
-                    <h4 class="font-semibold text-white text-sm">{{ therapist.name }}</h4>
-                    <p class="text-blue-100/80 text-xs mt-1">{{ therapist.qualification }}</p>
-                    <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
-                      <div class="flex items-center gap-1">
-                        <span>📍</span>
-                        <span>{{ therapist.distance }}km</span>
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                      <!-- Therapist Details -->
+                      <div class="flex-1 min-w-0">
+                        <h4 class="font-semibold text-white text-sm">{{ therapist.name }}</h4>
+                        <p class="text-blue-100/80 text-xs mt-1">{{ therapist.qualification }}</p>
+                        <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-blue-100/60">
+                          <div class="flex items-center gap-1">
+                            <span>📍</span>
+                            <span>{{ therapist.distance }}km</span>
+                          </div>
+                          <div v-if="therapist.phone" class="flex items-center gap-1">
+                            <span>📞</span>
+                            <span>{{ therapist.phone }}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div v-if="therapist.phone" class="flex items-center gap-1">
-                        <span>📞</span>
-                        <span>{{ therapist.phone }}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- Action Buttons -->
-                  <div class="flex items-center gap-2 flex-shrink-0">
-                    <button 
-                      v-if="!getContactAttempts(therapist.id).length"
-                      @click="addContactAttempt(therapist)"
-                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
-                      title="Kontaktversuch hinzufügen"
-                    >
-                      <UIcon name="i-heroicons-plus" class="w-4 h-4" />
-                      <span>Kontaktversuch hinzufügen</span>
-                    </button>
-                    <div 
-                      v-else
-                      class="p-2 rounded-lg bg-gray-500/20 text-gray-400 text-xs px-3"
-                      title="Kontaktversuch bereits vorhanden"
-                    >
-                      Bereits kontaktiert
+                      <!-- Action Buttons -->
+                      <div class="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2 lg:flex-shrink-0">
+                        <button 
+                          v-if="!getContactAttempts(therapist.id).length"
+                          @click="addContactAttempt(therapist)"
+                          class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm whitespace-nowrap"
+                          title="Kontaktversuch hinzufügen"
+                        >
+                          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                          <span class="hidden xl:inline">Kontaktversuch hinzufügen</span>
+                          <span class="xl:hidden">Kontaktversuch</span>
+                        </button>
+                        <div 
+                          v-else
+                          class="p-2 rounded-lg bg-gray-500/20 text-gray-400 text-xs px-3 text-center whitespace-nowrap"
+                          title="Kontaktversuch bereits vorhanden"
+                        >
+                          <span class="hidden lg:inline">Bereits kontaktiert</span>
+                          <span class="lg:hidden">Kontaktiert</span>
+                        </div>
+                        <div class="flex gap-2">
+                          <button 
+                            @click="confirmRemoveBookmark(therapist)"
+                            class="flex-1 lg:flex-none p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all flex items-center justify-center gap-1"
+                            title="Therapeut merken/entfernen"
+                          >
+                            <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
+                            <span class="hidden xl:inline text-xs">Entfernen</span>
+                          </button>
+                          <button 
+                            v-if="therapist.phone"
+                            @click="callTherapist(therapist.phone)"
+                            class="flex-1 lg:flex-none p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all flex items-center justify-center gap-1"
+                            title="Anrufen"
+                          >
+                            <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                            <span class="hidden xl:inline text-xs">Anrufen</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      @click="confirmRemoveBookmark(therapist)"
-                      class="p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all"
-                      title="Therapeut merken/entfernen"
-                    >
-                      <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
-                    </button>
-                    <button 
-                      v-if="therapist.phone"
-                      @click="callTherapist(therapist.phone)"
-                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
-                      title="Anrufen"
-                    >
-                      <UIcon name="i-heroicons-phone" class="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
                 
@@ -636,44 +650,47 @@
                       :key="attempt.id"
                       class="p-2 rounded bg-white/5 text-xs"
                     >
-                      <div class="flex items-center justify-between mb-1">
+                      <div class="space-y-2">
                         <div class="flex items-center gap-2">
                           <div :class="[
-                            'w-2 h-2 rounded-full',
+                            'w-2 h-2 rounded-full flex-shrink-0',
                             attempt.replyReceived ? 'bg-green-400' : 'bg-yellow-400'
                           ]"></div>
-                          <span class="text-blue-100">{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
+                          <span class="text-blue-100 text-xs">{{ formatDateWithTime(attempt.contactDate, attempt.contactTime) }}</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                           <div :class="[
-                            'text-xs px-3 py-1.5 rounded-lg border',
+                            'text-xs px-2 py-1 rounded border flex-1 sm:flex-none',
                             attempt.replyReceived 
                               ? 'bg-green-500/20 text-green-300 border-green-500/30' 
                               : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                           ]">
                             <div class="flex items-center gap-1">
-                              <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
-                              {{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}
+                              <UIcon :name="attempt.replyReceived ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3 flex-shrink-0" />
+                              <span class="sm:hidden">{{ attempt.replyReceived ? 'Antwort' : 'Wartet' }}</span>
+                              <span class="hidden sm:inline">{{ attempt.replyReceived ? 'Rückmeldung bekommen' : 'Ausstehend' }}</span>
                             </div>
                           </div>
-                          <button 
-                            @click="toggleReplyStatus(attempt.id)"
-                            class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
-                            title="Bearbeiten"
-                          >
-                            <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
-                          </button>
-                          <button 
-                            @click="removeContactAttempt(attempt.id)"
-                            class="p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all"
-                            title="Löschen"
-                          >
-                            <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
-                          </button>
+                          <div class="flex gap-2">
+                            <button 
+                              @click="toggleReplyStatus(attempt.id)"
+                              class="flex-1 sm:flex-none p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all flex items-center justify-center"
+                              title="Bearbeiten"
+                            >
+                              <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
+                            </button>
+                            <button 
+                              @click="removeContactAttempt(attempt.id)"
+                              class="flex-1 sm:flex-none p-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all flex items-center justify-center"
+                              title="Löschen"
+                            >
+                              <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div v-if="attempt.waitingTime" class="text-blue-100/80 text-xs">
-                        Abgespeichert: {{ attempt.waitingTime }}
+                        <div v-if="attempt.waitingTime" class="text-blue-100/80 text-xs">
+                          Abgespeichert: {{ attempt.waitingTime }}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -729,19 +746,20 @@
                               <span>{{ therapist.phone }}</span>
                             </div>
                           </div>
-                          <div class="flex items-center gap-3 text-xs">
-                            <div class="flex items-center gap-1 text-green-400">
+                          <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <div class="flex items-center gap-1 text-green-400 flex-shrink-0">
                               <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
                               <span>Abgeschlossen</span>
                             </div>
-                            <div class="text-blue-100/50">
+                            <div class="text-blue-100/50 flex-shrink-0">
                               {{ getContactAttempts(therapist.id).length }} Kontaktversuch(e)
                             </div>
-                            <div class="flex items-center gap-1">
+                            <div class="flex items-center gap-1 flex-shrink-0">
                               <UBadge 
                                 :color="isTherapistIncludedInPdf(therapist.id) ? 'green' : 'gray'" 
                                 variant="soft" 
                                 size="xs"
+                                class="text-xs whitespace-nowrap"
                               >
                                 {{ isTherapistIncludedInPdf(therapist.id) ? 'Im PDF' : 'Nicht im PDF' }}
                               </UBadge>
