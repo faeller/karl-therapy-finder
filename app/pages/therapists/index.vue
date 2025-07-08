@@ -596,7 +596,7 @@
                       </div>
 
                       <!-- Action Buttons -->
-                      <div class="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2 lg:flex-shrink-0">
+                      <div class="flex flex-col sm:flex-row gap-2 lg:flex-shrink-0">
                         <button 
                           v-if="!getContactAttempts(therapist.id).length"
                           @click="addContactAttempt(therapist)"
@@ -604,34 +604,34 @@
                           title="Kontaktversuch hinzufügen"
                         >
                           <UIcon name="i-heroicons-plus" class="w-4 h-4" />
-                          <span class="hidden xl:inline">Kontaktversuch hinzufügen</span>
-                          <span class="xl:hidden">Kontaktversuch</span>
+                          <span class="hidden md:inline">Kontaktversuch hinzufügen</span>
+                          <span class="md:hidden">Kontaktversuch</span>
                         </button>
                         <div 
                           v-else
                           class="p-2 rounded-lg bg-gray-500/20 text-gray-400 text-xs px-3 text-center whitespace-nowrap"
                           title="Kontaktversuch bereits vorhanden"
                         >
-                          <span class="hidden lg:inline">Bereits kontaktiert</span>
-                          <span class="lg:hidden">Kontaktiert</span>
+                          <span class="hidden md:inline">Bereits kontaktiert</span>
+                          <span class="md:hidden">Kontaktiert</span>
                         </div>
                         <div class="flex gap-2">
                           <button 
                             @click="confirmRemoveBookmark(therapist)"
-                            class="flex-1 lg:flex-none p-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all flex items-center justify-center gap-1"
+                            class="flex-1 md:flex-none px-3 py-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all flex items-center justify-center gap-2 text-sm"
                             title="Therapeut merken/entfernen"
                           >
                             <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
-                            <span class="hidden xl:inline text-xs">Entfernen</span>
+                            <span class="hidden md:inline">Entfernen</span>
                           </button>
                           <button 
                             v-if="therapist.phone"
                             @click="callTherapist(therapist.phone)"
-                            class="flex-1 lg:flex-none p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all flex items-center justify-center gap-1"
+                            class="flex-1 md:flex-none px-3 py-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all flex items-center justify-center gap-2 text-sm"
                             title="Anrufen"
                           >
                             <UIcon name="i-heroicons-phone" class="w-4 h-4" />
-                            <span class="hidden xl:inline text-xs">Anrufen</span>
+                            <span class="hidden md:inline">Anrufen</span>
                           </button>
                         </div>
                       </div>
@@ -733,74 +733,82 @@
 
                       <!-- Therapist Info -->
                       <div class="flex-1 min-w-0">
-                        <h4 class="font-medium text-white/80 text-sm">{{ therapist.name }}</h4>
-                        <p class="text-blue-100/60 text-xs mt-1">{{ therapist.qualification }}</p>
-                        <div class="space-y-1 mt-2">
-                          <div class="flex items-center gap-3 text-xs text-blue-100/50">
-                            <div class="flex items-center gap-1">
-                              <span>📍</span>
-                              <span>{{ therapist.distance }}km</span>
-                            </div>
-                            <div v-if="therapist.phone" class="flex items-center gap-1">
-                              <span>📞</span>
-                              <span>{{ therapist.phone }}</span>
+                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                          <!-- Details -->
+                          <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-white/80 text-sm">{{ therapist.name }}</h4>
+                            <p class="text-blue-100/60 text-xs mt-1">{{ therapist.qualification }}</p>
+                            <div class="space-y-1 mt-2">
+                              <div class="flex items-center gap-3 text-xs text-blue-100/50">
+                                <div class="flex items-center gap-1">
+                                  <span>📍</span>
+                                  <span>{{ therapist.distance }}km</span>
+                                </div>
+                                <div v-if="therapist.phone" class="flex items-center gap-1">
+                                  <span>📞</span>
+                                  <span>{{ therapist.phone }}</span>
+                                </div>
+                              </div>
+                              <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <div class="flex items-center gap-1 text-green-400 flex-shrink-0">
+                                  <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
+                                  <span>Abgeschlossen</span>
+                                </div>
+                                <div class="text-blue-100/50 flex-shrink-0">
+                                  {{ getContactAttempts(therapist.id).length }} Kontaktversuch(e)
+                                </div>
+                                <div class="flex items-center gap-1 flex-shrink-0">
+                                  <UBadge 
+                                    :color="isTherapistIncludedInPdf(therapist.id) ? 'green' : 'gray'" 
+                                    variant="soft" 
+                                    size="xs"
+                                    class="text-xs whitespace-nowrap"
+                                  >
+                                    {{ isTherapistIncludedInPdf(therapist.id) ? 'Im PDF' : 'Nicht im PDF' }}
+                                  </UBadge>
+                                </div>
+                              </div>
+                              <div v-if="getContactAttempts(therapist.id).length > 0" class="space-y-1 mt-2">
+                                <div class="text-xs text-blue-100/60">
+                                  Letzter Kontakt: {{ formatDate(getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].contactDate) }}
+                                </div>
+                                <div v-if="getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime" class="text-xs text-blue-100/70">
+                                  <span class="text-blue-200/80">Abgespeichert:</span> {{ getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime }}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div class="flex flex-wrap items-center gap-2 text-xs">
-                            <div class="flex items-center gap-1 text-green-400 flex-shrink-0">
-                              <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
-                              <span>Abgeschlossen</span>
-                            </div>
-                            <div class="text-blue-100/50 flex-shrink-0">
-                              {{ getContactAttempts(therapist.id).length }} Kontaktversuch(e)
-                            </div>
-                            <div class="flex items-center gap-1 flex-shrink-0">
-                              <UBadge 
-                                :color="isTherapistIncludedInPdf(therapist.id) ? 'green' : 'gray'" 
-                                variant="soft" 
-                                size="xs"
-                                class="text-xs whitespace-nowrap"
-                              >
-                                {{ isTherapistIncludedInPdf(therapist.id) ? 'Im PDF' : 'Nicht im PDF' }}
-                              </UBadge>
-                            </div>
-                          </div>
-                          <div v-if="getContactAttempts(therapist.id).length > 0" class="space-y-1 mt-2">
-                            <div class="text-xs text-blue-100/60">
-                              Letzter Kontakt: {{ formatDate(getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].contactDate) }}
-                            </div>
-                            <div v-if="getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime" class="text-xs text-blue-100/70">
-                              <span class="text-blue-200/80">Abgespeichert:</span> {{ getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].waitingTime }}
-                            </div>
+
+                          <!-- Action Buttons -->
+                          <div class="flex flex-col sm:flex-row gap-2 lg:flex-shrink-0">
+                            <button 
+                              v-if="therapist.phone"
+                              @click="callTherapist(therapist.phone)"
+                              class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all text-sm"
+                              title="Anrufen"
+                            >
+                              <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                              <span class="hidden md:inline">Anrufen</span>
+                            </button>
+                            <button 
+                              v-if="getContactAttempts(therapist.id).length > 0"
+                              @click="editCompletedTherapist(therapist)"
+                              class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
+                              title="Kontaktversuche bearbeiten"
+                            >
+                              <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
+                              <span class="hidden md:inline">Bearbeiten</span>
+                            </button>
+                            <button 
+                              @click="confirmRemoveBookmark(therapist)"
+                              class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all text-sm"
+                              title="Therapeut entfernen"
+                            >
+                              <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
+                              <span class="hidden md:inline">Entfernen</span>
+                            </button>
                           </div>
                         </div>
-                      </div>
-
-                      <!-- Action Buttons -->
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <button 
-                          v-if="therapist.phone"
-                          @click="callTherapist(therapist.phone)"
-                          class="p-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
-                          title="Anrufen"
-                        >
-                          <UIcon name="i-heroicons-phone" class="w-3 h-3" />
-                        </button>
-                        <button 
-                          v-if="getContactAttempts(therapist.id).length > 0"
-                          @click="editCompletedTherapist(therapist)"
-                          class="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition-all"
-                          title="Kontaktversuche bearbeiten"
-                        >
-                          <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
-                        </button>
-                        <button 
-                          @click="confirmRemoveBookmark(therapist)"
-                          class="p-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 hover:text-yellow-200 transition-all"
-                          title="Therapeut entfernen"
-                        >
-                          <UIcon name="i-heroicons-bookmark-solid" class="w-3 h-3" />
-                        </button>
                       </div>
                     </div>
                   </div>

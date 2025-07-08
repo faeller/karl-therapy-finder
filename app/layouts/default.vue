@@ -227,11 +227,11 @@ const mobileMenuItems = computed(() => {
   }, {
     label: 'Therapeuten',
     icon: 'i-heroicons-user-group',
-    to: '/therapists'
+    click: handleTherapistsNavClick
   }, {
     label: 'Kontaktprotokoll',
     icon: 'i-heroicons-document-text',
-    to: '/therapists/contact-protocol'
+    click: handleKontaktprotokollNavClick
   }]
 
   const githubItem = {
