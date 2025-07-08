@@ -7,21 +7,21 @@ const navigateToApp = () => {
 
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-md lg:max-w-4xl xl:max-w-6xl flex-col items-center gap-6 lg:gap-8 text-center">
+    <div class="relative z-10 flex w-full max-w-md lg:max-w-4xl xl:max-w-6xl flex-col items-center text-center">
       <!-- KARL Logo/Icon -->
-      <div class="relative">
-        <div class="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-3xl font-bold text-white shadow-2xl backdrop-blur-sm">
+      <div class="relative mb-8 lg:mb-12">
+        <div class="flex h-24 w-24 lg:h-28 lg:w-28 items-center justify-center rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-4xl lg:text-5xl font-bold text-white shadow-2xl backdrop-blur-sm">
           K
         </div>
         <!-- AI Badge -->
-        <div class="absolute -bottom-2 -right-2 bg-black text-white text-sm font-bold px-2 py-1 rounded-full shadow-lg">
+        <div class="absolute -bottom-2 -right-2 bg-black text-white text-sm lg:text-base font-bold px-2.5 py-1.5 rounded-full shadow-lg">
           AI
         </div>
       </div>
       
       <!-- App Title Section -->
-      <div class="space-y-2 lg:space-y-3">
-        <div class="flex items-center justify-center gap-3">
+      <div class="space-y-4 lg:space-y-6 mb-8 lg:mb-12">
+        <div class="flex items-center justify-center gap-4 lg:gap-5">
           <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white">KARL</h1>
           <span class="bg-green-500/20 border border-green-500/30 text-green-200 text-sm lg:text-base font-bold px-3 py-1 rounded-full">
             ALPHA
@@ -34,7 +34,7 @@ const navigateToApp = () => {
       </div>
       
       <!-- Hero Text -->
-      <div class="space-y-3 lg:space-y-4">
+      <div class="space-y-4 lg:space-y-6 mb-10 lg:mb-16">
         <h2 class="text-2xl lg:text-3xl xl:text-4xl font-semibold text-white leading-tight">
           Dein Buddy für die
         </h2>
@@ -45,7 +45,7 @@ const navigateToApp = () => {
       </div>
       
       <!-- Statistics Cards -->
-      <div class="grid gap-3 lg:gap-4 w-full max-w-sm lg:max-w-4xl text-sm lg:text-base lg:grid-cols-3">
+      <div class="grid gap-4 lg:gap-6 w-full max-w-sm lg:max-w-4xl text-sm lg:text-base lg:grid-cols-3 mb-10 lg:mb-16">
         <div class="flex items-center gap-3 lg:gap-4 rounded-2xl bg-white/10 backdrop-blur-sm p-4 lg:p-6 border border-white/20">
           <div class="text-2xl lg:text-3xl">📊</div>
           <div class="text-blue-100/90 font-medium">5-6 Monate durchschnittliche Wartezeit</div>

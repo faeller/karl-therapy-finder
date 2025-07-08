@@ -1310,7 +1310,7 @@ const getStoredFilters = () => {
           problem: 'Alle Probleme',
           ageGroup: 'Alle Altersgruppen',
           billing: 'Gesetzliche Krankenversicherung',
-          freePlaces: 'Nur freie Plätze',
+          freePlaces: 'Egal',
           specialization: ''
         }, ...JSON.parse(stored) }
       }
@@ -1324,7 +1324,7 @@ const getStoredFilters = () => {
     problem: 'Alle Probleme',
     ageGroup: 'Alle Altersgruppen',
     billing: 'Gesetzliche Krankenversicherung',
-    freePlaces: 'Nur freie Plätze',
+    freePlaces: 'Egal',
     specialization: ''
   }
 }
@@ -2080,7 +2080,7 @@ const hasActiveFilters = computed(() => {
          filters.value.problem !== 'Alle Probleme' ||
          filters.value.ageGroup !== 'Alle Altersgruppen' ||
          filters.value.billing !== 'Gesetzliche Krankenversicherung' ||
-         filters.value.freePlaces !== 'Nur freie Plätze' ||
+         filters.value.freePlaces !== 'Egal' ||
          filters.value.specialization !== ''
 })
 
@@ -2092,7 +2092,7 @@ const activeFiltersCount = computed(() => {
     filters.value.problem !== 'Alle Probleme',
     filters.value.ageGroup !== 'Alle Altersgruppen',
     filters.value.billing !== 'Gesetzliche Krankenversicherung',
-    filters.value.freePlaces !== 'Nur freie Plätze',
+    filters.value.freePlaces !== 'Egal',
     filters.value.specialization !== ''
   ].filter(Boolean).length
 })

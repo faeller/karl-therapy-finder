@@ -184,13 +184,15 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   console.log(`🔄 Unified cache miss, fetching from both APIs for PLZ: ${plz}`)
 
   // Call both APIs in parallel
-  // Remove freePlaces from TK query as it doesn't support this parameter
+  // Skip TK API entirely when freePlaces is enabled (TK doesn't support this parameter)
+  const shouldCallTkApi = !query.freePlaces || query.freePlaces === null || query.freePlaces === undefined
+  
   const tkQuery = { ...query }
   delete tkQuery.freePlaces
   
   const [therapieDeResult, tkResult] = await Promise.all([
     callTherapieDeApi(query),
-    callTkApi(tkQuery)
+    shouldCallTkApi ? callTkApi(tkQuery) : Promise.resolve({ status: 'success', data: null, results: 0 })
   ])
 
   // Check if at least one API succeeded
