@@ -480,7 +480,7 @@
               </div>
               <div>
                 <h3 class="text-xl font-semibold text-white">Schritt 2: Kontaktprotokoll erstellen</h3>
-                <p class="text-blue-200/80 text-sm">Dokumentiere deine Bemühungen um einen Therapieplatz</p>
+                <p class="text-blue-200/80 text-sm">Dokumentiere alle Kontaktversuche – KARL hilft dir dabei!</p>
               </div>
             </div>
             
@@ -568,50 +568,270 @@
               </div>
               
               <p class="text-blue-100/90 leading-relaxed">
-                Kontaktiere selbständig mehrere Psychotherapeuten und dokumentiere alle Versuche in einem Kontaktprotokoll. Dies ist wichtig für das spätere Kostenerstattungsverfahren.
+                Das Kontaktprotokoll ist <strong>essentiell</strong> für dein Kostenerstattungsverfahren. Du musst nachweisen, dass du selbständig mehrere Therapeuten kontaktiert hast, aber keinen zeitnahen Termin (unter 3 Monaten) bekommen konntest.
               </p>
+
+              <!-- KARL Kontaktprotokoll Feature Integration -->
+              <div :class="[
+                'border-2 rounded-xl p-4 lg:p-6 transition-all duration-300',
+                contactCount > 0 
+                  ? 'bg-gradient-to-r from-green-500/10 via-blue-500/10 to-purple-500/10 border-green-400/30'
+                  : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-400/30 hover:border-blue-300/50'
+              ]">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-3">
+                    <div :class="[
+                      'flex h-8 w-8 items-center justify-center rounded-lg border-2',
+                      contactCount > 0 
+                        ? 'bg-green-500/20 border-green-400/40' 
+                        : 'bg-blue-500/20 border-blue-400/40'
+                    ]">
+                      <UIcon name="i-heroicons-cpu-chip" class="w-4 h-4 text-blue-300" />
+                    </div>
+                    <div>
+                      <h4 :class="[
+                        'font-semibold flex items-center gap-2',
+                        contactCount > 0 ? 'text-green-200' : 'text-blue-200'
+                      ]">
+                        KARL Kontaktprotokoll-Tool
+                        <span v-if="contactCount > 0" class="text-green-400 text-xs">({{ contactCount }} Kontakte)</span>
+                      </h4>
+                      <p :class="[
+                        'text-xs',
+                        contactCount > 0 ? 'text-green-200/70' : 'text-blue-200/70'
+                      ]">Automatische Dokumentation & PDF-Export</p>
+                    </div>
+                  </div>
+                  
+                  <!-- KARL AI Badge -->
+                  <div class="flex items-center gap-2">
+                    <div class="bg-black text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm border border-gray-600">
+                      AI
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Progress Overview -->
+                <div v-if="contactCount > 0" class="mb-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-blue-200">Kontakt-Fortschritt</span>
+                    <span class="text-sm font-semibold text-blue-100">{{ Math.min(contactCount, 10) }}/10 empfohlen</span>
+                  </div>
+                  <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div 
+                      class="h-full bg-gradient-to-r from-blue-400 to-green-400 rounded-full transition-all duration-500 ease-out"
+                      :style="{ width: Math.min((contactCount / 10) * 100, 100) + '%' }"
+                    />
+                  </div>
+                  <div class="flex justify-between mt-1 text-xs">
+                    <span :class="contactCount >= 6 ? 'text-green-300' : 'text-blue-200/70'">
+                      {{ contactCount >= 6 ? '✓ Minimum erreicht' : `${Math.max(0, 6 - contactCount)} weitere benötigt` }}
+                    </span>
+                    <span :class="contactCount >= 10 ? 'text-green-300' : 'text-blue-200/70'">
+                      {{ contactCount >= 10 ? '✓ Optimal' : `${Math.max(0, 10 - contactCount)} bis optimal` }}
+                    </span>
+                  </div>
+                  
+                  <!-- Contact List Preview -->
+                  <div class="mt-3 bg-white/5 border border-white/10 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-medium text-blue-200">Deine Kontakte</span>
+                      <span class="text-xs text-blue-300">{{ qualifyingContactsCount }} qualifizieren für PDF</span>
+                    </div>
+                    <div class="space-y-2 max-h-32 overflow-y-auto">
+                      <div 
+                        v-for="contact in getContactData().slice(0, 5)" 
+                        :key="contact.id"
+                        class="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10"
+                      >
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-blue-100 truncate">
+                              {{ contact.therapistName || 'Unbekannter Therapeut' }}
+                            </span>
+                            <span 
+                              v-if="!contact.replyReceived || (contact.waitingTime && !contact.waitingTime.includes('1 Monat') && !contact.waitingTime.includes('2 Monate'))"
+                              class="flex-shrink-0 w-2 h-2 bg-green-400 rounded-full"
+                              title="Qualifiziert für PDF"
+                            />
+                            <span 
+                              v-else
+                              class="flex-shrink-0 w-2 h-2 bg-gray-400 rounded-full"
+                              title="Nicht für PDF qualifiziert"
+                            />
+                          </div>
+                          <div class="text-xs text-blue-200/70 truncate">
+                            {{ contact.contactDate || 'Kein Datum' }} • {{ contact.waitingTime || 'Keine Antwort' }}
+                          </div>
+                        </div>
+                      </div>
+                      <div v-if="contactCount > 5" class="text-center">
+                        <span class="text-xs text-blue-300 italic">... und {{ contactCount - 5 }} weitere</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div v-if="contactCount > 0" class="space-y-3">
+                  <!-- Main Action Button -->
+                  <NuxtLink 
+                    to="/therapists"
+                    :class="[
+                      'group flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 w-full',
+                      'bg-green-500 hover:bg-green-600 text-white border border-green-400/50'
+                    ]"
+                  >
+                    <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
+                    <span class="text-sm">Kontakte verwalten & mehr hinzufügen</span>
+                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 opacity-70 group-hover:opacity-100" />
+                  </NuxtLink>
+
+                  <!-- PDF Actions -->
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <!-- View PDF Button -->
+                    <button 
+                      @click="previewProtocolPdf"
+                      :disabled="qualifyingContactsCount < 3"
+                      :class="[
+                        'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg font-medium transition-all duration-200 shadow border text-sm',
+                        qualifyingContactsCount >= 3
+                          ? 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400/50 hover:shadow-lg hover:scale-105 active:scale-95'
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/20 cursor-not-allowed'
+                      ]"
+                    >
+                      <UIcon name="i-heroicons-eye" class="w-4 h-4" />
+                      <span>PDF ansehen</span>
+                    </button>
+
+                    <!-- Download PDF Button -->
+                    <button 
+                      @click="downloadProtocolPdf"
+                      :disabled="qualifyingContactsCount < 3"
+                      :class="[
+                        'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg font-medium transition-all duration-200 shadow border text-sm',
+                        qualifyingContactsCount >= 3
+                          ? 'bg-purple-500 hover:bg-purple-600 text-white border-purple-400/50 hover:shadow-lg hover:scale-105 active:scale-95'
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/20 cursor-not-allowed'
+                      ]"
+                    >
+                      <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
+                      <span>PDF herunterladen</span>
+                    </button>
+                  </div>
+
+                  <!-- Minimum contacts notice -->
+                  <div v-if="qualifyingContactsCount < 3" class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                      <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-300 flex-shrink-0" />
+                      <span class="text-xs text-amber-200">
+                        Du benötigst mindestens 3 qualifizierende Kontakte für das PDF 
+                        ({{ Math.max(0, 3 - qualifyingContactsCount) }} weitere benötigt)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- No contacts state -->
+                <div v-else class="space-y-3">
+                  <!-- Start Button -->
+                  <NuxtLink 
+                    to="/therapists"
+                    class="group flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 w-full bg-blue-500 hover:bg-blue-600 text-white border border-blue-400/50"
+                  >
+                    <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
+                    <span class="text-sm">KARL Tool nutzen</span>
+                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 opacity-70 group-hover:opacity-100" />
+                  </NuxtLink>
+
+                  <!-- Alternative Manual Option -->
+                  <div class="bg-white/5 border border-white/10 rounded-lg p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                      <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 text-blue-300" />
+                      <span class="text-xs font-medium text-blue-200">Manuell dokumentieren</span>
+                    </div>
+                    <p class="text-xs text-blue-100/70 leading-relaxed">
+                      Du kannst auch selbst eine Liste führen oder Musterdokumente aus dem Internet verwenden.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Feature Benefits -->
+                <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-blue-300" />
+                    <span class="text-xs font-medium text-blue-200">KARL macht's einfacher:</span>
+                  </div>
+                  <ul class="text-xs text-blue-100/80 space-y-1">
+                    <li class="flex items-start gap-2">
+                      <span class="text-blue-300 mt-0.5">•</span>
+                      <span>Automatische Therapeutensuche in deiner Region</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-blue-300 mt-0.5">•</span>
+                      <span>Kontakte direkt aus der Suche speichern und verfolgen</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-blue-300 mt-0.5">•</span>
+                      <span>Offizielles PDF im korrekten Format für die Krankenkasse</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-blue-300 mt-0.5">•</span>
+                      <span>Auto-Save: Deine Daten bleiben sicher im Browser gespeichert</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
               
               <!-- Important Requirements -->
               <div class="bg-amber-500/10 p-4 lg:p-5 rounded-xl border border-amber-500/20">
                 <div class="flex items-start gap-3">
                   <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300 mt-0.5 flex-shrink-0" />
                   <div class="space-y-2">
-                    <h4 class="text-amber-200 font-semibold">Was muss ins Kontaktprotokoll:</h4>
+                    <h4 class="text-amber-200 font-semibold">Was die Krankenkasse sehen will:</h4>
                     <ul class="text-amber-100/90 text-sm space-y-1.5">
                       <li class="flex items-start gap-2">
                         <span class="text-amber-300 mt-1">•</span>
-                        <span>Name des Therapeuten, Datum und Uhrzeit des Kontakts</span>
+                        <span><strong>6-10 Kontaktversuche</strong> bei verschiedenen Therapeuten</span>
                       </li>
                       <li class="flex items-start gap-2">
                         <span class="text-amber-300 mt-1">•</span>
-                        <span>Antwort: Ist ein Therapieplatz in unter 3 Monaten verfügbar?</span>
+                        <span><strong>Datum und Uhrzeit</strong> jedes Kontaktversuchs</span>
                       </li>
                       <li class="flex items-start gap-2">
                         <span class="text-amber-300 mt-1">•</span>
-                        <span>Auch Therapeuten notieren, die nicht ans Telefon gehen</span>
+                        <span><strong>Wartezeit über 3 Monate</strong> oder keine Rückmeldung</span>
                       </li>
                       <li class="flex items-start gap-2">
                         <span class="text-amber-300 mt-1">•</span>
-                        <span>Insgesamt 6-10 Therapeuten kontaktieren (je nach Region)</span>
+                        <span><strong>Name und Adresse</strong> der kontaktierten Therapeuten</span>
                       </li>
                     </ul>
                   </div>
                 </div>
               </div>
-              
-              <!-- Quick Tip -->
-              <div class="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-                <div class="flex items-center gap-2 mb-2">
+
+              <!-- Manual Documentation Tips -->
+              <div class="bg-white/5 p-4 rounded-lg border border-white/10">
+                <div class="flex items-center gap-2 mb-3">
                   <UIcon name="i-heroicons-light-bulb" class="w-4 h-4 text-blue-300" />
-                  <h4 class="text-blue-200 font-medium text-sm">Therapeuten finden</h4>
+                  <h4 class="text-blue-200 font-medium text-sm">Alternative: Manuell dokumentieren</h4>
                 </div>
-                <p class="text-blue-100/80 text-xs">
-                  Nutze Plattformen wie therapie.de oder die Therapeutensuche deiner Krankenkasse. Auch Empfehlungen von Hausärzten können hilfreich sein.
-                </p>
+                <div class="space-y-2 text-xs text-blue-100/80">
+                  <p>
+                    <strong>Therapeuten finden:</strong> therapie.de, Krankenkassen-Websites, Hausarzt-Empfehlungen
+                  </p>
+                  <p>
+                    <strong>Dokumentation:</strong> Excel-Tabelle oder handschriftliche Liste mit allen Kontaktdaten
+                  </p>
+                  <p>
+                    <strong>Wichtig:</strong> Jeden Anruf/E-Mail sofort notieren – auch wenn niemand antwortet!
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div class="flex justify-between items-center pt-4 border-t border-white/10">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-white/10">
               <UButton 
                 @click="prevStep" 
                 color="gray"
@@ -622,23 +842,26 @@
                 Zurück
               </UButton>
               
-              <UButton 
-                @click="completeStep(2)" 
-                :color="stepProgress[2] ? 'green' : 'blue'" 
-                size="sm"
-                variant="outline"
-              >
-                {{ stepProgress[2] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
-              </UButton>
-              
-              <UButton 
-                @click="nextStep" 
-                color="primary"
-                size="sm"
-                trailing-icon="i-heroicons-chevron-right"
-              >
-                Weiter
-              </UButton>
+              <div class="flex items-center gap-3">
+                <UButton 
+                  @click="completeStep(2)" 
+                  :color="stepProgress[2] ? 'green' : 'blue'" 
+                  size="sm"
+                  variant="outline"
+                  :icon="stepProgress[2] ? 'i-heroicons-check-circle' : 'i-heroicons-clock'"
+                >
+                  {{ stepProgress[2] ? 'Abgeschlossen ✓' : 'Als erledigt markieren' }}
+                </UButton>
+                
+                <UButton 
+                  @click="nextStep" 
+                  color="primary"
+                  size="sm"
+                  trailing-icon="i-heroicons-chevron-right"
+                >
+                  Weiter zu Schritt 3
+                </UButton>
+              </div>
             </div>
           </div>
 
@@ -1207,6 +1430,134 @@ const tempPlz = ref('')
 // Progress tracking toggles for Step 3
 const hasUberweisungscode = ref(false)
 const hasDringendErforderlich = ref(false)
+
+// Contact data integration for Kontaktprotokoll
+const getContactData = () => {
+  if (process.client) {
+    try {
+      // Get contact attempts from localStorage (matches the structure in therapists/index.vue)
+      const contactAttempts = JSON.parse(localStorage.getItem('contact-attempts') || '[]')
+      const manualContactAttempts = JSON.parse(localStorage.getItem('manual-contact-attempts') || '[]')
+      return [...contactAttempts, ...manualContactAttempts]
+    } catch (error) {
+      console.warn('Failed to load contact data:', error)
+      return []
+    }
+  }
+  return []
+}
+
+// Computed properties for contact tracking
+const contactCount = computed(() => {
+  return getContactData().length
+})
+
+const qualifyingContactsCount = computed(() => {
+  const contacts = getContactData()
+  // Count contacts that qualify for the protocol (no reply or long waiting time)
+  return contacts.filter(contact => {
+    return !contact.replyReceived || 
+           (contact.waitingTime && !contact.waitingTime.includes('1 Monat') && !contact.waitingTime.includes('2 Monate'))
+  }).length
+})
+
+// Helper function to prepare contact data for PDF
+const prepareContactsForPdf = () => {
+  const contacts = getContactData()
+  const qualifyingContacts = contacts.filter(contact => {
+    return !contact.replyReceived || 
+           (contact.waitingTime && !contact.waitingTime.includes('1 Monat') && !contact.waitingTime.includes('2 Monate'))
+  })
+
+  return qualifyingContacts.map(contact => ({
+    name: contact.therapistName || 'Name nicht verfügbar',
+    address: contact.therapistAddress || 'Adresse nicht verfügbar', 
+    date: contact.contactDate || new Date().toLocaleDateString('de-DE'),
+    time: contact.contactTime || '12:00',
+    waitingTime: contact.waitingTime || 'Warte noch auf Rückmeldung'
+  }))
+}
+
+// Preview PDF function
+const previewProtocolPdf = async () => {
+  try {
+    const pdfContacts = prepareContactsForPdf()
+
+    if (pdfContacts.length < 3) {
+      const toast = useToast()
+      toast.add({
+        title: 'Nicht genügend Kontakte',
+        description: 'Du benötigst mindestens 3 qualifizierende Kontaktversuche für das PDF.',
+        color: 'amber',
+        timeout: 4000
+      })
+      return
+    }
+
+    // Use the PDF generator composable
+    const { previewPdf } = usePdfGenerator()
+    
+    // Get current PLZ for the PDF
+    const currentPLZ = onboardingStore?.formData?.location || '00000'
+    
+    // Preview PDF in new tab
+    await previewPdf(pdfContacts, currentPLZ)
+    
+  } catch (error) {
+    console.error('Failed to preview PDF:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'PDF-Fehler',
+      description: 'Beim Anzeigen des PDFs ist ein Fehler aufgetreten.',
+      color: 'red',
+      timeout: 4000
+    })
+  }
+}
+
+// PDF download function
+const downloadProtocolPdf = async () => {
+  try {
+    const pdfContacts = prepareContactsForPdf()
+
+    if (pdfContacts.length < 3) {
+      const toast = useToast()
+      toast.add({
+        title: 'Nicht genügend Kontakte',
+        description: 'Du benötigst mindestens 3 qualifizierende Kontaktversuche für das PDF.',
+        color: 'amber',
+        timeout: 4000
+      })
+      return
+    }
+
+    // Use the PDF generator composable
+    const { exportPdf } = usePdfGenerator()
+    
+    // Get current PLZ for the PDF
+    const currentPLZ = onboardingStore?.formData?.location || '00000'
+    
+    // Generate and download PDF
+    await exportPdf(pdfContacts, currentPLZ)
+    
+    const toast = useToast()
+    toast.add({
+      title: 'PDF heruntergeladen! 📋',
+      description: `Kontaktprotokoll mit ${pdfContacts.length} Kontakten wurde gespeichert.`,
+      color: 'green',
+      timeout: 4000
+    })
+  } catch (error) {
+    console.error('Failed to generate PDF:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'PDF-Fehler',
+      description: 'Beim Erstellen des PDFs ist ein Fehler aufgetreten.',
+      color: 'red',
+      timeout: 4000
+    })
+  }
+}
 
 // Toggle functions
 const toggleUberweisungscode = () => {
