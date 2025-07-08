@@ -1,6 +1,8 @@
 // Unified Therapists API Adapter
 // Combines results from therapie.de and TK-Ärzte and provides health checks
 
+import { securityMiddleware } from '../utils/rateLimiter'
+
 interface TherapistData {
   id: string
   name: string
@@ -149,6 +151,16 @@ function combineResults(
 }
 
 export default defineEventHandler(async (event): Promise<TherapistSearchResult> => {
+  // Apply security middleware
+  const securityCheck = securityMiddleware(event)
+  if (!securityCheck.allowed) {
+    throw createError({
+      statusCode: securityCheck.status || 403,
+      statusMessage: securityCheck.error || 'Access denied',
+      data: securityCheck.retryAfter ? { retryAfter: securityCheck.retryAfter } : undefined
+    })
+  }
+
   const query = getQuery(event)
   const plz = query.plz as string
 

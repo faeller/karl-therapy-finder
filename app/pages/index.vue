@@ -56,7 +56,7 @@ const navigateToApp = () => {
         </div>
         <div class="flex items-center gap-3 lg:gap-4 rounded-2xl bg-white/10 backdrop-blur-sm p-4 lg:p-6 border border-white/20">
           <div class="text-2xl lg:text-3xl">📞</div>
-          <div class="text-blue-100/90 font-medium">100+ Anrufe werden oft benötigt</div>
+          <div class="text-blue-100/90 font-medium">30+ Anrufe werden oft benötigt</div>
         </div>
       </div>
       

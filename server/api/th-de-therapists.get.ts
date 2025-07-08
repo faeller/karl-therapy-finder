@@ -1,4 +1,5 @@
 import { load } from 'cheerio'
+import { securityMiddleware } from '../utils/rateLimiter'
 
 interface TherapistData {
   id: string
@@ -23,6 +24,16 @@ const cache = new Map<string, { data: TherapistSearchResult; expires: number }>(
 const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
 
 export default defineEventHandler(async (event): Promise<TherapistSearchResult> => {
+  // Apply security middleware
+  const securityCheck = securityMiddleware(event)
+  if (!securityCheck.allowed) {
+    throw createError({
+      statusCode: securityCheck.status || 403,
+      statusMessage: securityCheck.error || 'Access denied',
+      data: securityCheck.retryAfter ? { retryAfter: securityCheck.retryAfter } : undefined
+    })
+  }
+
   const query = getQuery(event)
   const plz = query.plz as string
   const specialization = query.specialization as string
