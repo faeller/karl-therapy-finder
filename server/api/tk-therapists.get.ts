@@ -25,7 +25,7 @@ interface TherapieDeCompatSearchResult {
 
 // --- CACHING ---
 const cache = new Map<string, { data: any; expires: number }>()
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
 
 
 // --- MAPPER FUNCTION ---

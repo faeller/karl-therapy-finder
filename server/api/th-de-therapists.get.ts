@@ -21,7 +21,7 @@ interface TherapistSearchResult {
 
 // Simple in-memory cache with expiration
 const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
 
 export default defineEventHandler(async (event): Promise<TherapistSearchResult> => {
   // Apply security middleware

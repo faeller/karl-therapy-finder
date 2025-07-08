@@ -28,7 +28,7 @@ interface TherapistSearchResult {
 
 // Simple in-memory cache with expiration
 const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
 
 async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) =>
