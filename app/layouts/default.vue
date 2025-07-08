@@ -165,6 +165,9 @@ onMounted(() => {
   setNavFromPath(currentPath)
 })
 
+// Also set navigation state immediately for SSR consistency
+setNavFromPath(route.path)
+
 // Watch for route changes
 // Only set navigation state for routes that don't manage their own navigation
 watch(() => route.path, (newPath) => {

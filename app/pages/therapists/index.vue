@@ -1,12 +1,12 @@
 <template>
   <PageCard>
-    <div class="relative z-10 flex w-full max-w-6xl flex-col items-center gap-6">
+    <div class="relative z-10 flex w-full max-w-4xl flex-col items-center gap-4 px-4 sm:px-6">
       <!-- KARL Header -->
       <div class="w-full text-center space-y-3">
         <div class="flex h-16 w-16 items-center justify-center mx-auto rounded-3xl border-2 border-blue-500/30 bg-linear-to-br from-blue-400/80 to-blue-600/80 text-2xl font-bold text-white shadow-2xl backdrop-blur-sm">
           K
         </div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">
+        <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
           <template v-if="!isPiniaLoading">
             {{ greeting }} {{ onboardingStore.formData.nickname || '' }}! 👋
           </template>
@@ -35,33 +35,35 @@
       <!-- Tab Navigation -->
       <div v-if="!isPiniaLoading && onboardingStore.formData.location" class="w-full">
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 mb-4">
-          <div class="flex gap-2">
+          <div class="flex flex-col sm:flex-row gap-2">
             <button 
               @click="activeTab = 'search'"
               :class="[
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none',
                 activeTab === 'search' 
                   ? 'bg-blue-500 text-white shadow-lg' 
                   : 'text-blue-200 hover:text-white hover:bg-white/10'
               ]"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex items-center justify-center gap-2">
                 <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
-                Therapeuten suchen
+                <span class="hidden sm:inline">Therapeuten suchen</span>
+                <span class="sm:hidden">Suchen</span>
               </div>
             </button>
             <button 
               @click="activeTab = 'kontaktprotokoll'"
               :class="[
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none',
                 activeTab === 'kontaktprotokoll' 
                   ? 'bg-blue-500 text-white shadow-lg' 
                   : 'text-blue-200 hover:text-white hover:bg-white/10'
               ]"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex items-center justify-center gap-2">
                 <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
-                Kontaktprotokoll
+                <span class="hidden sm:inline">Kontaktprotokoll</span>
+                <span class="sm:hidden">Protokoll</span>
                 <UBadge v-if="bookmarkedTherapists.length > 0" color="white" variant="solid" size="xs">
                   {{ bookmarkedTherapists.length }}
                 </UBadge>
@@ -87,11 +89,11 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             <!-- Therapy Type -->
             <select 
               v-model="filters.therapyType"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Alle Therapiearten" class="text-gray-900">Alle Therapien</option>
               <option v-for="option in therapyTypeOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -102,7 +104,7 @@
             <!-- Problem -->
             <select 
               v-model="filters.problem"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Alle Probleme" class="text-gray-900">Alle Probleme</option>
               <option v-for="option in problemOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -113,7 +115,7 @@
             <!-- Age Group -->
             <select 
               v-model="filters.ageGroup"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Alle Altersgruppen" class="text-gray-900">Alle Altersgruppen</option>
               <option v-for="option in ageGroupOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -124,7 +126,7 @@
             <!-- Billing -->
             <select 
               v-model="filters.billing"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Alle Abrechnungsarten" class="text-gray-900">Alle Abrechnungen</option>
               <option v-for="option in billingOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -135,7 +137,7 @@
             <!-- Gender -->
             <select 
               v-model="filters.gender"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Egal" class="text-gray-900">Geschlecht egal</option>
               <option v-for="option in genderOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -146,7 +148,7 @@
             <!-- Free Places -->
             <select 
               v-model="filters.freePlaces"
-              class="text-xs px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Egal" class="text-gray-900">Alle Plätze</option>
               <option v-for="option in freePlacesOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
@@ -254,43 +256,45 @@
           <div 
             v-for="therapist in therapistData.therapists" 
             :key="therapist.id"
-            class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20 hover:bg-white/15 transition-colors group"
+            class="rounded-xl bg-white/10 backdrop-blur-sm p-3 sm:p-4 border border-white/20 hover:bg-white/15 transition-colors group"
           >
-            <div class="flex items-start gap-3">
-              <!-- Profile Image -->
-              <div class="flex-shrink-0">
-                <div v-if="therapist.image" class="w-12 h-12 rounded-lg overflow-hidden">
-                  <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
-                </div>
-                <div v-else class="w-12 h-12 rounded-lg bg-blue-500/30 flex items-center justify-center">
-                  <svg class="w-6 h-6 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                </div>
-              </div>
-
-              <!-- Therapist Info -->
-              <div class="flex-1 min-w-0 cursor-pointer" @click="openTherapistProfile(therapist.profileUrl)">
-                <h4 class="font-semibold text-white text-sm group-hover:text-blue-200 transition-colors">
-                  {{ therapist.name }}
-                </h4>
-                <p class="text-blue-100/80 text-xs mt-1">
-                  {{ therapist.qualification }}
-                </p>
-                <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
-                  <div class="flex items-center gap-1">
-                    <span>📍</span>
-                    <span>{{ therapist.distance }}km</span>
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+              <div class="flex items-start gap-3">
+                <!-- Profile Image -->
+                <div class="flex-shrink-0">
+                  <div v-if="therapist.image" class="w-10 h-10 rounded-lg overflow-hidden">
+                    <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
                   </div>
-                  <div v-if="therapist.phone" class="flex items-center gap-1">
-                    <span>📞</span>
-                    <span>{{ therapist.phone }}</span>
+                  <div v-else class="w-10 h-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                 </div>
-              </div>
 
-              <!-- Action Buttons -->
-              <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- Therapist Info -->
+                <div class="flex-1 min-w-0 cursor-pointer" @click="openTherapistProfile(therapist.profileUrl)">
+                  <h4 class="font-semibold text-white text-sm group-hover:text-blue-200 transition-colors">
+                    {{ therapist.name }}
+                  </h4>
+                  <p class="text-blue-100/80 text-xs mt-1 line-clamp-2">
+                    {{ therapist.qualification }}
+                  </p>
+                  <div class="flex flex-col gap-1 mt-2 text-xs text-blue-100/60">
+                    <div class="flex items-center gap-1">
+                      <span>📍</span>
+                      <span>{{ therapist.distance }}km</span>
+                    </div>
+                    <div v-if="therapist.phone" class="flex items-center gap-1">
+                      <span>📞</span>
+                      <span class="truncate">{{ therapist.phone }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Mobile Action Buttons -->
+              <div class="flex items-center justify-end gap-2 mt-3">
                 <button 
                   v-if="therapist.phone"
                   @click="callTherapist(therapist.phone)"
@@ -307,15 +311,99 @@
                       ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30' 
                       : 'bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200'
                   ]"
+                  title="Therapeut merken"
                 >
                   <UIcon :name="isBookmarked(therapist.id) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'" class="w-4 h-4" />
                 </button>
                 <button 
+                  @click="addContactAttemptFromSearch(therapist)"
+                  class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                  title="Kontaktversuch hinzufügen"
+                >
+                  <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                </button>
+                <button 
                   @click="openTherapistProfile(therapist.profileUrl)"
                   class="p-2 rounded-lg bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200 transition-all"
+                  title="Profil öffnen"
                 >
                   <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+
+            <!-- Desktop/Tablet Layout -->
+            <div class="hidden md:block">
+              <div class="flex items-start gap-3">
+                <!-- Profile Image -->
+                <div class="flex-shrink-0">
+                  <div v-if="therapist.image" class="w-12 h-12 rounded-lg overflow-hidden">
+                    <img :src="therapist.image" :alt="therapist.name" class="w-full h-full object-cover">
+                  </div>
+                  <div v-else class="w-12 h-12 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Therapist Info -->
+                <div class="flex-1 min-w-0 cursor-pointer" @click="openTherapistProfile(therapist.profileUrl)">
+                  <h4 class="font-semibold text-white text-sm group-hover:text-blue-200 transition-colors">
+                    {{ therapist.name }}
+                  </h4>
+                  <p class="text-blue-100/80 text-xs mt-1">
+                    {{ therapist.qualification }}
+                  </p>
+                  <div class="flex items-center gap-4 mt-2 text-xs text-blue-100/60">
+                    <div class="flex items-center gap-1">
+                      <span>📍</span>
+                      <span>{{ therapist.distance }}km</span>
+                    </div>
+                    <div v-if="therapist.phone" class="flex items-center gap-1">
+                      <span>📞</span>
+                      <span>{{ therapist.phone }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button 
+                    v-if="therapist.phone"
+                    @click="callTherapist(therapist.phone)"
+                    class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                    title="Anrufen"
+                  >
+                    <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="toggleBookmark(therapist)"
+                    :class="[
+                      'p-2 rounded-lg transition-all',
+                      isBookmarked(therapist.id) 
+                        ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30' 
+                        : 'bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200'
+                    ]"
+                    title="Therapeut merken"
+                  >
+                    <UIcon :name="isBookmarked(therapist.id) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'" class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="addContactAttemptFromSearch(therapist)"
+                    class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                    title="Kontaktversuch hinzufügen"
+                  >
+                    <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="openTherapistProfile(therapist.profileUrl)"
+                    class="p-2 rounded-lg bg-white/10 text-blue-100/60 hover:bg-white/20 hover:text-blue-200 transition-all"
+                    title="Profil öffnen"
+                  >
+                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -345,7 +433,7 @@
           <p class="text-blue-100/80 text-sm mb-4">
             Erstelle ein PDF-Dokument mit allen qualifizierten Kontaktversuchen für deine Krankenkasse. (Nur Versuche ohne Rückmeldung oder Wartezeit >3 Monate)
           </p>
-          <div class="flex gap-3">
+          <div class="flex flex-col sm:flex-row gap-3">
             <button 
               @click="previewPdf"
               :disabled="qualifyingContactAttempts.length === 0"
@@ -353,7 +441,8 @@
             >
               <div class="flex items-center justify-center gap-2">
                 <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                PDF in neuem Tab öffnen
+                <span class="hidden sm:inline">PDF in neuem Tab öffnen</span>
+                <span class="sm:hidden">Vorschau</span>
               </div>
             </button>
             <button 
@@ -363,7 +452,8 @@
             >
               <div class="flex items-center justify-center gap-2">
                 <UIcon name="i-heroicons-document-arrow-down" class="w-4 h-4" />
-                PDF herunterladen
+                <span class="hidden sm:inline">PDF herunterladen</span>
+                <span class="sm:hidden">Download</span>
               </div>
             </button>
           </div>
@@ -502,14 +592,6 @@
                   <!-- Action Buttons -->
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
-                      v-if="therapist.phone"
-                      @click="callTherapist(therapist.phone)"
-                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
-                      title="Anrufen"
-                    >
-                      <UIcon name="i-heroicons-phone" class="w-4 h-4" />
-                    </button>
-                    <button 
                       v-if="!getContactAttempts(therapist.id).length"
                       @click="addContactAttempt(therapist)"
                       class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
@@ -531,6 +613,14 @@
                       title="Therapeut merken/entfernen"
                     >
                       <UIcon name="i-heroicons-bookmark-solid" class="w-4 h-4" />
+                    </button>
+                    <button 
+                      v-if="therapist.phone"
+                      @click="callTherapist(therapist.phone)"
+                      class="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                      title="Anrufen"
+                    >
+                      <UIcon name="i-heroicons-phone" class="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -657,7 +747,7 @@
                               </UBadge>
                             </div>
                           </div>
-                          <div v-if="getContactAttempts(therapist.id).length > 0" class="space-y-1">
+                          <div v-if="getContactAttempts(therapist.id).length > 0" class="space-y-1 mt-2">
                             <div class="text-xs text-blue-100/60">
                               Letzter Kontakt: {{ formatDate(getContactAttempts(therapist.id)[getContactAttempts(therapist.id).length - 1].contactDate) }}
                             </div>
@@ -1370,6 +1460,22 @@ const openContactModal = (therapist?: TherapistData) => {
   customWaitingTime.value = ''
   
   showContactModal.value = true
+}
+
+// Quick add contact attempt from search results
+const addContactAttemptFromSearch = (therapist: TherapistData) => {
+  // Auto-bookmark the therapist if not already bookmarked
+  if (!isBookmarked(therapist.id)) {
+    toggleBookmark(therapist)
+  }
+  
+  // Switch to contact protocol tab
+  activeTab.value = 'kontaktprotokoll'
+  
+  // Wait for tab to switch, then open modal
+  nextTick(() => {
+    openContactModal(therapist)
+  })
 }
 
 const closeContactModal = () => {
