@@ -75,38 +75,125 @@ billingMap['8'] = '22';   // Private Krankenversicherung -> private insurance
 billingMap['9'] = '22';   // Selbstzahler -> self-payers (same as private in TK)
 
 
-// --- HELPER FUNCTIONS FOR SPLITTING MULTIPLE THERAPISTS ---
-function splitMultipleTherapists(therapistName: string): string[] {
-  // Split by "Frau " and "Herr " prefixes, but keep the prefix with each name
-  const names: string[] = [];
+// --- HELPER FUNCTIONS FOR CLEANING DATA ---
+function cleanTherapistName(name: string): string {
+  if (!name) return '';
   
-  // Replace multiple spaces with single space and clean up
-  const cleanName = therapistName.replace(/\s+/g, ' ').trim();
+  // Remove practice names that are concatenated with therapist names
+  let cleaned = name.replace(/\s+/g, ' ').trim();
   
-  // Split by gender prefixes while preserving them
-  const parts = cleanName.split(/(Frau |Herr )/);
-  let currentName = '';
+  // Remove practice prefixes before Frau/Herr
+  cleaned = cleaned.replace(/^.*?(?=Frau\s|Herr\s)/, '');
   
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    if (part === 'Frau ' || part === 'Herr ') {
-      // If we have a current name, save it
-      if (currentName.trim()) {
-        names.push(currentName.trim());
-      }
-      // Start new name with the gender prefix
-      currentName = part;
-    } else if (part.trim()) {
-      currentName += part;
+  // If no Frau/Herr found but contains common practice words, try to extract the name part
+  if (!cleaned.includes('Frau ') && !cleaned.includes('Herr ')) {
+    // Look for patterns like "Practice Name Title. Name" 
+    const nameMatch = cleaned.match(/(?:Dr\.|Dipl\.-|Prof\.).*?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$/);
+    if (nameMatch) {
+      cleaned = nameMatch[0];
     }
   }
   
-  // Add the last name if it exists
-  if (currentName.trim()) {
-    names.push(currentName.trim());
+  return cleaned.trim();
+}
+
+function cleanQualification(qualification: string): string {
+  if (!qualification) return '';
+  
+  // Remove duplicates and fix truncated qualifications
+  let cleaned = qualification.replace(/\s+/g, ' ').trim();
+  
+  // Fix common truncations
+  if (cleaned.endsWith('Psychologische ')) {
+    cleaned = 'Psychologische Psychotherapeutin';
   }
   
-  return names.filter(name => name.length > 0);
+  // Remove duplicated parts
+  cleaned = cleaned.replace(/(Psychologische?\s+Psychotherapeut(?:in)?)\1+/g, '$1');
+  
+  return cleaned;
+}
+
+function cleanOpeningStatus(status: string): string {
+  if (!status) return '';
+  
+  // Remove duplicates
+  const parts = status.split(/(?=Praxis\s)/);
+  const unique = [...new Set(parts.filter(p => p.trim()))];
+  return unique.join(' ').trim();
+}
+
+function cleanPhoneNumber(phone: string): string {
+  if (!phone) return '';
+  
+  // Remove "Telefon:" and "Telefax:" prefixes
+  let cleaned = phone.replace(/Telefon:\s*/g, '').replace(/Telefax:\s*/g, '');
+  
+  // Extract German phone number pattern like "0911 / 12345678"
+  const phonePattern = /(\d{4})\s*\/\s*(\d[\d\s]*\d)/;
+  let match = cleaned.match(phonePattern);
+  
+  if (match) {
+    // Format as "0911 / digits"
+    let digits = match[2].replace(/\s/g, '');
+    return `${match[1]} / ${digits}`;
+  }
+  
+  // Try pattern like "09 11 / 12345" and fix to "0911 / 12345"  
+  const splitPattern = /(\d{2})\s+(\d{2})\s*\/\s*(\d[\d\s]*\d)/;
+  match = cleaned.match(splitPattern);
+  
+  if (match) {
+    let digits = match[3].replace(/\s/g, '');
+    return `${match[1]}${match[2]} / ${digits}`;
+  }
+  
+  // Simple pattern for any phone-like number
+  const simplePattern = /(\d{3,})/;
+  const simpleMatch = cleaned.match(simplePattern);
+  if (simpleMatch) {
+    return simpleMatch[1];
+  }
+  
+  return '';
+}
+
+// --- HELPER FUNCTIONS FOR SPLITTING MULTIPLE THERAPISTS ---
+function splitMultipleTherapists(therapistName: string): string[] {
+  // Clean and normalize the input
+  let cleanName = therapistName.replace(/\s+/g, ' ').trim();
+  
+  // First, extract all therapist names using a more comprehensive regex
+  const therapistRegex = /(Frau|Herr)\s+([^F][^r][^a][^u][^H][^e][^r][^r]*?)(?=Frau\s|Herr\s|$)/g;
+  const matches = [];
+  let match;
+  
+  while ((match = therapistRegex.exec(cleanName)) !== null) {
+    const fullName = match[0].trim();
+    if (fullName && fullName.length > 5) { // Ensure it's a meaningful name
+      matches.push(fullName);
+    }
+  }
+  
+  // If regex approach found names, use those
+  if (matches.length > 0) {
+    return matches;
+  }
+  
+  // Fallback: try to find just the first therapist name if practice name is concatenated
+  const firstTherapistMatch = cleanName.match(/(Frau|Herr)\s+[^F][^H]*?(?:\s+Dr\.|[A-Z][a-z]+).*?(?=Frau\s|Herr\s|$)/);
+  if (firstTherapistMatch) {
+    return [firstTherapistMatch[0].trim()];
+  }
+  
+  // If all else fails, try to clean up obvious practice name prefixes
+  const cleanedName = cleanName.replace(/^.*?(?=Frau\s|Herr\s)/, '');
+  if (cleanedName && cleanedName !== cleanName) {
+    return [cleanedName.trim()];
+  }
+  
+  // Last resort: return the original name
+  return [cleanName];
 }
 
 function splitMultipleQualifications(qualification: string): string[] {
@@ -116,22 +203,44 @@ function splitMultipleQualifications(qualification: string): string[] {
 }
 
 function splitMultiplePhones(phone: string): string[] {
-  // Split phone numbers by "Telefon:" prefix
-  const phones: string[] = [];
-  
   if (!phone) return [];
   
-  // Split by "Telefon:" and clean up
-  const parts = phone.split(/Telefon:\s*/);
+  // Clean up the phone string
+  let cleanPhone = phone.trim();
+  
+  // Remove duplicate phone numbers (same number repeated)
+  // Pattern: "number + Telefon: + same number"
+  const phoneRegex = /(\d[\d\s\/\-\+]+\d)(?:\s*Telefon:\s*\1)?/g;
+  const matches = cleanPhone.match(phoneRegex);
+  
+  if (matches) {
+    // Extract unique phone numbers
+    const uniquePhones = new Set<string>();
+    matches.forEach(match => {
+      // Clean the match and extract the phone number
+      const cleaned = match.replace(/Telefon:\s*/g, '').trim();
+      if (cleaned && /\d/.test(cleaned)) {
+        uniquePhones.add(cleaned);
+      }
+    });
+    return Array.from(uniquePhones);
+  }
+  
+  // Fallback: split by "Telefon:" and return unique numbers
+  const parts = cleanPhone.split(/Telefon:\s*/);
+  const phones: string[] = [];
   
   for (const part of parts) {
-    const cleanPhone = part.trim();
-    if (cleanPhone && cleanPhone !== 'Telefon:') {
-      phones.push(cleanPhone);
+    const cleaned = part.trim();
+    if (cleaned && cleaned !== 'Telefon:' && /\d/.test(cleaned)) {
+      // Check if this phone number is already in the array
+      if (!phones.some(existing => existing === cleaned)) {
+        phones.push(cleaned);
+      }
     }
   }
   
-  return phones;
+  return phones.length > 0 ? phones : [cleanPhone];
 }
 
 
@@ -225,23 +334,31 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
       if ($card.find('h3.card-title').length === 0) return;
       
       const practiceName = $card.find('h3.card-title').text().trim();
-      const therapistName = $card.find('strong > a').text().trim();
+      let therapistName = $card.find('strong > a').text().trim();
       const profileUrlRaw = $card.find('strong > a').attr('href') || '';
       const profileUrl = new URL(profileUrlRaw, 'https://www.tk-aerztefuehrer.de').toString();
       const idMatch = profileUrl.match(/e_id=(\d+)/);
       const baseId = idMatch ? idMatch[1] : `fallback-${therapists.length}`;
-      const qualification = $card.find('span[style*="color:#666"]').text().trim();
-      const openingStatus = $card.find('div[style*="font-weight:600"]').text().trim();
+      let qualification = $card.find('span[style*="color:#666"]').text().trim();
+      let openingStatus = $card.find('div[style*="font-weight:600"]').text().trim();
       const distanceText = $card.find('div:contains("km")').last().text().trim();
       const distanceMatch = distanceText.match(/([\d,]+)\s+km/);
       const distance = distanceMatch ? parseFloat(distanceMatch[1].replace(',', '.')) : 0;
-      const phone = $card.find('p:contains("Telefon:")').text().replace('Telefon:', '').trim() || undefined;
+      let phone = $card.find('p:contains("Telefon:")').text().replace('Telefon:', '').trim() || undefined;
       const addressParts = $card.find('.col-sm-4.pt-2').contents().filter((_, el) => el.type === 'text' && $(el).text().trim().length > 0).map((_, el) => $(el).text().trim()).get().slice(0, 2);
       const address = addressParts.join(', ');
 
-      // Check for multiple therapists in one entry
-      const hasMultipleNames = therapistName.includes('Frau ') && therapistName.split('Frau ').length > 2 || 
-                               therapistName.includes('Herr ') && therapistName.split('Herr ').length > 2;
+      // Clean up common issues before processing
+      therapistName = cleanTherapistName(therapistName);
+      qualification = cleanQualification(qualification);
+      openingStatus = cleanOpeningStatus(openingStatus);
+      phone = cleanPhoneNumber(phone || '');
+
+      // Check for multiple therapists in one entry (after cleaning)
+      const frauCount = (therapistName.match(/Frau /g) || []).length;
+      const herrCount = (therapistName.match(/Herr /g) || []).length;
+      const totalGenderPrefixes = frauCount + herrCount;
+      const hasMultipleNames = totalGenderPrefixes > 1;
       
       if (hasMultipleNames) {
         // Split multiple therapists into separate entries
@@ -263,14 +380,15 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
           });
         });
       } else {
-        // Single therapist entry
+        // Single therapist entry - ensure phone is properly handled
+        const finalPhone = phone || undefined;
         therapists.push({ 
           id: baseId, 
           practiceName, 
           therapistName, 
           qualification, 
           address, 
-          phone, 
+          phone: finalPhone, 
           distance, 
           openingStatus, 
           profileUrl 
