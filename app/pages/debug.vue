@@ -24,25 +24,37 @@
           Enable experimental features like email extraction and contact automation
         </p>
         
-        <div class="flex items-center gap-3">
-          <UToggle 
-            v-model="debugMode" 
-            @update:model-value="toggleDebugMode"
-            size="lg"
-            color="primary"
-          />
-          <span class="text-sm text-white font-medium">
-            {{ debugMode ? 'Enabled' : 'Disabled' }}
-          </span>
-          <UBadge 
-            v-if="debugMode" 
-            color="green" 
-            variant="soft" 
-            size="xs"
-          >
-            ACTIVE
-          </UBadge>
-        </div>
+        <ClientOnly>
+          <div class="flex items-center gap-3">
+            <button
+              @click="toggleDebugMode(!debugMode)"
+              :class="[
+                'relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 ease-in-out',
+                debugMode 
+                  ? 'bg-blue-500 hover:bg-blue-600' 
+                  : 'bg-gray-600 hover:bg-gray-500'
+              ]"
+            >
+              <span 
+                :class="[
+                  'inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ease-in-out',
+                  debugMode ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+            <span class="text-sm text-white font-medium">
+              {{ debugMode ? 'Enabled' : 'Disabled' }}
+            </span>
+            <UBadge 
+              v-if="debugMode" 
+              color="green" 
+              variant="soft" 
+              size="xs"
+            >
+              ACTIVE
+            </UBadge>
+          </div>
+        </ClientOnly>
       </div>
 
       <!-- Debug Tools -->
