@@ -112,6 +112,17 @@
             >
               <UIcon name="i-simple-icons-patreon" class="w-4 h-4" />
             </UButton>
+            
+            <!-- Settings -->
+            <UButton 
+              @click="showSettingsModal = true"
+              variant="ghost" 
+              color="blue"
+              size="sm"
+              class="text-blue-100/80 hover:text-blue-200 hover:bg-white/10"
+            >
+              <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4" />
+            </UButton>
           </div>
 
           <!-- Mobile Navigation -->
@@ -133,6 +144,9 @@
       </div>
       <AppFooter />
     </Container>
+
+    <!-- Settings Modal -->
+    <SettingsModal v-model="showSettingsModal" />
   </div>
 </template>
 
@@ -142,6 +156,12 @@ const { locale, locales, setLocale } = useI18n()
 
 // Use navigation state management
 const { currentNavItem, setNavFromPath } = useNavigation()
+
+// Settings modal state
+const showSettingsModal = ref(false)
+
+// Import SettingsModal component
+import SettingsModal from '~/components/SettingsModal.vue'
 
 // Handle navbar clicks for therapists page
 const handleTherapistsNavClick = () => {
@@ -255,6 +275,12 @@ const mobileMenuItems = computed(() => {
     target: '_blank'
   }
 
+  const settingsItem = {
+    label: 'Settings',
+    icon: 'i-heroicons-cog-6-tooth',
+    onClick: () => showSettingsModal.value = true
+  }
+
   const patreonItem = {
     label: 'Patreon',
     icon: 'i-simple-icons-patreon',
@@ -262,7 +288,7 @@ const mobileMenuItems = computed(() => {
     target: '_blank'
   }
 
-  return [...baseItems, githubItem, patreonItem]
+  return [...baseItems, settingsItem, githubItem, patreonItem]
 })
 
 // Load persisted language on mount
