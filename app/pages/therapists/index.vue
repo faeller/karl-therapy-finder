@@ -115,8 +115,7 @@
               v-model="filters.ageGroup"
               class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="Alle Altersgruppen" class="text-gray-900">Alle Altersgruppen</option>
-              <option v-for="option in ageGroupOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+              <option v-for="option in ageGroupOptions" :key="option" :value="option" class="text-gray-900">
                 {{ option }}
               </option>
             </select>
@@ -2258,6 +2257,11 @@ const saveManualContactAttempts = () => {
 
 // Load filters from localStorage or use defaults
 const getStoredFilters = () => {
+  // Get default age group from onboarding data
+  const defaultAgeGroup = onboardingStore.formData.isAdult === false 
+    ? 'Kinder- und Jugendpsychotherapie' 
+    : 'Für Erwachsene'
+  
   if (process.client) {
     try {
       const stored = localStorage.getItem('therapist-filters')
@@ -2266,7 +2270,7 @@ const getStoredFilters = () => {
           therapyType: 'Alle Therapiearten',
           gender: 'Egal',
           problem: 'Alle Probleme',
-          ageGroup: 'Alle Altersgruppen',
+          ageGroup: defaultAgeGroup,
           billing: 'Gesetzliche Krankenversicherung',
           freePlaces: 'Egal',
           specialization: ''
@@ -2280,7 +2284,7 @@ const getStoredFilters = () => {
     therapyType: 'Alle Therapiearten',
     gender: 'Egal',
     problem: 'Alle Probleme',
-    ageGroup: 'Alle Altersgruppen',
+    ageGroup: defaultAgeGroup,
     billing: 'Gesetzliche Krankenversicherung',
     freePlaces: 'Egal',
     specialization: ''
@@ -2920,11 +2924,8 @@ const problemMap: Record<string, string | null> = {
 }
 
 const ageGroupMap: Record<string, string | null> = {
-  'Alle Altersgruppen': null,
-  'Kinder (0-12)': 'kinder',
-  'Jugendliche (13-17)': 'jugend',
-  'Erwachsene (18-64)': 'erwachsene',
-  'Senioren (65+)': 'senioren'
+  'Für Erwachsene': null,
+  'Kinder- und Jugendpsychotherapie': 'kjp'
 }
 
 const billingMap: Record<string, string | null> = {
@@ -2972,11 +2973,8 @@ const searchProblemOptions = [
 
 // Age group options (Für wen?)
 const ageGroupOptions = [
-  'Alle Altersgruppen',
-  'Kinder (0-12)',
-  'Jugendliche (13-17)',
-  'Erwachsene (18-64)',
-  'Senioren (65+)'
+  'Für Erwachsene',
+  'Kinder- und Jugendpsychotherapie'
 ]
 
 // Billing options (Abrechnung)
@@ -3008,7 +3006,9 @@ const queryParams = computed(() => ({
   ageGroup: ageGroupMap[filters.value.ageGroup] || undefined,
   billing: billingMap[filters.value.billing] || undefined,
   freePlaces: freePlacesMap[filters.value.freePlaces] || undefined,
-  specialization: debouncedSpecialization.value || undefined
+  specialization: debouncedSpecialization.value || undefined,
+  // Override specialization for KJP
+  tkSpecialization: ageGroupMap[filters.value.ageGroup] === 'kjp' ? 'kjp' : 'psychotherapeut'
 }))
 
 const { data: therapistData, pending, error, refresh } = await useLazyFetch<TherapistSearchResult>('/api/therapists', {
@@ -3051,7 +3051,7 @@ const hasActiveFilters = computed(() => {
   return filters.value.therapyType !== 'Alle Therapiearten' || 
          filters.value.gender !== 'Egal' ||
          filters.value.problem !== 'Alle Probleme' ||
-         filters.value.ageGroup !== 'Alle Altersgruppen' ||
+         false ||
          filters.value.billing !== 'Gesetzliche Krankenversicherung' ||
          filters.value.freePlaces !== 'Egal' ||
          filters.value.specialization !== ''
@@ -3063,7 +3063,7 @@ const activeFiltersCount = computed(() => {
     filters.value.therapyType !== 'Alle Therapiearten',
     filters.value.gender !== 'Egal',
     filters.value.problem !== 'Alle Probleme',
-    filters.value.ageGroup !== 'Alle Altersgruppen',
+    false,
     filters.value.billing !== 'Gesetzliche Krankenversicherung',
     filters.value.freePlaces !== 'Egal',
     filters.value.specialization !== ''

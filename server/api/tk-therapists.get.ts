@@ -64,6 +64,12 @@ specializationMap['psychotherapeut'] = {
   Ft_e: 'CatId1%3A%3APsychologischer+Psychotherapeut%2FPsychotherapeutin%3A%3A1086%3B' 
 };
 
+// KJP specialization
+specializationMap['kjp'] = { 
+  Ft: 'Kinder-%2FJugendpsychiatrie+und+-psychotherapie', 
+  Ft_e: 'CatId1%3A%3AKinder-%2FJugendpsychiatrie+und+-psychotherapie%3A%3A17%3B' 
+};
+
 // Add billing options including Privat/Selbstzahler
 billingMap['gesetzlich'] = '127';  // TK and other statutory insurance
 billingMap['privat'] = '22';       // Private insurance

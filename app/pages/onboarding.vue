@@ -603,7 +603,7 @@ const getLocationAndPLZ = async () => {
           <!-- Info about data management -->
           <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-md mx-auto text-sm">
             <p class="text-blue-200/90 text-center">
-              💡 <strong>Tipp:</strong> Du kannst diese Daten jederzeit ändern und in den Einstellungen (⚙️ oben rechts) importieren/exportieren.
+              💡 <strong>Tipp:</strong> Du kannst deine Daten jederzeit ändern mit dem Zurück-Knopf. <br><br> In den Einstellungen (⚙️ oben rechts) kannst du sie exportieren und importieren.
             </p>
           </div>
 

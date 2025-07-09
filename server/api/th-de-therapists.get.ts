@@ -168,6 +168,11 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
         params.set('terminzeitraum', freePlaces)
       }
       
+      // Add therapy offering parameter for KJP
+      if (ageGroup === 'kjp') {
+        params.set('therapieangebot', '4') // Therapie für Kinder und Jugendliche
+      }
+      
       // Add more parameters as needed for other filters
       if (therapyType) {
         // Map therapy types to therapie.de parameters if needed

@@ -66,6 +66,10 @@ async function callTkApi(query: Record<string, any>): Promise<{ status: 'success
   try {
     console.log('📞 Calling TK API...')
     const tkQuery = { ...query, compatible: 'true' }
+    // Use tkSpecialization if provided, otherwise default to 'psychotherapeut'
+    if (query.tkSpecialization) {
+      tkQuery.specialization = query.tkSpecialization
+    }
     const response = await fetchWithTimeout(
       $fetch('/api/tk-therapists', { query: tkQuery }),
       15000
@@ -88,7 +92,8 @@ async function callTkApi(query: Record<string, any>): Promise<{ status: 'success
 function combineResults(
   therapieDeResult: { status: string; data?: any; results: number; error?: string },
   tkResult: { status: string; data?: any; results: number; error?: string },
-  plz: string
+  plz: string,
+  query: Record<string, any>
 ): TherapistSearchResult {
   const combinedTherapists: TherapistData[] = []
   let totalResults = 0
@@ -132,14 +137,34 @@ function combineResults(
     totalResults += tkResult.data.totalResults || 0
   }
 
+  // Filter out inappropriate entries for adult therapy
+  let filteredTherapists = combinedTherapists
+  
+  // If searching for adult therapy (not KJP), filter out "Kinder" entries that don't have "Psychologische(r) Psychotherapeut"
+  if (query.ageGroup !== 'kjp' && query.tkSpecialization !== 'kjp') {
+    console.log('🔍 Filtering for adult therapy, checking for inappropriate child therapists...')
+    filteredTherapists = combinedTherapists.filter(therapist => {
+      // If the qualification contains "Kinder", check if it also contains "Psychologische(r) Psychotherapeut"
+      if (therapist.qualification && therapist.qualification.toLowerCase().includes('kinder')) {
+        console.log(`📋 Found therapist with "Kinder" in qualification: ${therapist.name} - ${therapist.qualification}`)
+        const hasValidQualification = therapist.qualification.toLowerCase().includes('psychologische') ||
+                                     therapist.qualification.toLowerCase().includes('psychologischer')
+        console.log(`   - Valid for adults: ${hasValidQualification}`)
+        return hasValidQualification
+      }
+      return true // Keep all other entries
+    })
+    console.log(`🔍 Filtered ${combinedTherapists.length} down to ${filteredTherapists.length} therapists`)
+  }
+
   // Sort by distance
-  combinedTherapists.sort((a, b) => a.distance - b.distance)
+  filteredTherapists.sort((a, b) => a.distance - b.distance)
 
   return {
     plz,
-    totalResults,
+    totalResults: filteredTherapists.length, // Update total to reflect filtered count
     radius,
-    therapists: combinedTherapists,
+    therapists: filteredTherapists,
     sources: {
       'therapie.de': {
         status: therapieDeResult.status as 'success' | 'error' | 'timeout',
@@ -212,7 +237,7 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   }
 
   // Combine results from both sources
-  const result = combineResults(therapieDeResult, tkResult, plz)
+  const result = combineResults(therapieDeResult, tkResult, plz, query)
 
   // Log summary
   console.log(`📊 Combined results for PLZ ${plz}:`)
