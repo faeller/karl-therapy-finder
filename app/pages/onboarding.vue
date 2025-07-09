@@ -432,7 +432,7 @@ const getLocationAndPLZ = async () => {
             <p class="text-blue-100/80 text-sm">Komplett optional - hilft uns bei der Suche</p>
           </div>
           
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 max-w-2xl mx-auto">
             <div
               v-for="option in struggleOptions"
               :key="option.value"
