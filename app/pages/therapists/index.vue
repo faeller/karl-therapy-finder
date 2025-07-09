@@ -1187,20 +1187,80 @@
             </div>
           </div>
 
-          <!-- Email Input -->
-          <div>
-            <label class="block text-sm font-medium text-blue-200 mb-2">
-              E-Mail-Adresse (optional)
-            </label>
-            <input 
-              v-model="emailForm.customEmail"
-              type="email"
-              class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
-              :placeholder="selectedTherapist?.email || 'therapeut@praxis.de'"
-            />
-            <p v-if="selectedTherapist?.email" class="text-xs text-blue-200/60 mt-1">
-              Gefundene E-Mail: {{ selectedTherapist.email }} (Du kannst eine andere eingeben)
-            </p>
+          <!-- Email and Insurance Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Email Input -->
+            <div>
+              <label class="block text-sm font-medium text-blue-200 mb-2">
+                E-Mail-Adresse (optional)
+              </label>
+              <input 
+                v-model="emailForm.customEmail"
+                type="email"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+                :placeholder="selectedTherapist?.email || 'therapeut@praxis.de'"
+              />
+              <p v-if="selectedTherapist?.email" class="text-xs text-blue-200/60 mt-1">
+                Gefundene E-Mail: {{ selectedTherapist.email }} (Du kannst eine andere eingeben)
+              </p>
+            </div>
+
+            <!-- Insurance Type -->
+            <div>
+              <label class="block text-sm font-medium text-blue-200 mb-2">
+                Versicherung (optional)
+              </label>
+              <div class="flex gap-1 flex-wrap">
+                <button
+                  @click="emailForm.insurance = 'gesetzlich'"
+                  :class="[
+                    'px-2 py-1.5 rounded text-xs font-medium transition-all',
+                    emailForm.insurance === 'gesetzlich'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                  ]"
+                  type="button"
+                >
+                  Gesetzlich
+                </button>
+                <button
+                  @click="emailForm.insurance = 'privat'"
+                  :class="[
+                    'px-2 py-1.5 rounded text-xs font-medium transition-all',
+                    emailForm.insurance === 'privat'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                  ]"
+                  type="button"
+                >
+                  Privat
+                </button>
+                <button
+                  @click="emailForm.insurance = 'bewilligte Kostenerstattung'"
+                  :class="[
+                    'px-2 py-1.5 rounded text-xs font-medium transition-all',
+                    emailForm.insurance === 'bewilligte Kostenerstattung'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                  ]"
+                  type="button"
+                >
+                  Kostenerstattung
+                </button>
+                <button
+                  @click="emailForm.insurance = ''"
+                  :class="[
+                    'px-2 py-1.5 rounded text-xs font-medium transition-all',
+                    emailForm.insurance === ''
+                      ? 'bg-gray-500 text-white'
+                      : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                  ]"
+                  type="button"
+                >
+                  Keine Angabe
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- No Email Found Info -->
@@ -1216,63 +1276,6 @@
                   Du kannst im E-Mail-Feld oben eine eigene hinzufügen.
                 </p>
               </div>
-            </div>
-          </div>
-
-          <!-- Insurance Type -->
-          <div>
-            <label class="block text-sm font-medium text-blue-200 mb-2">
-              Versicherung (optional)
-            </label>
-            <div class="flex gap-2 flex-wrap">
-              <button
-                @click="emailForm.insurance = 'gesetzlich'"
-                :class="[
-                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                  emailForm.insurance === 'gesetzlich'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
-                ]"
-                type="button"
-              >
-                Gesetzlich
-              </button>
-              <button
-                @click="emailForm.insurance = 'privat'"
-                :class="[
-                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                  emailForm.insurance === 'privat'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
-                ]"
-                type="button"
-              >
-                Privat
-              </button>
-              <button
-                @click="emailForm.insurance = 'bewilligte Kostenerstattung'"
-                :class="[
-                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                  emailForm.insurance === 'bewilligte Kostenerstattung'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
-                ]"
-                type="button"
-              >
-                Kostenerstattung
-              </button>
-              <button
-                @click="emailForm.insurance = ''"
-                :class="[
-                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                  emailForm.insurance === ''
-                    ? 'bg-gray-500 text-white'
-                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
-                ]"
-                type="button"
-              >
-                Keine Angabe
-              </button>
             </div>
           </div>
 
