@@ -1162,7 +1162,7 @@
           <!-- Name Input -->
           <div>
             <label class="block text-sm font-medium text-blue-200 mb-2">
-              Ihr vollständiger Name *
+              Dein vollständiger Name *
             </label>
             <input 
               v-model="emailForm.fullName"

@@ -5,11 +5,17 @@ const currentYear = format(new Date(), 'yyyy');
 </script>
 
 <template>
-  <div class="mt-6 flex flex-col items-center justify-center gap-1 text-xs text-blue-200/60 text-center px-4">
-    <span class="text-[10px] text-blue-200/50">KARL v0.2</span>
-    <span class="italic">Dein KI-Buddy für die Therapieplatz-Jagd</span>
-    <div class="text-[10px] text-blue-200/40">
-      Based on <a href="https://github.com/zackha/habit" target="_blank" class="hover:text-blue-200/60 transition-colors">Habit by Sefa Bulak</a>
+  <div class="mt-4 mb-6 flex justify-center">
+    <div class="flex items-center gap-3 text-[11px] text-white/60 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+      <span>KARL v{{ config.public.version || '0.6.1' }} - by Merle Fäller {{ currentYear }}</span>
+      <span class="text-white/30">•</span>
+      <div class="flex items-center gap-2">
+        <NuxtLink to="/impressum" class="hover:text-white/80 transition-colors">Impressum</NuxtLink>
+        <template v-if="config.public.privacyPolicyEnabled !== 'false'">
+          <span class="text-white/30">•</span>
+          <NuxtLink to="/privacy-policy" class="hover:text-white/80 transition-colors">Datenschutz</NuxtLink>
+        </template>
+      </div>
     </div>
   </div>
 </template>
