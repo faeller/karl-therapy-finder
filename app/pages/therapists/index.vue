@@ -1159,18 +1159,48 @@
 
         <!-- Form -->
         <div class="space-y-4">
-          <!-- Name Input -->
+          <!-- Name and Age Row -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-blue-200 mb-2">
+                Name (optional)
+              </label>
+              <input 
+                v-model="emailForm.fullName"
+                type="text"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+                placeholder="Max Mustermann"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-blue-200 mb-2">
+                Alter (optional)
+              </label>
+              <input 
+                v-model="emailForm.age"
+                type="number"
+                min="16"
+                max="120"
+                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+                placeholder="25"
+              />
+            </div>
+          </div>
+
+          <!-- Email Input -->
           <div>
             <label class="block text-sm font-medium text-blue-200 mb-2">
-              Dein vollständiger Name *
+              E-Mail-Adresse (optional)
             </label>
             <input 
-              v-model="emailForm.fullName"
-              type="text"
+              v-model="emailForm.customEmail"
+              type="email"
               class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
-              placeholder="Max Mustermann"
-              required
+              :placeholder="selectedTherapist?.email || 'therapeut@praxis.de'"
             />
+            <p v-if="selectedTherapist?.email" class="text-xs text-blue-200/60 mt-1">
+              Gefundene E-Mail: {{ selectedTherapist.email }} (Du kannst eine andere eingeben)
+            </p>
           </div>
 
           <!-- No Email Found Info -->
@@ -1181,47 +1211,12 @@
                 <h4 class="text-sm font-medium text-yellow-200 mb-1">
                   Keine E-Mail-Adresse gefunden
                 </h4>
-                <p class="text-xs text-yellow-100/80 mb-3">
+                <p class="text-xs text-yellow-100/80">
                   Für diesen Therapeuten wurde keine öffentliche E-Mail-Adresse gefunden. 
-                  Du kannst eine eigene E-Mail-Adresse hinzufügen.
+                  Du kannst im E-Mail-Feld oben eine eigene hinzufügen.
                 </p>
-                <div>
-                  <label class="block text-xs font-medium text-yellow-200 mb-2">
-                    E-Mail-Adresse hinzufügen (optional)
-                  </label>
-                  <div class="flex gap-2">
-                    <input 
-                      v-model="emailForm.customEmail"
-                      type="email"
-                      class="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-white placeholder-white/40 text-sm"
-                      placeholder="therapeut@praxis.de"
-                    />
-                    <button
-                      @click="saveCustomEmailForTherapist"
-                      :disabled="!emailForm.customEmail.trim()"
-                      class="px-3 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                      Speichern
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Age Input -->
-          <div>
-            <label class="block text-sm font-medium text-blue-200 mb-2">
-              Alter (optional)
-            </label>
-            <input 
-              v-model="emailForm.age"
-              type="number"
-              min="16"
-              max="120"
-              class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
-              placeholder="z.B. 25"
-            />
           </div>
 
           <!-- Insurance Type -->
@@ -1390,10 +1385,10 @@
           <!-- Coming Soon Button -->
           <button
             @click="sendWithGmail"
-            :disabled="!isFormValid"
+            :disabled="!isOAuthFormValid"
             :class="[
               'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium border transition-all',
-              isFormValid 
+              isOAuthFormValid 
                 ? 'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 focus:ring-2 focus:ring-yellow-500' 
                 : 'border-white/20 text-white/40 cursor-not-allowed'
             ]"
@@ -1406,6 +1401,9 @@
             </svg>
             Automatisch senden (Gmail OAuth) - Coming Soon
           </button>
+          <p v-if="!isOAuthFormValid && emailForm.fullName.trim() === ''" class="text-xs text-yellow-300/70 mt-1">
+            💡 Name erforderlich für automatisches Senden
+          </p>
         </div>
       </div>
     </div>
@@ -1718,15 +1716,22 @@ const previewEmailBody = computed(() => {
 
 const isFormValid = computed(() => {
   const effectiveEmail = selectedTherapist.value ? getEffectiveEmail(selectedTherapist.value) : null
-  const valid = emailForm.value.fullName.trim() !== '' && 
-         effectiveEmail &&
-         currentTemplate.value
+  const valid = effectiveEmail && currentTemplate.value
   console.log('✅ Form validation:', {
     hasName: emailForm.value.fullName.trim() !== '',
     hasEmail: !!effectiveEmail,
     hasTemplate: !!currentTemplate.value,
     isValid: valid
   })
+  return valid
+})
+
+// Separate validation for OAuth that requires name
+const isOAuthFormValid = computed(() => {
+  const effectiveEmail = selectedTherapist.value ? getEffectiveEmail(selectedTherapist.value) : null
+  const valid = emailForm.value.fullName.trim() !== '' && 
+         effectiveEmail &&
+         currentTemplate.value
   return valid
 })
 
