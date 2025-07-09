@@ -27,6 +27,30 @@ const profileCache = new Map<string, { email?: string; hasHeilpr?: boolean; expi
 const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
 const PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
+// Function to fetch single profile
+async function fetchSingleProfile(profileUrl: string): Promise<{ success: boolean; data?: { email?: string; hasHeilpr?: boolean } }> {
+  // Check profile cache first
+  const cachedProfile = profileCache.get(profileUrl)
+  if (cachedProfile && Date.now() < cachedProfile.expires) {
+    return { success: true, data: cachedProfile }
+  }
+
+  try {
+    const profileData = await extractProfileData(profileUrl)
+    
+    // Cache the profile data
+    profileCache.set(profileUrl, {
+      ...profileData,
+      expires: Date.now() + PROFILE_CACHE_DURATION
+    })
+    
+    return { success: true, data: profileData }
+  } catch (error) {
+    console.error('Error fetching single profile:', error)
+    return { success: false }
+  }
+}
+
 // Function to extract email and heilpr info from profile page
 async function extractProfileData(profileUrl: string): Promise<{ email?: string; hasHeilpr?: boolean }> {
   try {
@@ -89,6 +113,12 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   const ageGroup = query.ageGroup as string
   const billing = query.billing as string
   const freePlaces = query.freePlaces as string
+  const profileUrl = query.profileUrl as string
+
+  // Handle single profile fetching
+  if (profileUrl) {
+    return await fetchSingleProfile(profileUrl)
+  }
 
   if (!plz) {
     throw createError({

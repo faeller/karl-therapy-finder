@@ -322,16 +322,35 @@
                   Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
                 </div>
                 <button 
-                  v-if="therapist.email"
-                  @click="openEmailDialog(therapist)"
-                  class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
-                  title="E-Mail schreiben"
+                  v-if="shouldShowEmailButton(therapist)"
+                  @click="getEffectiveEmail(therapist) ? openEmailDialog(therapist) : fetchTherapistProfile(therapist)"
+                  :disabled="isProfileLoading(therapist)"
+                  :class="[
+                    'p-2 rounded-lg transition-all relative',
+                    isProfileLoading(therapist)
+                      ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                      : hasBeenFetchedWithoutEmail(therapist) && !getEffectiveEmail(therapist)
+                        ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                        : getEffectiveEmail(therapist)
+                          ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                          : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                  ]"
+                  :title="getEffectiveEmail(therapist) ? 'E-Mail schreiben' : hasBeenFetchedWithoutEmail(therapist) ? 'Keine E-Mail gefunden - eigene hinzufügen' : isProfileLoading(therapist) ? 'Lädt...' : 'E-Mail laden'"
                 >
-                  <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                  <UIcon 
+                    :name="isProfileLoading(therapist) ? 'i-heroicons-arrow-path' : 'i-heroicons-envelope'" 
+                    :class="['w-4 h-4', isProfileLoading(therapist) ? 'animate-spin' : '']" 
+                  />
+                  <!-- Badge for not-yet-loaded emails -->
+                  <span 
+                    v-if="!getEffectiveEmail(therapist) && !isProfileLoading(therapist) && !hasBeenFetchedWithoutEmail(therapist)"
+                    class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
+                    title="E-Mail noch nicht geladen"
+                  ></span>
                 </button>
-                <!-- Temporary test button for all therapists -->
+                <!-- Debug test button -->
                 <button 
-                  v-if="!therapist.email && debugMode"
+                  v-if="!shouldShowEmailButton(therapist) && debugMode"
                   @click="testEmailDialog(therapist)"
                   class="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all"
                   title="Test E-Mail (Debug)"
@@ -417,16 +436,35 @@
                     Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
                   </div>
                   <button 
-                    v-if="therapist.email"
-                    @click="openEmailDialog(therapist)"
-                    class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
-                    title="E-Mail schreiben"
+                    v-if="shouldShowEmailButton(therapist)"
+                    @click="getEffectiveEmail(therapist) ? openEmailDialog(therapist) : fetchTherapistProfile(therapist)"
+                    :disabled="isProfileLoading(therapist)"
+                    :class="[
+                      'p-2 rounded-lg transition-all relative',
+                      isProfileLoading(therapist)
+                        ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                        : hasBeenFetchedWithoutEmail(therapist) && !getEffectiveEmail(therapist)
+                          ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                          : getEffectiveEmail(therapist)
+                            ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                            : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                    ]"
+                    :title="getEffectiveEmail(therapist) ? 'E-Mail schreiben' : hasBeenFetchedWithoutEmail(therapist) ? 'Keine E-Mail gefunden - eigene hinzufügen' : isProfileLoading(therapist) ? 'Lädt...' : 'E-Mail laden'"
                   >
-                    <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                    <UIcon 
+                      :name="isProfileLoading(therapist) ? 'i-heroicons-arrow-path' : 'i-heroicons-envelope'" 
+                      :class="['w-4 h-4', isProfileLoading(therapist) ? 'animate-spin' : '']" 
+                    />
+                    <!-- Badge for not-yet-loaded emails -->
+                    <span 
+                      v-if="!getEffectiveEmail(therapist) && !isProfileLoading(therapist) && !hasBeenFetchedWithoutEmail(therapist)"
+                      class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
+                      title="E-Mail noch nicht geladen"
+                    ></span>
                   </button>
-                  <!-- Temporary test button for all therapists -->
+                  <!-- Debug test button -->
                   <button 
-                    v-if="!therapist.email && debugMode"
+                    v-if="!shouldShowEmailButton(therapist) && debugMode"
                     @click="testEmailDialog(therapist)"
                     class="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all"
                     title="Test E-Mail (Debug)"
@@ -1135,6 +1173,42 @@
             />
           </div>
 
+          <!-- No Email Found Info -->
+          <div v-if="!selectedTherapist?.email" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <div class="flex items-start gap-2">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-yellow-400 mt-0.5" />
+              <div>
+                <h4 class="text-sm font-medium text-yellow-200 mb-1">
+                  Keine E-Mail-Adresse gefunden
+                </h4>
+                <p class="text-xs text-yellow-100/80 mb-3">
+                  Für diesen Therapeuten wurde keine öffentliche E-Mail-Adresse gefunden. 
+                  Du kannst eine eigene E-Mail-Adresse hinzufügen.
+                </p>
+                <div>
+                  <label class="block text-xs font-medium text-yellow-200 mb-2">
+                    E-Mail-Adresse hinzufügen (optional)
+                  </label>
+                  <div class="flex gap-2">
+                    <input 
+                      v-model="emailForm.customEmail"
+                      type="email"
+                      class="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-white placeholder-white/40 text-sm"
+                      placeholder="therapeut@praxis.de"
+                    />
+                    <button
+                      @click="saveCustomEmailForTherapist"
+                      :disabled="!emailForm.customEmail.trim()"
+                      class="px-3 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Speichern
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Age Input -->
           <div>
             <label class="block text-sm font-medium text-blue-200 mb-2">
@@ -1266,7 +1340,7 @@
             </div>
             <div class="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
               <div class="text-sm text-blue-200 mb-2">
-                <strong>An:</strong> {{ selectedTherapist?.email || 'test@example.com' }}
+                <strong>An:</strong> {{ selectedTherapist ? (getEffectiveEmail(selectedTherapist) || 'Keine E-Mail-Adresse') : 'test@example.com' }}
               </div>
               <div class="text-sm text-blue-200 mb-2">
                 <strong>Betreff:</strong> {{ currentTemplate?.subject }}
@@ -1493,6 +1567,12 @@ const customWaitingTime = ref('')
 const { debugMode } = useDebugMode()
 const { templates, problemOptions, createMailtoLink } = useEmailTemplates()
 
+// Track loading states for individual therapist profiles
+const loadingProfiles = ref(new Set<string>())
+
+// Custom email addresses stored by user
+const customEmails = ref(new Map<string, string>())
+
 
 const showEmailDialog = ref(false)
 const selectedTherapist = ref<TherapistData | null>(null)
@@ -1501,7 +1581,8 @@ const emailForm = ref({
   fullName: '',
   problems: [] as string[],
   age: '',
-  insurance: ''
+  insurance: '',
+  customEmail: ''
 })
 
 // Load saved form data from localStorage
@@ -1636,12 +1717,13 @@ const previewEmailBody = computed(() => {
 })
 
 const isFormValid = computed(() => {
+  const effectiveEmail = selectedTherapist.value ? getEffectiveEmail(selectedTherapist.value) : null
   const valid = emailForm.value.fullName.trim() !== '' && 
-         selectedTherapist.value?.email &&
+         effectiveEmail &&
          currentTemplate.value
   console.log('✅ Form validation:', {
     hasName: emailForm.value.fullName.trim() !== '',
-    hasEmail: !!selectedTherapist.value?.email,
+    hasEmail: !!effectiveEmail,
     hasTemplate: !!currentTemplate.value,
     isValid: valid
   })
@@ -1664,9 +1746,17 @@ const openEmailDialog = (therapist: TherapistData) => {
     fullName: '',
     problems: [],
     age: '',
-    insurance: ''
+    insurance: '',
+    customEmail: ''
   }
   loadSavedFormData() // Load saved form data
+  loadCustomEmails() // Load custom emails
+  
+  // Load custom email for this therapist if available
+  if (customEmails.value.has(therapist.profileUrl)) {
+    emailForm.value.customEmail = customEmails.value.get(therapist.profileUrl) || ''
+  }
+  
   selectedTemplate.value = 'initial-inquiry'
   
   console.log('📝 Form reset, selectedTemplate:', selectedTemplate.value)
@@ -1683,6 +1773,12 @@ const sendWithDefaultClient = () => {
     return
   }
   
+  const effectiveEmail = getEffectiveEmail(selectedTherapist.value)
+  if (!effectiveEmail) {
+    console.error('❌ No email address available')
+    return
+  }
+  
   const emailData = {
     fullName: emailForm.value.fullName,
     problems: emailForm.value.problems,
@@ -1694,7 +1790,7 @@ const sendWithDefaultClient = () => {
   console.log('📧 Creating mailto link with data:', emailData)
   
   const mailtoLink = createMailtoLink(
-    selectedTherapist.value.email!,
+    effectiveEmail,
     selectedTherapist.value.name,
     emailData
   )
@@ -1711,23 +1807,29 @@ const copyEmailAddress = async () => {
   if (!process.client) return
   
   try {
-    if (!selectedTherapist.value?.email) {
+    if (!selectedTherapist.value) {
+      console.warn('No therapist selected')
+      return
+    }
+    
+    const effectiveEmail = getEffectiveEmail(selectedTherapist.value)
+    if (!effectiveEmail) {
       console.warn('No email address to copy')
       return
     }
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(selectedTherapist.value.email)
-      console.log('📋 Email address copied to clipboard:', selectedTherapist.value.email)
+      await navigator.clipboard.writeText(effectiveEmail)
+      console.log('📋 Email address copied to clipboard:', effectiveEmail)
     } else {
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
-      textArea.value = selectedTherapist.value.email
+      textArea.value = effectiveEmail
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
       document.body.removeChild(textArea)
-      console.log('📋 Email address copied to clipboard (fallback):', selectedTherapist.value.email)
+      console.log('📋 Email address copied to clipboard (fallback):', effectiveEmail)
     }
   } catch (error) {
     console.error('Failed to copy email address:', error)
@@ -1764,15 +1866,21 @@ const copyEmailPreview = async () => {
 
 const openEmailClient = () => {
   try {
-    if (!selectedTherapist.value?.email) {
+    if (!selectedTherapist.value) {
+      console.warn('No therapist selected')
+      return
+    }
+    
+    const effectiveEmail = getEffectiveEmail(selectedTherapist.value)
+    if (!effectiveEmail) {
       console.warn('No email address to open client with')
       return
     }
     
-    const mailtoLink = `mailto:${selectedTherapist.value.email}`
+    const mailtoLink = `mailto:${effectiveEmail}`
     window.open(mailtoLink, '_blank')
     showEmailDialog.value = false
-    console.log('📧 Email client opened with address:', selectedTherapist.value.email)
+    console.log('📧 Email client opened with address:', effectiveEmail)
   } catch (error) {
     console.error('Failed to open email client:', error)
   }
@@ -1792,6 +1900,125 @@ const testEmailDialog = (therapist: TherapistData) => {
   // Set a fake email for testing
   const testTherapist = { ...therapist, email: 'test@example.com' }
   openEmailDialog(testTherapist)
+}
+
+// Fetch individual therapist profile to get email
+const fetchTherapistProfile = async (therapist: TherapistData) => {
+  if (loadingProfiles.value.has(therapist.profileUrl)) {
+    console.log('Already loading profile for:', therapist.name)
+    return
+  }
+  
+  loadingProfiles.value.add(therapist.profileUrl)
+  
+  try {
+    console.log('🔄 Fetching profile for:', therapist.name)
+    const response = await $fetch('/api/th-de-therapists', {
+      query: {
+        profileUrl: therapist.profileUrl
+      }
+    })
+    
+    if (response.success && response.data) {
+      // Update the therapist in the current results
+      if (therapistData.value && therapistData.value.therapists) {
+        const index = therapistData.value.therapists.findIndex(t => t.profileUrl === therapist.profileUrl)
+        if (index !== -1) {
+          // Force reactivity by creating a new object
+          therapistData.value.therapists[index] = {
+            ...therapistData.value.therapists[index],
+            email: response.data.email || null, // Explicitly set to null if no email
+            hasHeilpr: response.data.hasHeilpr
+          }
+          console.log('✅ Updated therapist with email:', response.data.email ? 'Yes' : 'No')
+          
+          // Always open the dialog regardless of whether email was found
+          console.log('📧 Opening dialog automatically')
+          nextTick(() => {
+            openEmailDialog(therapistData.value.therapists[index])
+          })
+        }
+      }
+    } else {
+      console.log('❌ No data returned from profile fetch')
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch therapist profile:', error)
+  } finally {
+    loadingProfiles.value.delete(therapist.profileUrl)
+  }
+}
+
+// Check if therapist should show email button
+const shouldShowEmailButton = (therapist: TherapistData) => {
+  return therapist.source === 'therapie.de'
+}
+
+// Check if therapist profile is loading
+const isProfileLoading = (therapist: TherapistData) => {
+  return loadingProfiles.value.has(therapist.profileUrl)
+}
+
+// Check if therapist has been fetched but no email found
+const hasBeenFetchedWithoutEmail = (therapist: TherapistData) => {
+  // If the therapist has been processed (either has email or explicitly marked as no email)
+  return therapist.hasOwnProperty('email') && !therapist.email
+}
+
+// Load custom emails from localStorage
+const loadCustomEmails = () => {
+  if (!process.client) return
+  
+  try {
+    const savedEmails = localStorage.getItem('therapist-custom-emails')
+    if (savedEmails) {
+      const parsed = JSON.parse(savedEmails)
+      customEmails.value = new Map(Object.entries(parsed))
+      console.log('📧 Loaded custom emails:', customEmails.value.size)
+    }
+  } catch (error) {
+    console.warn('Error loading custom emails:', error)
+  }
+}
+
+// Save custom emails to localStorage
+const saveCustomEmails = () => {
+  if (!process.client) return
+  
+  try {
+    const emailsObj = Object.fromEntries(customEmails.value)
+    localStorage.setItem('therapist-custom-emails', JSON.stringify(emailsObj))
+    console.log('💾 Saved custom emails')
+  } catch (error) {
+    console.warn('Error saving custom emails:', error)
+  }
+}
+
+// Save custom email for current therapist
+const saveCustomEmailForTherapist = () => {
+  if (!selectedTherapist.value || !emailForm.value.customEmail.trim()) return
+  
+  customEmails.value.set(selectedTherapist.value.profileUrl, emailForm.value.customEmail.trim())
+  saveCustomEmails()
+  
+  // Update the therapist data to include the custom email
+  if (therapistData.value && therapistData.value.therapists) {
+    const index = therapistData.value.therapists.findIndex(t => t.profileUrl === selectedTherapist.value!.profileUrl)
+    if (index !== -1) {
+      therapistData.value.therapists[index] = {
+        ...therapistData.value.therapists[index],
+        email: emailForm.value.customEmail.trim()
+      }
+    }
+  }
+  
+  console.log('📧 Saved custom email for therapist:', selectedTherapist.value.name)
+}
+
+// Get effective email address (custom or original)
+const getEffectiveEmail = (therapist: TherapistData) => {
+  const customEmail = customEmails.value.get(therapist.profileUrl)
+  return customEmail || therapist.email
 }
 
 // Watch for form changes
@@ -1991,6 +2218,7 @@ onMounted(() => {
   // Load saved form data on startup
   try {
     loadSavedFormData()
+    loadCustomEmails()
   } catch (error) {
     console.warn('Error loading saved form data:', error)
   }
