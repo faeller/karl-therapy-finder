@@ -1197,9 +1197,17 @@
               <input 
                 v-model="emailForm.customEmail"
                 type="email"
-                class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+                :class="[
+                  'w-full px-3 py-2.5 bg-white/5 rounded-lg focus:outline-none text-white placeholder-white/40 transition-all',
+                  isCustomEmailValid
+                    ? 'border border-white/20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                    : 'border border-red-500/50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                ]"
                 :placeholder="selectedTherapist?.email || 'therapeut@praxis.de'"
               />
+              <div v-if="!isCustomEmailValid && emailForm.customEmail.trim()" class="mt-1 text-xs text-red-300">
+                Bitte gib eine gültige E-Mail-Adresse ein
+              </div>
               <p v-if="selectedTherapist?.email" class="text-xs text-blue-200/60 mt-1">
                 Gefundene E-Mail: {{ selectedTherapist.email }} (Du kannst eine andere eingeben)
               </p>
@@ -1343,14 +1351,26 @@
             <div class="flex gap-3">
               <button
                 @click="copyEmailAddress"
-                class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white/80 border border-white/20 hover:bg-white/10 hover:text-white transition-all"
+                :disabled="!getEffectiveEmail(selectedTherapist)"
+                :class="[
+                  'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all',
+                  getEffectiveEmail(selectedTherapist)
+                    ? 'text-white/80 border border-white/20 hover:bg-white/10 hover:text-white'
+                    : 'text-white/40 border border-white/10 cursor-not-allowed'
+                ]"
               >
                 <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
                 E-Mail Adresse kopieren
               </button>
               <button
                 @click="openEmailClient"
-                class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white/80 border border-white/20 hover:bg-white/10 hover:text-white transition-all"
+                :disabled="!getEffectiveEmail(selectedTherapist)"
+                :class="[
+                  'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all',
+                  getEffectiveEmail(selectedTherapist)
+                    ? 'text-white/80 border border-white/20 hover:bg-white/10 hover:text-white'
+                    : 'text-white/40 border border-white/10 cursor-not-allowed'
+                ]"
               >
                 <UIcon name="i-heroicons-envelope-open" class="w-4 h-4" />
                 E-Mail-Client öffnen
@@ -1407,6 +1427,55 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Sent Confirmation Modal -->
+  <div 
+    v-if="showEmailSentModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    @click="handleEmailSentNo"
+  >
+    <div @click.stop class="w-full max-w-md bg-gray-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20">
+      <div class="p-6">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-white">
+            E-Mail gesendet?
+          </h3>
+          <button @click="handleEmailSentNo" class="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Content -->
+        <div class="mb-6">
+          <p class="text-white/80 mb-4">
+            Hast du die E-Mail an <strong class="text-white">{{ selectedTherapist?.name }}</strong> gesendet?
+          </p>
+          <p class="text-sm text-white/60">
+            Wenn ja, können wir einen Kontaktversuch in deinem Kontaktprotokoll hinzufügen (Status: "Wartet auf Antwort").
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            @click="handleEmailSentYes"
+            class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-all"
+          >
+            <UIcon name="i-heroicons-check" class="w-4 h-4" />
+            Ja, E-Mail gesendet
+          </button>
+          <button
+            @click="handleEmailSentNo"
+            class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white/80 border border-white/20 hover:bg-white/10 hover:text-white transition-all"
+          >
+            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+            Nein, nicht gesendet
+          </button>
         </div>
       </div>
     </div>
@@ -1576,6 +1645,7 @@ const customEmails = ref(new Map<string, string>())
 
 
 const showEmailDialog = ref(false)
+const showEmailSentModal = ref(false)
 const selectedTherapist = ref<TherapistData | null>(null)
 const selectedTemplate = ref('initial-inquiry')
 const emailForm = ref({
@@ -1719,7 +1789,7 @@ const previewEmailBody = computed(() => {
 
 const isFormValid = computed(() => {
   const effectiveEmail = selectedTherapist.value ? getEffectiveEmail(selectedTherapist.value) : null
-  const valid = effectiveEmail && currentTemplate.value
+  const valid = currentTemplate.value // Only require template, not email
   console.log('✅ Form validation:', {
     hasName: emailForm.value.fullName.trim() !== '',
     hasEmail: !!effectiveEmail,
@@ -1736,6 +1806,18 @@ const isOAuthFormValid = computed(() => {
          effectiveEmail &&
          currentTemplate.value
   return valid
+})
+
+// Email validation function
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+// Check if custom email is valid
+const isCustomEmailValid = computed(() => {
+  const customEmail = emailForm.value.customEmail.trim()
+  return customEmail === '' || isValidEmail(customEmail)
 })
 
 // Email methods
@@ -1782,10 +1864,6 @@ const sendWithDefaultClient = () => {
   }
   
   const effectiveEmail = getEffectiveEmail(selectedTherapist.value)
-  if (!effectiveEmail) {
-    console.error('❌ No email address available')
-    return
-  }
   
   const emailData = {
     fullName: emailForm.value.fullName,
@@ -1798,7 +1876,7 @@ const sendWithDefaultClient = () => {
   console.log('📧 Creating mailto link with data:', emailData)
   
   const mailtoLink = createMailtoLink(
-    effectiveEmail,
+    effectiveEmail || '', // Use empty string if no email address
     selectedTherapist.value.name,
     emailData
   )
@@ -1806,7 +1884,10 @@ const sendWithDefaultClient = () => {
   console.log('🔗 Generated mailto link:', mailtoLink)
   
   window.open(mailtoLink, '_blank')
+  
+  // Show the email sent confirmation modal
   showEmailDialog.value = false
+  showEmailSentModal.value = true
   
   console.log('✅ Email client should have opened')
 }
@@ -1887,7 +1968,10 @@ const openEmailClient = () => {
     
     const mailtoLink = `mailto:${effectiveEmail}`
     window.open(mailtoLink, '_blank')
+    
+    // Show the email sent confirmation modal
     showEmailDialog.value = false
+    showEmailSentModal.value = true
     console.log('📧 Email client opened with address:', effectiveEmail)
   } catch (error) {
     console.error('Failed to open email client:', error)
@@ -1902,6 +1986,22 @@ const sendWithGmail = () => {
     console.error('Gmail OAuth error:', error)
   }
 }
+
+// Email sent modal functions
+const handleEmailSentYes = () => {
+  console.log('✅ User confirmed email was sent')
+  // Add Kontaktversuch entry using existing function
+  if (selectedTherapist.value) {
+    addContactAttemptFromSearch(selectedTherapist.value)
+  }
+  showEmailSentModal.value = false
+}
+
+const handleEmailSentNo = () => {
+  console.log('❌ User did not send email')
+  showEmailSentModal.value = false
+}
+
 
 const testEmailDialog = (therapist: TherapistData) => {
   console.log('🧪 Test email dialog for:', therapist.name)
@@ -2047,8 +2147,10 @@ watch(emailForm, () => {
 watch(() => emailForm.value.customEmail, (newCustomEmail, oldCustomEmail) => {
   if (selectedTherapist.value) {
     if (newCustomEmail && newCustomEmail.trim()) {
-      // Save the custom email
-      saveCustomEmailForTherapist()
+      // Only save if the email is valid
+      if (isValidEmail(newCustomEmail.trim())) {
+        saveCustomEmailForTherapist()
+      }
     } else if (oldCustomEmail && oldCustomEmail.trim()) {
       // Clear the custom email from storage when field is emptied
       customEmails.value.delete(selectedTherapist.value.profileUrl)
