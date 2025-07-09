@@ -12,6 +12,8 @@ interface TherapistData {
   distance: number
   profileUrl: string
   image?: string
+  email?: string
+  hasHeilpr?: boolean
   source?: 'therapie.de' | 'tk'
 }
 
@@ -98,7 +100,10 @@ function combineResults(
     therapieDeTherapists.forEach((therapist: any) => {
       combinedTherapists.push({
         ...therapist,
-        source: 'therapie.de' as const
+        source: 'therapie.de' as const,
+        // Preserve email and hasHeilpr fields from therapie.de
+        email: therapist.email,
+        hasHeilpr: therapist.hasHeilpr
       })
     })
     totalResults += therapieDeResult.data.totalResults || 0

@@ -105,7 +105,7 @@
               class="text-xs sm:text-sm px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="Alle Probleme" class="text-gray-900">Alle Probleme</option>
-              <option v-for="option in problemOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
+              <option v-for="option in searchProblemOptions.slice(1)" :key="option" :value="option" class="text-gray-900">
                 {{ option }}
               </option>
             </select>
@@ -317,6 +317,27 @@
                 >
                   <UIcon name="i-heroicons-phone" class="w-4 h-4" />
                 </button>
+                <!-- Debug email button visibility -->
+                <div v-if="debugMode" class="text-xs text-yellow-300 bg-black/20 px-1 rounded">
+                  Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
+                </div>
+                <button 
+                  v-if="therapist.email"
+                  @click="openEmailDialog(therapist)"
+                  class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                  title="E-Mail schreiben"
+                >
+                  <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                </button>
+                <!-- Temporary test button for all therapists -->
+                <button 
+                  v-if="!therapist.email && debugMode"
+                  @click="testEmailDialog(therapist)"
+                  class="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all"
+                  title="Test E-Mail (Debug)"
+                >
+                  <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                </button>
                 <button 
                   @click="toggleBookmark(therapist)"
                   :class="[
@@ -390,6 +411,27 @@
                     title="Anrufen"
                   >
                     <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+                  </button>
+                  <!-- Debug email button visibility -->
+                  <div v-if="debugMode" class="text-xs text-yellow-300 bg-black/20 px-1 rounded">
+                    Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
+                  </div>
+                  <button 
+                    v-if="therapist.email"
+                    @click="openEmailDialog(therapist)"
+                    class="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all"
+                    title="E-Mail schreiben"
+                  >
+                    <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                  </button>
+                  <!-- Temporary test button for all therapists -->
+                  <button 
+                    v-if="!therapist.email && debugMode"
+                    @click="testEmailDialog(therapist)"
+                    class="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all"
+                    title="Test E-Mail (Debug)"
+                  >
+                    <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
                   </button>
                   <button 
                     @click="toggleBookmark(therapist)"
@@ -1058,6 +1100,242 @@
       </div>
     </div>
   </PageCard>
+
+  <!-- Email Dialog Modal -->
+  <div 
+    v-if="showEmailDialog" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    @click="showEmailDialog = false"
+  >
+    <div @click.stop @keydown.enter="sendWithDefaultClient" class="w-full max-w-lg bg-gray-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-white">
+            E-Mail an {{ selectedTherapist?.name }}
+          </h3>
+          <button @click="showEmailDialog = false" class="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Form -->
+        <div class="space-y-4">
+          <!-- Name Input -->
+          <div>
+            <label class="block text-sm font-medium text-blue-200 mb-2">
+              Ihr vollständiger Name *
+            </label>
+            <input 
+              v-model="emailForm.fullName"
+              type="text"
+              class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+              placeholder="Max Mustermann"
+              required
+            />
+          </div>
+
+          <!-- Age Input -->
+          <div>
+            <label class="block text-sm font-medium text-blue-200 mb-2">
+              Alter (optional)
+            </label>
+            <input 
+              v-model="emailForm.age"
+              type="number"
+              min="16"
+              max="120"
+              class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-white/40"
+              placeholder="z.B. 25"
+            />
+          </div>
+
+          <!-- Insurance Type -->
+          <div>
+            <label class="block text-sm font-medium text-blue-200 mb-2">
+              Versicherung (optional)
+            </label>
+            <div class="flex gap-2 flex-wrap">
+              <button
+                @click="emailForm.insurance = 'gesetzlich'"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                  emailForm.insurance === 'gesetzlich'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                ]"
+                type="button"
+              >
+                Gesetzlich
+              </button>
+              <button
+                @click="emailForm.insurance = 'privat'"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                  emailForm.insurance === 'privat'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                ]"
+                type="button"
+              >
+                Privat
+              </button>
+              <button
+                @click="emailForm.insurance = 'bewilligte Kostenerstattung'"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                  emailForm.insurance === 'bewilligte Kostenerstattung'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                ]"
+                type="button"
+              >
+                Kostenerstattung
+              </button>
+              <button
+                @click="emailForm.insurance = ''"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                  emailForm.insurance === ''
+                    ? 'bg-gray-500 text-white'
+                    : 'bg-white/5 border border-white/20 text-white/70 hover:bg-white/10'
+                ]"
+                type="button"
+              >
+                Keine Angabe
+              </button>
+            </div>
+          </div>
+
+          <!-- Problem Selection -->
+          <div>
+            <label class="block text-sm font-medium text-blue-200 mb-2">
+              Problembereiche (mehrere auswählbar)
+            </label>
+            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-white/5 border border-white/20 rounded-lg">
+              <label 
+                v-for="problem in problemOptions" 
+                :key="problem"
+                class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/10 p-2 rounded transition-colors"
+              >
+                <input 
+                  type="checkbox" 
+                  :value="problem"
+                  v-model="emailForm.problems"
+                  class="rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500"
+                />
+                <span class="text-white/80">{{ problem }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Template Selection -->
+          <div>
+            <label class="block text-sm font-medium text-blue-200 mb-2">
+              E-Mail-Vorlage *
+            </label>
+            <select
+              v-model="selectedTemplate"
+              class="w-full px-3 py-2.5 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
+            >
+              <option value="" class="bg-gray-800 text-white">Vorlage auswählen</option>
+              <option 
+                v-for="template in templates" 
+                :key="template.id"
+                :value="template.id"
+                class="bg-gray-800 text-white"
+              >
+                {{ template.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Email Preview -->
+          <div v-if="selectedTemplate && currentTemplate">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-blue-200">
+                E-Mail-Vorschau
+              </label>
+              <button
+                @click="copyEmailPreview"
+                class="p-1.5 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                title="E-Mail Inhalt kopieren"
+              >
+                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+              </button>
+            </div>
+            <div class="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
+              <div class="text-sm text-blue-200 mb-2">
+                <strong>An:</strong> {{ selectedTherapist?.email || 'test@example.com' }}
+              </div>
+              <div class="text-sm text-blue-200 mb-2">
+                <strong>Betreff:</strong> {{ currentTemplate?.subject }}
+              </div>
+              <div class="text-sm text-white/90 whitespace-pre-wrap bg-white/10 p-3 rounded border border-white/20 max-h-40 overflow-y-auto">
+                {{ previewEmailBody }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3 mt-6 pt-4 border-t border-white/20">
+          <!-- Primary Action: Most prominent button -->
+          <button
+            @click="sendWithDefaultClient"
+            :disabled="!isFormValid"
+            :class="[
+              'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all',
+              isFormValid 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-2 focus:ring-blue-500' 
+                : 'bg-white/10 text-white/40 cursor-not-allowed'
+            ]"
+          >
+            <UIcon name="i-heroicons-envelope" class="w-5 h-5" />
+            E-Mail-Client mit fertiger Nachricht öffnen
+          </button>
+          
+          <!-- Secondary Actions -->
+          <div class="flex gap-3">
+            <button
+              @click="copyEmailAddress"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white/80 border border-white/20 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+              E-Mail Adresse kopieren
+            </button>
+            <button
+              @click="openEmailClient"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white/80 border border-white/20 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <UIcon name="i-heroicons-envelope-open" class="w-4 h-4" />
+              E-Mail-Client öffnen
+            </button>
+          </div>
+          
+          <!-- Coming Soon Button -->
+          <button
+            @click="sendWithGmail"
+            :disabled="!isFormValid"
+            :class="[
+              'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium border transition-all',
+              isFormValid 
+                ? 'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 focus:ring-2 focus:ring-yellow-500' 
+                : 'border-white/20 text-white/40 cursor-not-allowed'
+            ]"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Automatisch senden (Gmail OAuth) - Coming Soon
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -1072,6 +1350,8 @@ interface TherapistData {
   distance: number
   profileUrl: string
   image?: string
+  email?: string
+  hasHeilpr?: boolean
 }
 
 interface TherapistSearchResult {
@@ -1208,6 +1488,333 @@ const contactForm = ref({
 })
 
 const customWaitingTime = ref('')
+
+// Email functionality
+const { debugMode } = useDebugMode()
+const { templates, problemOptions, createMailtoLink } = useEmailTemplates()
+
+
+const showEmailDialog = ref(false)
+const selectedTherapist = ref<TherapistData | null>(null)
+const selectedTemplate = ref('initial-inquiry')
+const emailForm = ref({
+  fullName: '',
+  problems: [] as string[],
+  age: '',
+  insurance: ''
+})
+
+// Load saved form data from localStorage
+const loadSavedFormData = () => {
+  if (!process.client) return
+  
+  try {
+    const savedName = localStorage.getItem('email-form-name')
+    const savedProblems = localStorage.getItem('email-form-problems')
+    const savedAge = localStorage.getItem('email-form-age')
+    const savedInsurance = localStorage.getItem('email-form-insurance')
+    
+    if (savedName) {
+      emailForm.value.fullName = savedName
+      console.log('📝 Loaded saved name:', savedName)
+    }
+    
+    if (savedProblems) {
+      try {
+        emailForm.value.problems = JSON.parse(savedProblems)
+        console.log('🔍 Loaded saved problems:', emailForm.value.problems)
+      } catch (e) {
+        console.warn('Failed to parse saved problems:', e)
+      }
+    }
+    
+    if (savedAge) {
+      emailForm.value.age = savedAge
+      console.log('🎂 Loaded saved age:', savedAge)
+    }
+    
+    if (savedInsurance) {
+      emailForm.value.insurance = savedInsurance
+      console.log('🏥 Loaded saved insurance:', savedInsurance)
+    }
+  } catch (error) {
+    console.warn('Error accessing localStorage:', error)
+  }
+}
+
+// Save form data to localStorage
+const saveFormData = () => {
+  if (!process.client) return
+  
+  try {
+    if (emailForm.value.fullName.trim()) {
+      localStorage.setItem('email-form-name', emailForm.value.fullName.trim())
+    }
+    
+    if (emailForm.value.problems.length > 0) {
+      localStorage.setItem('email-form-problems', JSON.stringify(emailForm.value.problems))
+    } else {
+      localStorage.removeItem('email-form-problems')
+    }
+    
+    if (emailForm.value.age && String(emailForm.value.age).trim()) {
+      localStorage.setItem('email-form-age', String(emailForm.value.age).trim())
+    } else {
+      localStorage.removeItem('email-form-age')
+    }
+    
+    if (emailForm.value.insurance.trim()) {
+      localStorage.setItem('email-form-insurance', emailForm.value.insurance.trim())
+    } else {
+      localStorage.removeItem('email-form-insurance')
+    }
+    
+    console.log('💾 Saved form data')
+  } catch (error) {
+    console.warn('Error saving to localStorage:', error)
+  }
+}
+
+// Email computed properties
+const currentTemplate = computed(() => {
+  const template = templates.find(t => t.id === selectedTemplate.value)
+  console.log('📋 Current template:', template?.name, selectedTemplate.value)
+  return template
+})
+
+const previewEmailBody = computed(() => {
+  try {
+    console.log('👁️ Computing preview body...')
+    console.log('   - currentTemplate:', currentTemplate.value?.name)
+    console.log('   - selectedTherapist:', selectedTherapist.value?.name)
+    
+    if (!currentTemplate.value || !selectedTherapist.value) return ''
+    
+    const ageText = emailForm.value.age ? `\nAlter: ${emailForm.value.age}` : ''
+
+    let problemsText = ''
+    if (emailForm.value.problems.length > 0) {
+      if (emailForm.value.problems.length === 1) {
+        problemsText = `Meine Themen sind ${emailForm.value.problems[0]}.`
+      } else if (emailForm.value.problems.length === 2) {
+        problemsText = `Zu meinen Themen gehören ${emailForm.value.problems[0]} und ${emailForm.value.problems[1]}.`
+      } else {
+        const lastProblem = emailForm.value.problems[emailForm.value.problems.length - 1]
+        const otherProblems = emailForm.value.problems.slice(0, -1)
+        problemsText = `Meine Themen sind ${otherProblems.join(', ')} und ${lastProblem}.`
+      }
+    }
+
+    const insuranceText = emailForm.value.insurance 
+      ? emailForm.value.insurance === 'bewilligte Kostenerstattung' 
+        ? 'Ich habe eine bewilligte Kostenerstattung.'
+        : `Ich bin ${emailForm.value.insurance} versichert.`
+      : ''
+
+    let body = currentTemplate.value.body
+      .replace(/{fullName}/g, emailForm.value.fullName || '[Ihr Name]')
+      .replace(/{age}/g, ageText)
+
+    if (problemsText) {
+      body = body.replace(/{problems}/g, problemsText)
+    } else {
+      body = body.replace(/{problems}\n/g, '')
+    }
+
+    if (insuranceText) {
+      body = body.replace(/{insurance}/g, insuranceText)
+    } else {
+      body = body.replace(/{insurance}\n/g, '')
+    }
+      
+    console.log('📝 Generated email body preview')
+    return body
+  } catch (error) {
+    console.warn('Error generating email preview:', error)
+    return 'Fehler beim Generieren der Vorschau'
+  }
+})
+
+const isFormValid = computed(() => {
+  const valid = emailForm.value.fullName.trim() !== '' && 
+         selectedTherapist.value?.email &&
+         currentTemplate.value
+  console.log('✅ Form validation:', {
+    hasName: emailForm.value.fullName.trim() !== '',
+    hasEmail: !!selectedTherapist.value?.email,
+    hasTemplate: !!currentTemplate.value,
+    isValid: valid
+  })
+  return valid
+})
+
+// Email methods
+const openEmailDialog = (therapist: TherapistData) => {
+  console.log('🔘 Email button clicked for:', therapist.name)
+  console.log('📧 Therapist email:', therapist.email)
+  console.log('🏥 Therapist data:', therapist)
+  
+  selectedTherapist.value = therapist
+  showEmailDialog.value = true
+  
+  console.log('✅ Modal should be opening now, showEmailDialog:', showEmailDialog.value)
+  
+  // Reset form but keep saved data
+  emailForm.value = {
+    fullName: '',
+    problems: [],
+    age: '',
+    insurance: ''
+  }
+  loadSavedFormData() // Load saved form data
+  selectedTemplate.value = 'initial-inquiry'
+  
+  console.log('📝 Form reset, selectedTemplate:', selectedTemplate.value)
+}
+
+const sendWithDefaultClient = () => {
+  console.log('📤 Attempting to send email...')
+  console.log('   - selectedTherapist:', selectedTherapist.value?.name)
+  console.log('   - currentTemplate:', currentTemplate.value?.name)
+  console.log('   - emailForm:', emailForm.value)
+  
+  if (!selectedTherapist.value || !currentTemplate.value) {
+    console.error('❌ Missing required data for email send')
+    return
+  }
+  
+  const emailData = {
+    fullName: emailForm.value.fullName,
+    problems: emailForm.value.problems,
+    age: emailForm.value.age,
+    insurance: emailForm.value.insurance,
+    template: currentTemplate.value
+  }
+  
+  console.log('📧 Creating mailto link with data:', emailData)
+  
+  const mailtoLink = createMailtoLink(
+    selectedTherapist.value.email!,
+    selectedTherapist.value.name,
+    emailData
+  )
+  
+  console.log('🔗 Generated mailto link:', mailtoLink)
+  
+  window.open(mailtoLink, '_blank')
+  showEmailDialog.value = false
+  
+  console.log('✅ Email client should have opened')
+}
+
+const copyEmailAddress = async () => {
+  if (!process.client) return
+  
+  try {
+    if (!selectedTherapist.value?.email) {
+      console.warn('No email address to copy')
+      return
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(selectedTherapist.value.email)
+      console.log('📋 Email address copied to clipboard:', selectedTherapist.value.email)
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = selectedTherapist.value.email
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      console.log('📋 Email address copied to clipboard (fallback):', selectedTherapist.value.email)
+    }
+  } catch (error) {
+    console.error('Failed to copy email address:', error)
+  }
+}
+
+const copyEmailPreview = async () => {
+  if (!process.client) return
+  
+  try {
+    const emailContent = previewEmailBody.value
+    if (!emailContent) {
+      console.warn('No email content to copy')
+      return
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(emailContent)
+      console.log('📋 Email content copied to clipboard')
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = emailContent
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      console.log('📋 Email content copied to clipboard (fallback)')
+    }
+  } catch (error) {
+    console.error('Failed to copy email content:', error)
+  }
+}
+
+const openEmailClient = () => {
+  try {
+    if (!selectedTherapist.value?.email) {
+      console.warn('No email address to open client with')
+      return
+    }
+    
+    const mailtoLink = `mailto:${selectedTherapist.value.email}`
+    window.open(mailtoLink, '_blank')
+    showEmailDialog.value = false
+    console.log('📧 Email client opened with address:', selectedTherapist.value.email)
+  } catch (error) {
+    console.error('Failed to open email client:', error)
+  }
+}
+
+const sendWithGmail = () => {
+  try {
+    console.log('📧 Gmail OAuth clicked (placeholder)')
+    alert('Gmail OAuth integration wird in Kürze verfügbar sein!')
+  } catch (error) {
+    console.error('Gmail OAuth error:', error)
+  }
+}
+
+const testEmailDialog = (therapist: TherapistData) => {
+  console.log('🧪 Test email dialog for:', therapist.name)
+  // Set a fake email for testing
+  const testTherapist = { ...therapist, email: 'test@example.com' }
+  openEmailDialog(testTherapist)
+}
+
+// Watch for form changes
+watch(emailForm, (newForm) => {
+  console.log('📝 Email form changed:', newForm)
+}, { deep: true })
+
+// Watch for form changes and save to localStorage (with debounce)
+watch(emailForm, () => {
+  try {
+    saveFormData()
+  } catch (error) {
+    console.warn('Error saving form data:', error)
+  }
+}, { deep: true })
+
+watch(selectedTemplate, (newTemplate) => {
+  console.log('📋 Selected template changed:', newTemplate)
+})
+
+watch(showEmailDialog, (isOpen) => {
+  console.log('🪟 Email dialog state changed:', isOpen ? 'OPEN' : 'CLOSED')
+})
 
 // Predefined waiting time options (these automatically set replyReceived = true)
 const primaryWaitingOption = 'Warte noch auf Rückmeldung'
@@ -1373,6 +1980,20 @@ onMounted(() => {
   
   // Mark localStorage loading as complete
   isLocalStorageLoading.value = false
+  
+  // Debug email system
+  console.log('🔧 Email system initialized')
+  console.log('   - debugMode:', debugMode.value)
+  console.log('   - templates available:', templates.length)
+  console.log('   - problemOptions available:', problemOptions.length)
+  console.log('   - createMailtoLink function:', typeof createMailtoLink)
+  
+  // Load saved form data on startup
+  try {
+    loadSavedFormData()
+  } catch (error) {
+    console.warn('Error loading saved form data:', error)
+  }
   
   // Try to force German locale for date inputs
   if (process.client) {
@@ -1983,8 +2604,8 @@ const genderOptions = [
   'Männlich'
 ]
 
-// Problem options (Worum geht es?)
-const problemOptions = [
+// Problem options for search filters (Worum geht es?)
+const searchProblemOptions = [
   'Alle Probleme',
   'Depression',
   'Angst - Phobie',

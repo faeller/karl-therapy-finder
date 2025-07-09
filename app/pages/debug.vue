@@ -14,6 +14,37 @@
         </p>
       </div>
 
+      <!-- Debug Mode Toggle -->
+      <div class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-purple-300 text-base">Debug Mode</h3>
+          <UBadge color="green" variant="soft">Feature Toggle</UBadge>
+        </div>
+        <p class="text-purple-100/80 text-sm mb-4">
+          Enable experimental features like email extraction and contact automation
+        </p>
+        
+        <div class="flex items-center gap-3">
+          <UToggle 
+            v-model="debugMode" 
+            @update:model-value="toggleDebugMode"
+            size="lg"
+            color="primary"
+          />
+          <span class="text-sm text-white font-medium">
+            {{ debugMode ? 'Enabled' : 'Disabled' }}
+          </span>
+          <UBadge 
+            v-if="debugMode" 
+            color="green" 
+            variant="soft" 
+            size="xs"
+          >
+            ACTIVE
+          </UBadge>
+        </div>
+      </div>
+
       <!-- Debug Tools -->
       <div class="w-full space-y-6">
         
@@ -280,6 +311,9 @@ definePageMeta({
 
 // Storage data for debugging
 const storageData = ref<Record<string, any>>({})
+
+// Debug mode toggle
+const { debugMode, toggleDebugMode } = useDebugMode()
 
 // Import/Export reactive variables
 const importFormat = ref<'json' | 'base64' | 'encrypted'>('json')

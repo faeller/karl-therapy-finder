@@ -10,6 +10,8 @@ interface TherapistData {
   distance: number
   profileUrl: string
   image?: string
+  email?: string
+  hasHeilpr?: boolean
 }
 
 interface TherapistSearchResult {
@@ -21,7 +23,50 @@ interface TherapistSearchResult {
 
 // Simple in-memory cache with expiration
 const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
+const profileCache = new Map<string, { email?: string; hasHeilpr?: boolean; expires: number }>()
 const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
+const PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
+// Function to extract email and heilpr info from profile page
+async function extractProfileData(profileUrl: string): Promise<{ email?: string; hasHeilpr?: boolean }> {
+  try {
+    const response = await $fetch<string>(profileUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    })
+
+    const $ = load(response)
+    
+    // Extract email from the contact button's data attribute
+    const emailData = $('#contact-button').attr('data-contact-email')
+    let email: string | undefined
+    
+    if (emailData) {
+      // Decode the email (it's ROT25/shift-1 encoded with character substitutions)
+      let decoded = emailData.replace(/[a-zA-Z]/g, (char) => {
+        const start = char <= 'Z' ? 65 : 97
+        return String.fromCharCode(((char.charCodeAt(0) - start + 25) % 26) + start)
+      })
+      
+      // Apply character substitutions
+      decoded = decoded.replace(/Z/g, '@')  // A -> @
+      decoded = decoded.replace(/\./g, '-')  // . -> -
+      decoded = decoded.replace(/\//g, '.')  // / -> .
+      
+      email = decoded
+    }
+    
+    // Check for heilpr in the entire page content
+    const fullPageText = $.html().toLowerCase()
+    const hasHeilpr = fullPageText.includes('heilpr')
+    
+    return { email, hasHeilpr }
+  } catch (error) {
+    console.error(`Error extracting profile data from ${profileUrl}:`, error)
+    return { hasHeilpr: false }
+  }
+}
 
 export default defineEventHandler(async (event): Promise<TherapistSearchResult> => {
   // Apply security middleware
@@ -226,11 +271,47 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
     // Sort therapists by distance
     allTherapists.sort((a, b) => a.distance - b.distance)
 
+    // Fetch profile data for first 3 therapists
+    const therapistsWithProfile = await Promise.all(
+      allTherapists.slice(0, 3).map(async (therapist) => {
+        // Check profile cache first
+        const cached = profileCache.get(therapist.id)
+        if (cached && Date.now() < cached.expires) {
+          return {
+            ...therapist,
+            email: cached.email,
+            hasHeilpr: cached.hasHeilpr
+          }
+        }
+
+        // Fetch profile data
+        const profileData = await extractProfileData(therapist.profileUrl)
+        
+        // Cache the result
+        profileCache.set(therapist.id, {
+          ...profileData,
+          expires: Date.now() + PROFILE_CACHE_DURATION
+        })
+
+        return {
+          ...therapist,
+          email: profileData.email,
+          hasHeilpr: profileData.hasHeilpr
+        }
+      })
+    )
+
+    // Combine enhanced therapists with the rest
+    const finalTherapists = [
+      ...therapistsWithProfile,
+      ...allTherapists.slice(3)
+    ]
+
     const result: TherapistSearchResult = {
       plz: extractedPlz,
       totalResults,
       radius,
-      therapists: allTherapists
+      therapists: finalTherapists
     }
 
     // Cache the result
