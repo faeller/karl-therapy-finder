@@ -73,6 +73,8 @@ const struggleOptions = [
   { value: 'trauma', label: 'Trauma & schwere Erlebnisse', emoji: '🌩️' },
   { value: 'eating', label: 'Essstörungen', emoji: '🍽️' },
   { value: 'ocd', label: 'Zwänge', emoji: '🔄' },
+  { value: 'adhs', label: 'ADHS', emoji: '🧠' },
+  { value: 'autism', label: 'Autismus', emoji: '∞' },
   { value: 'unsure', label: 'Ich weiß noch nicht genau', emoji: '🤷‍♀️' },
   { value: 'private', label: 'Möchte ich nicht sagen', emoji: '🤐' }
 ]
@@ -85,10 +87,9 @@ const genderOptions = [
 ]
 
 const therapyMethodOptions = [
-  { value: 'egal', label: 'Egal / Lass mich beraten' },
   { value: 'verhaltenstherapie', label: 'Verhaltenstherapie' },
   { value: 'tiefenpsychologie', label: 'Tiefenpsychologisches Verfahren' },
-  { value: 'gespraechstherapie', label: 'Gesprächstherapie' }
+  { value: 'egal', label: 'Egal / Lass mich beraten' }
 ]
 
 const paymentOptions = [
@@ -137,6 +138,21 @@ const toggleStruggle = (value: string, checked: boolean) => {
     }
   }
   onboardingStore.updateFormData({ struggles })
+}
+
+const toggleTherapyMethod = (value: string, checked: boolean) => {
+  const therapyMethods = [...formData.value.therapyMethods]
+  if (checked) {
+    if (!therapyMethods.includes(value)) {
+      therapyMethods.push(value)
+    }
+  } else {
+    const index = therapyMethods.indexOf(value)
+    if (index > -1) {
+      therapyMethods.splice(index, 1)
+    }
+  }
+  onboardingStore.updateFormData({ therapyMethods })
 }
 
 const completeOnboarding = () => {
@@ -229,44 +245,60 @@ const getLocationAndPLZ = async () => {
       :items="items" 
       color="primary"
       size="sm"
-      class="w-full"
+      class="w-full max-w-4xl mx-auto"
       orientation="horizontal"
     >
       <template #greeting>
         <!-- Greeting Step -->
         <div class="space-y-6 text-center">
           <div class="space-y-2">
-            <h2 class="text-xl font-semibold text-white">Hi! Ich bin KARL 👋</h2>
-            <p class="text-blue-100/80">Wie soll ich dich nennen?</p>
-            <p class="text-xs text-blue-200/60">Nur ein Spitzname - wenn wir später echte Daten brauchen, fragen wir nochmal!</p>
+            <h2 class="text-2xl font-semibold text-white">Hi! Ich bin KARL 👋</h2>
+            <p class="text-blue-100/80 text-base">Wie soll ich dich nennen?</p>
+            <p class="text-sm text-blue-200/60">Nur ein Spitzname - wenn wir später echte Daten brauchen, fragen wir nochmal!</p>
           </div>
           
-          <div class="space-y-4">
-            <UInput
-              :model-value="formData.nickname"
-              @update:model-value="(value) => onboardingStore.updateFormData({ nickname: value })"
-              placeholder="Dein Spitzname..."
-              :disabled="formData.skipNickname"
-              class="max-w-xs mx-auto"
-              @keyup.enter="nextStep"
-            />
-            
-            <UButton
-              :variant="formData.skipNickname ? 'solid' : 'outline'"
-              color="gray"
-              size="sm"
-              @click="() => { 
-                const newValue = !formData.skipNickname;
-                onboardingStore.updateFormData({ skipNickname: newValue }); 
-                if (newValue) {
-                  onboardingStore.updateFormData({ nickname: '' });
-                  nextStep();
-                }
-              }"
-              class="mx-auto"
-            >
-              Ohne Spitzname weitermachen
-            </UButton>
+          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-lg mx-auto">
+            <div class="space-y-4">
+              <div class="relative">
+                <input
+                  :value="formData.nickname"
+                  @input="(e) => onboardingStore.updateFormData({ nickname: e.target.value })"
+                  placeholder="Dein Spitzname..."
+                  :disabled="false"
+                  @focus="() => { if (formData.skipNickname) { onboardingStore.updateFormData({ skipNickname: false }); } }"
+                  @keyup.enter="nextStep"
+                  class="w-full px-4 py-4 text-lg text-center bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                />
+              </div>
+              
+              <button
+                v-if="!formData.nickname || formData.skipNickname"
+                @click="() => { 
+                  const newValue = !formData.skipNickname;
+                  onboardingStore.updateFormData({ skipNickname: newValue }); 
+                  if (newValue) {
+                    onboardingStore.updateFormData({ nickname: '' });
+                    nextStep();
+                  }
+                }"
+                :class="[
+                  'w-full p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                  formData.skipNickname
+                    ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                    : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                ]"
+              >
+                <span class="text-white font-medium text-sm">Ohne Spitzname weitermachen</span>
+              </button>
+              
+              <button
+                v-if="formData.nickname && !formData.skipNickname"
+                @click="nextStep"
+                class="w-full p-3 rounded-lg border-2 bg-blue-500/20 border-blue-500/50 shadow-lg transition-all duration-200 hover:scale-105"
+              >
+                <span class="text-white font-medium text-sm">Weiter</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -280,23 +312,37 @@ const getLocationAndPLZ = async () => {
             <p class="text-blue-100/80 text-sm">Das ist wichtig für die Art der Therapie (Kinder-/Jugendlichenpsychotherapie)</p>
           </div>
           
-          <div class="flex gap-4 justify-center">
-            <UButton
-              :variant="formData.isAdult === true ? 'solid' : 'outline'"
-              color="primary"
-              @click="() => { onboardingStore.updateFormData({ isAdult: true }); nextStep() }"
-              size="lg"
-            >
-              Über 21 🧑‍🎓
-            </UButton>
-            <UButton
-              :variant="formData.isAdult === false ? 'solid' : 'outline'"
-              color="primary"
-              @click="() => { onboardingStore.updateFormData({ isAdult: false }); nextStep() }"
-              size="lg"
-            >
-              Unter 21 🎒
-            </UButton>
+          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-lg mx-auto">
+            <div class="grid grid-cols-2 gap-4">
+              <div
+                @click="() => { onboardingStore.updateFormData({ isAdult: true }); nextStep() }"
+                :class="[
+                  'cursor-pointer p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105',
+                  formData.isAdult === true
+                    ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                    : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                ]"
+              >
+                <div class="text-center">
+                  <div class="text-4xl mb-2">🧑‍🎓</div>
+                  <div class="text-white font-medium">Über 21</div>
+                </div>
+              </div>
+              <div
+                @click="() => { onboardingStore.updateFormData({ isAdult: false }); nextStep() }"
+                :class="[
+                  'cursor-pointer p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105',
+                  formData.isAdult === false
+                    ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                    : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                ]"
+              >
+                <div class="text-center">
+                  <div class="text-4xl mb-2">🎒</div>
+                  <div class="text-white font-medium">Unter 21</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -307,63 +353,70 @@ const getLocationAndPLZ = async () => {
         <div class="space-y-6 text-center">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold text-white">Wo suchst du? 📍</h2>
-            <p class="text-blue-100/80">Deine Postleitzahl eingeben oder automatisch ermitteln</p>
+            <p class="text-blue-100/80 text-sm">Deine Postleitzahl eingeben oder automatisch ermitteln</p>
           </div>
           
-          <div class="space-y-4 max-w-sm mx-auto">
-            <!-- Location detection button -->
-            <button
-              @click="getLocationAndPLZ"
-              :disabled="isGettingLocation"
-              class="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed"
-            >
-              <UIcon 
-                :name="isGettingLocation ? 'i-heroicons-arrow-path' : 'i-heroicons-map-pin'" 
-                :class="['w-5 h-5', isGettingLocation && 'animate-spin']" 
+          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-lg mx-auto">
+            <div class="space-y-4">
+              <!-- Location detection button -->
+              <button
+                @click="getLocationAndPLZ"
+                :disabled="isGettingLocation"
+                class="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed"
+              >
+                <UIcon 
+                  :name="isGettingLocation ? 'i-heroicons-arrow-path' : 'i-heroicons-map-pin'" 
+                  :class="['w-5 h-5', isGettingLocation && 'animate-spin']" 
+                />
+                {{ isGettingLocation ? 'Ermittle Standort...' : 'Standort automatisch ermitteln' }}
+              </button>
+              
+              <!-- Error message -->
+              <div v-if="locationError" class="text-red-300 text-sm bg-red-500/20 rounded-lg p-3 border border-red-500/30">
+                {{ locationError }}
+              </div>
+              
+              <!-- Divider -->
+              <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-white/20"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                  <span class="bg-gray-900 px-2 text-blue-200/60">oder</span>
+                </div>
+              </div>
+              
+              <!-- Manual input -->
+              <input
+                :value="formData.location"
+                @input="(e) => onboardingStore.updateFormData({ location: e.target.value })"
+                placeholder="z.B. 10115"
+                pattern="[0-9]{5}"
+                maxlength="5"
+                @keyup.enter="canProceed && nextStep()"
+                class="w-full px-4 py-4 text-lg text-center bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-              {{ isGettingLocation ? 'Ermittle Standort...' : 'Standort automatisch ermitteln' }}
-            </button>
-            
-            <!-- Error message -->
-            <div v-if="locationError" class="text-red-300 text-sm bg-red-500/20 rounded-lg p-3 border border-red-500/30">
-              {{ locationError }}
-            </div>
-            
-            <!-- Divider -->
-            <div class="relative">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-white/20"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="bg-transparent px-2 text-blue-200/60">oder</span>
-              </div>
-            </div>
-            
-            <!-- Manual input -->
-            <UInput
-              :model-value="formData.location"
-              @update:model-value="(value) => onboardingStore.updateFormData({ location: value })"
-              placeholder="z.B. 10115"
-              icon="i-heroicons-pencil"
-              pattern="[0-9]{5}"
-              maxlength="5"
-              @keyup.enter="canProceed && nextStep()"
-            />
-            
-            <div>
-              <label class="block text-sm text-blue-100/80 mb-2">Wie weit würdest du fahren?</label>
-              <div class="grid grid-cols-3 gap-2">
-                <UButton
-                  v-for="option in [{ label: '5 km', value: 5 }, { label: '10 km', value: 10 }, { label: '25 km', value: 25 }, { label: '50 km', value: 50 }, { label: '100+ km', value: 100 }]"
-                  :key="option.value"
-                  :variant="formData.searchRadius === option.value ? 'solid' : 'outline'"
-                  :color="formData.searchRadius === option.value ? 'primary' : 'white'"
-                  size="sm"
-                  @click="onboardingStore.updateFormData({ searchRadius: option.value })"
-                  class="text-xs"
-                >
-                  {{ option.label }}
-                </UButton>
+              
+              <!-- Search radius -->
+              <div>
+                <label class="block text-sm text-blue-100/80 mb-3">Wie weit würdest du fahren?</label>
+                <div class="grid grid-cols-5 gap-2">
+                  <div
+                    v-for="option in [{ label: '5 km', value: 5 }, { label: '10 km', value: 10 }, { label: '25 km', value: 25 }, { label: '50 km', value: 50 }, { label: '100+ km', value: 100 }]"
+                    :key="option.value"
+                    @click="onboardingStore.updateFormData({ searchRadius: option.value })"
+                    :class="[
+                      'cursor-pointer p-2 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                      formData.searchRadius === option.value
+                        ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                        : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                    ]"
+                  >
+                    <div class="flex items-center justify-center">
+                      <span class="text-white font-medium text-xs">{{ option.label }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -379,110 +432,145 @@ const getLocationAndPLZ = async () => {
             <p class="text-blue-100/80 text-sm">Komplett optional - hilft uns bei der Suche</p>
           </div>
           
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-            <UCheckbox
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg mx-auto">
+            <div
               v-for="option in struggleOptions"
               :key="option.value"
-              :model-value="formData.struggles.includes(option.value)"
-              @update:model-value="(checked) => toggleStruggle(option.value, checked)"
-              :label="`${option.emoji} ${option.label}`"
-              class="text-left"
-            />
+              @click="toggleStruggle(option.value, !formData.struggles.includes(option.value))"
+              :class="[
+                'cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105',
+                formData.struggles.includes(option.value)
+                  ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                  : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+              ]"
+            >
+              <div class="flex items-center gap-3">
+                <span class="text-xl">{{ option.emoji }}</span>
+                <span class="text-white font-medium text-sm flex-1">{{ option.label }}</span>
+                <UIcon 
+                  v-if="formData.struggles.includes(option.value)"
+                  name="i-heroicons-check-circle"
+                  class="w-4 h-4 text-blue-400"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
       </template>
 
       <template #preferences>
-        <!-- Preferences Step -->
         <div class="space-y-6 text-center">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold text-white">Therapie-Präferenzen ⚙️</h2>
             <p class="text-blue-100/80 text-sm">Auch optional - aber kann die Suche eingrenzen</p>
           </div>
           
-          <div class="space-y-6 max-w-md mx-auto">
-            <!-- Gender preference -->
-            <div>
-              <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapeut*in Geschlecht</label>
-              <div class="grid grid-cols-2 gap-2">
-                <UButton
-                  v-for="option in genderOptions"
-                  :key="option.value"
-                  :variant="formData.therapistGender === option.value ? 'solid' : 'outline'"
-                  :color="formData.therapistGender === option.value ? 'primary' : 'white'"
-                  size="sm"
-                  @click="onboardingStore.updateFormData({ therapistGender: option.value })"
-                  class="text-xs"
-                >
-                  {{ option.label }}
-                </UButton>
-              </div>
-            </div>
+          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-lg mx-auto">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Gender preference -->
+                <div>
+                  <label class="block text-xs font-medium text-blue-100/90 mb-3">Therapeut*in Geschlecht</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div
+                      v-for="option in genderOptions"
+                      :key="option.value"
+                      @click="onboardingStore.updateFormData({ therapistGender: option.value })"
+                      :class="[
+                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                        formData.therapistGender === option.value
+                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                      ]"
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
+                        <UIcon 
+                          v-if="formData.therapistGender === option.value"
+                          name="i-heroicons-check-circle"
+                          class="w-4 h-4 text-blue-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <!-- Therapy method -->
-            <div>
-              <label class="block text-sm font-medium text-blue-100/90 mb-2">Therapie-Verfahren</label>
-              <div class="grid grid-cols-1 gap-2">
-                <UButton
-                  v-for="option in therapyMethodOptions"
-                  :key="option.value"
-                  :variant="formData.therapyMethod === option.value ? 'solid' : 'outline'"
-                  :color="formData.therapyMethod === option.value ? 'primary' : 'white'"
-                  size="sm"
-                  @click="onboardingStore.updateFormData({ therapyMethod: option.value })"
-                  class="text-xs"
-                >
-                  {{ option.label }}
-                </UButton>
+                <!-- Recent therapy -->
+                <div>
+                  <label class="block text-xs font-medium text-blue-100/90 mb-3">Hattest du in den letzten 2 Jahren eine ambulante Psychotherapie?</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div
+                      @click="() => onboardingStore.updateFormData({ hadRecentTherapy: false })"
+                      :class="[
+                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                        formData.hadRecentTherapy === false
+                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                      ]"
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="text-white font-medium text-xs">Nein</span>
+                        <UIcon 
+                          v-if="formData.hadRecentTherapy === false"
+                          name="i-heroicons-check-circle"
+                          class="w-4 h-4 text-blue-400"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      @click="() => onboardingStore.updateFormData({ hadRecentTherapy: true })"
+                      :class="[
+                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                        formData.hadRecentTherapy === true
+                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                      ]"
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="text-white font-medium text-xs">Ja</span>
+                        <UIcon 
+                          v-if="formData.hadRecentTherapy === true"
+                          name="i-heroicons-check-circle"
+                          class="w-4 h-4 text-blue-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <p class="text-xs text-blue-200/60 mt-2">Bei Ja ist noch ein Gutachten nötig, aber darum kümmert sich die Therapeut*in</p>
+                </div>
               </div>
-            </div>
 
-            <!-- Recent therapy -->
-            <div>
-              <label class="block text-sm font-medium text-blue-100/90 mb-2">Hattest du in den letzten 2 Jahren eine ambulante Psychotherapie?</label>
-              <div class="flex gap-4 justify-center">
-                <UButton
-                  :variant="formData.hadRecentTherapy === false ? 'solid' : 'outline'"
-                  color="primary"
-                  @click="() => onboardingStore.updateFormData({ hadRecentTherapy: false })"
-                  size="sm"
-                >
-                  Nein
-                </UButton>
-                <UButton
-                  :variant="formData.hadRecentTherapy === true ? 'solid' : 'outline'"
-                  color="primary"
-                  @click="() => onboardingStore.updateFormData({ hadRecentTherapy: true })"
-                  size="sm"
-                >
-                  Ja
-                </UButton>
+              <!-- Therapy method -->
+              <div class="mt-6">
+                <label class="block text-xs font-medium text-blue-100/90 mb-3">Therapie-Verfahren (Mehrfachauswahl)</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div
+                    v-for="option in therapyMethodOptions"
+                    :key="option.value"
+                    @click="toggleTherapyMethod(option.value, !formData.therapyMethods.includes(option.value))"
+                    :class="[
+                      'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 min-h-[3rem]',
+                      formData.therapyMethods.includes(option.value)
+                        ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                        : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                    ]"
+                  >
+                    <div class="flex items-center justify-between">
+                      <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
+                      <UIcon 
+                        v-if="formData.therapyMethods.includes(option.value)"
+                        name="i-heroicons-check-circle"
+                        class="w-4 h-4 text-blue-400"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p class="text-xs text-blue-200/60 mt-2">Bei Ja ist noch ein Gutachten nötig, aber darum kümmert sich die Therapeut*in</p>
-            </div>
 
-            <!-- Payment type -->
-            <div>
-              <label class="block text-sm font-medium text-blue-100/90 mb-2">Kassensitz oder Kostenerstattung?</label>
-              <div class="grid grid-cols-1 gap-2">
-                <UButton
-                  v-for="option in paymentOptions"
-                  :key="option.value"
-                  :variant="formData.paymentType === option.value ? 'solid' : 'outline'"
-                  :color="formData.paymentType === option.value ? 'primary' : 'white'"
-                  size="sm"
-                  @click="onboardingStore.updateFormData({ paymentType: option.value })"
-                  class="text-xs"
-                >
-                  {{ option.label }}
-                </UButton>
-              </div>
             </div>
-          </div>
         </div>
-
       </template>
+  
 
       <template #complete>
         <!-- Complete Step -->
@@ -507,11 +595,17 @@ const getLocationAndPLZ = async () => {
               <li>📍 Standort: {{ formData.location }} ({{ formData.searchRadius }}km Radius)</li>
               <li v-if="formData.struggles.length">💙 Probleme: {{ formData.struggles.length }} ausgewählt</li>
               <li v-if="formData.therapistGender !== 'egal'">👤 Geschlecht: {{ genderOptions.find(o => o.value === formData.therapistGender)?.label }}</li>
-              <li v-if="formData.therapyMethod !== 'egal'">🧠 Verfahren: {{ therapyMethodOptions.find(o => o.value === formData.therapyMethod)?.label }}</li>
+              <li v-if="formData.therapyMethods.length">🧠 Verfahren: {{ formData.therapyMethods.map(m => therapyMethodOptions.find(o => o.value === m)?.label).join(', ') }}</li>
               <li v-if="formData.hadRecentTherapy !== null">🕒 Letzte Therapie: {{ formData.hadRecentTherapy ? 'Innerhalb 2 Jahre' : 'Länger her/Nie' }}</li>
             </ul>
           </div>
           
+          <!-- Info about data management -->
+          <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-md mx-auto text-sm">
+            <p class="text-blue-200/90 text-center">
+              💡 <strong>Tipp:</strong> Du kannst diese Daten jederzeit ändern und in den Einstellungen (⚙️ oben rechts) importieren/exportieren.
+            </p>
+          </div>
 
           <div class="flex gap-4 items-center justify-center">
             <UButton

@@ -8,7 +8,7 @@ export const useOnboardingStore = defineStore('onboarding', {
       searchRadius: 25,
       struggles: [] as string[],
       therapistGender: 'egal',
-      therapyMethod: 'egal',
+      therapyMethods: [] as string[],
       paymentType: 'egal',
       hadRecentTherapy: null as boolean | null
     },
@@ -38,7 +38,7 @@ export const useOnboardingStore = defineStore('onboarding', {
         searchRadius: 25,
         struggles: [],
         therapistGender: 'egal',
-        therapyMethod: 'egal',
+        therapyMethods: [] as string[],
         paymentType: 'egal',
         hadRecentTherapy: null
       }
