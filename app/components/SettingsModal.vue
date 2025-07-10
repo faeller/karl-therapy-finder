@@ -317,8 +317,40 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Import stores that need to be refreshed
+const onboardingStore = useOnboardingStore()
+
 // Storage data for debugging
 const storageData = ref<Record<string, any>>({})
+
+// Function to refresh all reactive stores after data changes
+const refreshAllStores = () => {
+  if (process.client) {
+    try {
+      // Force onboarding store to reload from localStorage
+      // Since it uses persist: true, we need to trigger a fresh hydration
+      const onboardingData = localStorage.getItem('onboarding')
+      if (onboardingData) {
+        const parsedData = JSON.parse(onboardingData)
+        onboardingStore.$patch(parsedData)
+      } else {
+        // Reset to default state if no data
+        onboardingStore.$reset()
+      }
+      
+      console.log('🔄 Successfully refreshed onboarding store')
+      
+      // Emit event to notify parent components that data has changed
+      // This allows other components to refresh their reactive data
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('karl-data-changed'))
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ Error refreshing stores:', error)
+    }
+  }
+}
 
 // Import/Export reactive variables
 const importFormat = ref<'auto' | 'json' | 'base64' | 'encrypted'>('auto')
@@ -481,7 +513,10 @@ const importStorageData = async () => {
       }
       loadStorageData()
       clearImportForm()
-      alert('Daten erfolgreich importiert!')
+      refreshAllStores()
+      
+      // Reload page to apply all changes
+      window.location.reload()
     }
   } catch (error) {
     alert('Import fehlgeschlagen: ' + error)
@@ -532,7 +567,10 @@ const clearAllStorage = () => {
     if (confirm('Bist du sicher, dass du alle Daten löschen möchtest? Dies kann nicht rückgängig gemacht werden.')) {
       localStorage.clear()
       loadStorageData()
-      alert('Alle Daten erfolgreich gelöscht!')
+      refreshAllStores()
+      
+      // Reload page to apply all changes
+      window.location.reload()
     }
   }
 }

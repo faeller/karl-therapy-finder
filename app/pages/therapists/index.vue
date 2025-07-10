@@ -1154,9 +1154,15 @@
           <!-- Name and Age Row -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm font-medium text-blue-200 mb-2">
-                Name (optional)
-              </label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-blue-200">
+                  Voller Name (optional)
+                </label>
+                <div v-if="emailForm.fullName === onboardingStore.formData.nickname && onboardingStore.formData.nickname" class="flex items-center gap-1 text-xs text-green-300">
+                  <UIcon name="i-heroicons-sparkles" class="w-3 h-3" />
+                  <span>Aus Onboarding</span>
+                </div>
+              </div>
               <input 
                 v-model="emailForm.fullName"
                 type="text"
@@ -1281,14 +1287,23 @@
 
           <!-- Problem Selection -->
           <div>
-            <label class="block text-sm font-medium text-blue-200 mb-2">
-              Problembereiche (mehrere auswählbar)
-            </label>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-sm font-medium text-blue-200">
+                Problembereiche (mehrere auswählbar)
+              </label>
+              <div v-if="userOnboardingProblems.length > 0" class="flex items-center gap-1 text-xs text-green-300">
+                <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
+                <span>{{ userOnboardingProblems.length }} aus Onboarding übernommen</span>
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-white/5 border border-white/20 rounded-lg">
               <label 
                 v-for="problem in problemOptions" 
                 :key="problem"
-                class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/10 p-2 rounded transition-colors"
+                :class="[
+                  'flex items-center gap-2 text-sm cursor-pointer hover:bg-white/10 p-2 rounded transition-colors',
+                  userOnboardingProblems.includes(problem) ? 'bg-green-500/10 border border-green-500/20' : ''
+                ]"
               >
                 <input 
                   type="checkbox" 
@@ -1296,7 +1311,15 @@
                   v-model="emailForm.problems"
                   class="rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500"
                 />
-                <span class="text-white/80">{{ problem }}</span>
+                <span class="text-white/80 flex items-center gap-1">
+                  {{ problem }}
+                  <UIcon 
+                    v-if="userOnboardingProblems.includes(problem)" 
+                    name="i-heroicons-sparkles" 
+                    class="w-3 h-3 text-green-300" 
+                    title="Aus Onboarding übernommen"
+                  />
+                </span>
               </label>
             </div>
           </div>
@@ -1669,6 +1692,30 @@ const customWaitingTime = ref('')
 const { debugMode } = useDebugMode()
 const { templates, problemOptions, createMailtoLink } = useEmailTemplates()
 
+// Struggle options mapping from onboarding
+const struggleOptionsMap = {
+  'angst': 'Angst & Sorgen',
+  'depression': 'Niedergeschlagenheit & Depression', 
+  'stress': 'Stress & Burnout',
+  'relationships': 'Beziehungsprobleme',
+  'trauma': 'Trauma & schwere Erlebnisse',
+  'eating': 'Essstörungen',
+  'ocd': 'Zwänge',
+  'adhs': 'ADHS',
+  'autism': 'Autismus',
+  'unsure': 'Ich weiß noch nicht genau',
+  'private': 'Möchte ich nicht sagen'
+}
+
+// Get user's selected problems from onboarding
+const userOnboardingProblems = computed(() => {
+  const struggles = onboardingStore.formData.struggles || []
+  return struggles
+    .filter(struggle => struggle !== 'private' && struggle !== 'unsure') // Filter out non-specific ones
+    .map(struggle => struggleOptionsMap[struggle])
+    .filter(Boolean) // Remove any undefined mappings
+})
+
 // Gmail OAuth (only available in debug mode)
 const {
   isAuthenticated: isGmailAuthenticated,
@@ -1712,15 +1759,26 @@ const loadSavedFormData = () => {
     if (savedName) {
       emailForm.value.fullName = savedName
       console.log('📝 Loaded saved name:', savedName)
+    } else if (onboardingStore.formData.nickname && !onboardingStore.formData.skipNickname) {
+      // Use onboarding nickname if no saved name exists
+      emailForm.value.fullName = onboardingStore.formData.nickname
+      console.log('👋 Using onboarding nickname:', onboardingStore.formData.nickname)
     }
     
+    // Load problems: prioritize saved problems, fallback to onboarding data
     if (savedProblems) {
       try {
         emailForm.value.problems = JSON.parse(savedProblems)
         console.log('🔍 Loaded saved problems:', emailForm.value.problems)
       } catch (e) {
         console.warn('Failed to parse saved problems:', e)
+        // Fallback to onboarding problems if saved data is corrupted
+        emailForm.value.problems = [...userOnboardingProblems.value]
       }
+    } else if (userOnboardingProblems.value.length > 0) {
+      // Use onboarding problems if no saved problems exist
+      emailForm.value.problems = [...userOnboardingProblems.value]
+      console.log('🎯 Using onboarding problems:', emailForm.value.problems)
     }
     
     if (savedAge) {
@@ -2067,9 +2125,6 @@ const sendEmailViaGmail = async () => {
     
     if (result) {
       console.log('✅ Email sent successfully via Gmail:', result)
-      
-      // Show success message
-      alert(`✅ E-Mail erfolgreich gesendet an ${emailData.to}!`)
       
       // Close dialog and add to contact attempts
       showEmailDialog.value = false
