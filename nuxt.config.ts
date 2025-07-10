@@ -38,8 +38,13 @@ export default defineNuxtConfig({
     vueI18n: './i18n.config.ts'
   },
   runtimeConfig: {
+    // Private keys (server-side only)
+    gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
+    
+    // Public keys (client-side accessible)
     public: {
       version: pkg.version,
+      gmailClientId: process.env.GMAIL_CLIENT_ID,
     },
   },
   nitro: {
