@@ -14,7 +14,7 @@ const currentYear = format(new Date(), 'yyyy');
         <NuxtLink to="/impressum" class="hover:text-white/80 transition-colors">Impressum</NuxtLink>
         <template v-if="config.public.privacyPolicyEnabled !== 'false'">
           <span class="text-white/30">•</span>
-          <NuxtLink to="/privacy-policy" class="hover:text-white/80 transition-colors">Datenschutz</NuxtLink>
+          <NuxtLink to="/privacy" class="hover:text-white/80 transition-colors">Privacy Policy</NuxtLink>
         </template>
       </div>
     </div>

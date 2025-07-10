@@ -45,6 +45,7 @@ export default defineNuxtConfig({
     public: {
       version: pkg.version,
       gmailClientId: process.env.GMAIL_CLIENT_ID,
+      privacyPolicyEnabled: process.env.NUXT_PUBLIC_PRIVACY_POLICY_ENABLED,
     },
   },
   nitro: {

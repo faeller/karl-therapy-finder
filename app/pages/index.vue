@@ -154,6 +154,15 @@ const navigateToApp = () => {
               <p><strong>Deine Daten bleiben fürs erste lokal in deinem Browser.</strong> Sobald sich das ändert, musst du erst zustimmen.</p>
               <p><strong>Transparenz - </strong> Wenn KARL für dich E-Mails sendet oder anruft, zeigen wir dir genau, welche Daten geteilt werden.</p>
               <p class="italic text-blue-200/70">Wir nehmen Datenschutz ernst – auch wenn viele KI-Anbieter das leider nicht tun.</p>
+              <div class="mt-4 pt-3 border-t border-white/10">
+                <NuxtLink 
+                  to="/privacy" 
+                  class="inline-flex items-center gap-2 text-blue-200 hover:text-blue-100 transition-colors text-sm font-medium"
+                >
+                  <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
+                  Privacy Policy / Datenschutzerklärung
+                </NuxtLink>
+              </div>
             </div>
           </div>
         </div>
