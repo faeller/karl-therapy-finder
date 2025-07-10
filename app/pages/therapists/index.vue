@@ -172,15 +172,16 @@
           </div>
         </div>
         
+        
         <!-- Disclaimers -->
-        <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-          <div class="flex items-start gap-2">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
-            <div class="space-y-1">
-              <p class="text-amber-200 text-xs font-medium">
+        <div class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20 mb-4">
+          <div class="flex items-start gap-3">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-300 mt-0.5 flex-shrink-0" />
+            <div class="space-y-2">
+              <p class="text-amber-200 text-sm font-medium">
                 Wichtige Hinweise zu den Suchergebnissen:
               </p>
-              <p class="text-amber-100/90 text-xs">
+              <p class="text-amber-100/90 text-sm leading-relaxed">
                 • <strong>Keine Garantie für Richtigkeit der Daten</strong> - Bitte prüfe Kontaktdaten und Verfügbarkeit direkt beim Therapeuten<br>
                 • <strong>Achtung vor Heilpraktikern:</strong> Diese können nicht mit der Krankenkasse abrechnen. Achte auf approbierte Psychotherapeuten
               </p>
@@ -316,10 +317,6 @@
                 >
                   <UIcon name="i-heroicons-phone" class="w-4 h-4" />
                 </button>
-                <!-- Debug email button visibility -->
-                <div v-if="debugMode" class="text-xs text-yellow-300 bg-black/20 px-1 rounded">
-                  Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
-                </div>
                 <button 
                   v-if="shouldShowEmailButton(therapist)"
                   @click="getEffectiveEmail(therapist) ? openEmailDialog(therapist) : (therapist.source === 'therapie.de' ? fetchTherapistProfile(therapist) : openEmailDialog(therapist))"
@@ -328,10 +325,10 @@
                     'p-2 rounded-lg transition-all relative',
                     isProfileLoading(therapist)
                       ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                      : (hasBeenFetchedWithoutEmail(therapist) && !getEffectiveEmail(therapist)) || (therapist.source === 'tk' && therapist.profileUrl && !customEmails.value?.has(therapist.profileUrl))
-                        ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
-                        : (therapist.source === 'tk' && therapist.profileUrl && customEmails.value?.has(therapist.profileUrl)) || (therapist.source === 'therapie.de' && getEffectiveEmail(therapist))
-                          ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                      : getEffectiveEmail(therapist)
+                        ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                        : (hasBeenFetchedWithoutEmail(therapist) || (therapist.source === 'tk' && therapist.profileUrl && !customEmails.value?.has(therapist.profileUrl)))
+                          ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
                           : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
                   ]"
                   :title="getEffectiveEmail(therapist) ? 'E-Mail schreiben' : hasBeenFetchedWithoutEmail(therapist) ? 'Keine E-Mail gefunden - eigene hinzufügen' : isProfileLoading(therapist) ? 'Lädt...' : (therapist.source === 'therapie.de' ? 'E-Mail laden' : 'E-Mail schreiben')"
@@ -430,10 +427,6 @@
                   >
                     <UIcon name="i-heroicons-phone" class="w-4 h-4" />
                   </button>
-                  <!-- Debug email button visibility -->
-                  <div v-if="debugMode" class="text-xs text-yellow-300 bg-black/20 px-1 rounded">
-                    Email: {{ therapist.email ? 'Yes' : 'No' }} | Source: {{ therapist.source }}
-                  </div>
                   <button 
                     v-if="shouldShowEmailButton(therapist)"
                     @click="getEffectiveEmail(therapist) ? openEmailDialog(therapist) : (therapist.source === 'therapie.de' ? fetchTherapistProfile(therapist) : openEmailDialog(therapist))"
@@ -442,10 +435,10 @@
                       'p-2 rounded-lg transition-all relative',
                       isProfileLoading(therapist)
                         ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                        : (hasBeenFetchedWithoutEmail(therapist) && !getEffectiveEmail(therapist)) || (therapist.source === 'tk' && therapist.profileUrl && !customEmails.value?.has(therapist.profileUrl))
-                          ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
-                          : (therapist.source === 'tk' && therapist.profileUrl && customEmails.value?.has(therapist.profileUrl)) || (therapist.source === 'therapie.de' && getEffectiveEmail(therapist))
-                            ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                        : getEffectiveEmail(therapist)
+                          ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                          : (hasBeenFetchedWithoutEmail(therapist) || (therapist.source === 'tk' && therapist.profileUrl && !customEmails.value?.has(therapist.profileUrl)))
+                            ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
                             : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
                     ]"
                     :title="getEffectiveEmail(therapist) ? 'E-Mail schreiben' : hasBeenFetchedWithoutEmail(therapist) ? 'Keine E-Mail gefunden - eigene hinzufügen' : isProfileLoading(therapist) ? 'Lädt...' : (therapist.source === 'therapie.de' ? 'E-Mail laden' : 'E-Mail schreiben')"
@@ -1376,16 +1369,38 @@
               </button>
             </div>
             
-            <!-- Coming Soon Button -->
+            <!-- Gmail OAuth Button -->
             <button
-              @click="sendWithGmail"
-              :disabled="!isOAuthFormValid"
+              v-if="debugMode"
+              @click="handleGmailOAuth"
+              :disabled="!isOAuthFormValid || isGmailLoading"
               :class="[
                 'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium border transition-all',
-                isOAuthFormValid 
-                  ? 'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 focus:ring-2 focus:ring-yellow-500' 
-                  : 'border-white/20 text-white/40 cursor-not-allowed'
+                isGmailAuthenticated && isOAuthFormValid
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : isOAuthFormValid && !isGmailLoading
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                    : 'border-white/20 text-white/40 cursor-not-allowed'
               ]"
+            >
+              <UIcon 
+                v-if="isGmailLoading"
+                name="i-heroicons-arrow-path" 
+                class="w-4 h-4 animate-spin" 
+              />
+              <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              {{ isGmailAuthenticated ? 'Automatisch über Gmail senden' : 'Mit Gmail verbinden' }}
+            </button>
+            <!-- Coming Soon Button (when debug mode is off) -->
+            <button
+              v-else
+              :disabled="true"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium border border-white/20 text-white/40 cursor-not-allowed transition-all"
             >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -1398,6 +1413,23 @@
             <p v-if="!isOAuthFormValid && emailForm.fullName.trim() === ''" class="text-xs text-yellow-300/70 mt-1">
               💡 Name erforderlich für automatisches Senden
             </p>
+            <!-- Gmail Auth Status (Debug Mode) -->
+            <div v-if="debugMode" class="mt-2 text-xs">
+              <div v-if="isGmailAuthenticated" class="flex items-center gap-2 text-green-300">
+                <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
+                <span>Gmail verbunden: {{ gmailUserEmail }}</span>
+                <button @click="logoutGmail" class="text-red-300 hover:text-red-200 underline ml-2">
+                  Trennen
+                </button>
+              </div>
+              <div v-else-if="gmailAuthError" class="flex items-center gap-2 text-red-300">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3" />
+                <span>{{ gmailAuthError }}</span>
+              </div>
+              <div v-else class="text-blue-300/70">
+                Gmail nicht verbunden (Debug Modus aktiv)
+              </div>
+            </div>
           </div>
 
           <!-- Email Preview -->
@@ -1484,6 +1516,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 interface TherapistData {
   id: string
   name: string
@@ -1635,6 +1668,17 @@ const customWaitingTime = ref('')
 // Email functionality
 const { debugMode } = useDebugMode()
 const { templates, problemOptions, createMailtoLink } = useEmailTemplates()
+
+// Gmail OAuth (only available in debug mode)
+const {
+  isAuthenticated: isGmailAuthenticated,
+  isLoading: isGmailLoading,
+  authError: gmailAuthError,
+  userEmail: gmailUserEmail,
+  startOAuthFlow,
+  sendEmail: sendGmailEmail,
+  logout: logoutGmail
+} = useGmailOAuth()
 
 // Track loading states for individual therapist profiles
 const loadingProfiles = ref(new Set<string>())
@@ -1977,13 +2021,84 @@ const openEmailClient = () => {
   }
 }
 
-const sendWithGmail = () => {
+// Gmail OAuth handler
+const handleGmailOAuth = async () => {
+  if (!debugMode.value) return
+  
   try {
-    console.log('📧 Gmail OAuth clicked (placeholder)')
-    alert('Gmail OAuth integration wird in Kürze verfügbar sein!')
+    if (!isGmailAuthenticated.value) {
+      // Start OAuth flow
+      console.log('🔐 Starting Gmail OAuth flow...')
+      startOAuthFlow()
+    } else {
+      // Send email directly
+      await sendEmailViaGmail()
+    }
   } catch (error) {
     console.error('Gmail OAuth error:', error)
+    alert(`Gmail OAuth Fehler: ${error.message}`)
   }
+}
+
+// Send email via Gmail
+const sendEmailViaGmail = async () => {
+  if (!isGmailAuthenticated.value || !selectedTherapist.value || !currentTemplate.value) return
+  
+  try {
+    console.log('📧 Sending email via Gmail...')
+    console.log('📧 Template data:', {
+      selectedTemplate: selectedTemplate.value,
+      currentTemplate: currentTemplate.value?.name,
+      templateType: typeof currentTemplate.value
+    })
+    
+    // Use the computed preview body which has all the replacements done
+    const emailBody = previewEmailBody.value || ''
+    console.log('📧 Final email body:', emailBody)
+    
+    const emailData = {
+      to: getEffectiveEmail(selectedTherapist.value) || emailForm.value.customEmail,
+      subject: `Anfrage für einen Therapieplatz - ${emailForm.value.fullName}`,
+      body: emailBody,
+      from: gmailUserEmail.value
+    }
+    
+    const result = await sendGmailEmail(emailData)
+    
+    if (result) {
+      console.log('✅ Email sent successfully via Gmail:', result)
+      
+      // Show success message
+      alert(`✅ E-Mail erfolgreich gesendet an ${emailData.to}!`)
+      
+      // Close dialog and add to contact attempts
+      showEmailDialog.value = false
+      
+      // Add to contact attempts with Gmail tracking
+      await addContactAttempt(selectedTherapist.value, {
+        contactDate: new Date().toISOString().split('T')[0],
+        contactTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
+        contactMethod: 'email',
+        replyReceived: false,
+        notes: `E-Mail automatisch über Gmail gesendet (ID: ${result.messageId})`
+      })
+      
+      toast.add({
+        title: 'E-Mail gesendet',
+        description: `Erfolgreich an ${selectedTherapist.value.name} gesendet`,
+        color: 'green',
+        timeout: 5000
+      })
+    }
+  } catch (error) {
+    console.error('Email send error:', error)
+    alert(`Fehler beim Senden: ${error.message}`)
+  }
+}
+
+const sendWithGmail = () => {
+  // Legacy function, redirect to new handler
+  handleGmailOAuth()
 }
 
 // Email sent modal functions
