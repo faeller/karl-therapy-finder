@@ -39,7 +39,7 @@
               :class="$route.path === '/' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-home" class="w-4 h-4 mr-2" />
-              Landing
+              Start
             </UButton>
             
             <UButton 
@@ -61,7 +61,7 @@
               :class="$route.path === '/app' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'"
             >
               <UIcon name="i-heroicons-map" class="w-4 h-4 mr-2" />
-              Nächste Schritte
+              Guide
             </UButton>
             
             <UButton 
@@ -296,7 +296,7 @@ const mobileMenuItems = computed(() => {
   const isOnTherapistsPage = route.path.startsWith('/therapists')
   
   const baseItems = [{
-    label: 'Landing',
+    label: 'Start',
     icon: 'i-heroicons-home',
     to: '/'
   }, {
@@ -304,7 +304,7 @@ const mobileMenuItems = computed(() => {
     icon: 'i-heroicons-user-circle',
     to: '/onboarding'
   }, {
-    label: 'Nächste Schritte',
+    label: 'Guide',
     icon: 'i-heroicons-map',
     to: '/app'
   }, {
