@@ -22,7 +22,9 @@ export default defineNuxtConfig({
       ]
     }
   },
-  hub: {},
+  hub: {
+    kv: true
+  },
   colorMode: {
     preference: 'dark',
   },
@@ -40,11 +42,13 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Private keys (server-side only)
     gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
+    patreonClientSecret: process.env.PATREON_CLIENT_SECRET,
     
     // Public keys (client-side accessible)
     public: {
       version: pkg.version,
       gmailClientId: process.env.GMAIL_CLIENT_ID,
+      patreonClientId: process.env.PATREON_CLIENT_ID,
       privacyPolicyEnabled: process.env.NUXT_PUBLIC_PRIVACY_POLICY_ENABLED,
     },
   },

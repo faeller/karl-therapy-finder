@@ -24,7 +24,7 @@ interface TherapistSearchResult {
 // Simple in-memory cache with expiration
 const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
 const profileCache = new Map<string, { email?: string; hasHeilpr?: boolean; expires: number }>()
-const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
+const CACHE_DURATION = 3 * 60 * 60 * 1000 // 3 hours
 const PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 // Function to fetch single profile

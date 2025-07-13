@@ -2,6 +2,7 @@
 // Combines results from therapie.de and TK-Ärzte and provides health checks
 
 import { securityMiddleware } from '../utils/rateLimiter'
+import { therapistCache } from '../utils/kvCache'
 
 interface TherapistData {
   id: string
@@ -28,9 +29,8 @@ interface TherapistSearchResult {
   }
 }
 
-// Simple in-memory cache with expiration
-const cache = new Map<string, { data: TherapistSearchResult; expires: number }>()
-const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
+// Cache configuration
+const CACHE_DURATION = 3 * 60 * 60 * 1000 // 3 hours
 
 async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -205,10 +205,10 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   const cacheKey = JSON.stringify(query)
   
   // Check cache first
-  const cached = cache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log(`✅ Unified cache hit for PLZ: ${plz}`)
-    return cached.data
+  const cached = await therapistCache.get<TherapistSearchResult>(cacheKey)
+  if (cached) {
+    console.log(`✅ Unified KV cache hit for PLZ: ${plz}`)
+    return cached
   }
   
   console.log(`🔄 Unified cache miss, fetching from both APIs for PLZ: ${plz}`)
@@ -245,11 +245,8 @@ export default defineEventHandler(async (event): Promise<TherapistSearchResult> 
   console.log(`   TK: ${tkResult.status} (${tkResult.results} results)`)
   console.log(`   Combined: ${result.therapists.length} unique therapists`)
 
-  // Cache the result
-  cache.set(cacheKey, {
-    data: result,
-    expires: Date.now() + CACHE_DURATION
-  })
+  // Cache the result in KV
+  await therapistCache.set(cacheKey, result, CACHE_DURATION)
 
   return result
 })

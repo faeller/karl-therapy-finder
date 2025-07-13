@@ -23,9 +23,10 @@ interface EterminserviceResult {
   message?: string
 }
 
-// Simple in-memory cache with expiration
-const cache = new Map<string, { data: EterminserviceResult; expires: number }>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes (shorter than therapist cache)
+// KV cache import and configuration
+import { eteminCache } from '../utils/kvCache'
+
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 // Service codes mapping for different types of appointments
 const SERVICE_CODES = {
@@ -62,10 +63,10 @@ export default defineEventHandler(async (event): Promise<EterminserviceResult> =
   const cacheKey = `${plz}-${service}`
   
   // Check cache first
-  const cached = cache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log(`✅ eterminservice cache hit for: ${cacheKey}`)
-    return cached.data
+  const cached = await eteminCache.get<EterminserviceResult>(cacheKey)
+  if (cached) {
+    console.log(`✅ eterminservice KV cache hit for: ${cacheKey}`)
+    return cached
   }
   
   console.log(`🔄 eterminservice cache miss, fetching for: ${cacheKey}`)
@@ -132,11 +133,8 @@ export default defineEventHandler(async (event): Promise<EterminserviceResult> =
       }
     }
 
-    // Cache the result
-    cache.set(cacheKey, {
-      data: result,
-      expires: Date.now() + CACHE_DURATION
-    })
+    // Cache the result in KV
+    await eteminCache.set(cacheKey, result, CACHE_DURATION)
 
     return result
 

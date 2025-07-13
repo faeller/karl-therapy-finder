@@ -1,5 +1,6 @@
 import { load } from 'cheerio'
 import { securityMiddleware } from '../utils/rateLimiter'
+import { therapistCache } from '../utils/kvCache'
 
 // --- NATIVE INTERFACES (Default output of this service) ---
 interface TKTherapistData {
@@ -24,8 +25,7 @@ interface TherapieDeCompatSearchResult {
 
 
 // --- CACHING ---
-const cache = new Map<string, { data: any; expires: number }>()
-const CACHE_DURATION = 120 * 60 * 1000 // 120 minutes
+const CACHE_DURATION = 3 * 60 * 60 * 1000 // 3 hours
 
 
 // --- MAPPER FUNCTION ---
@@ -314,10 +314,10 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
   const cacheKey = `tk-${plz}-${specialization}-${billing}-${gender || ''}-${maxDistance || ''}-${compatible ? 'compat' : 'native'}`
 
   // Check cache first
-  const cached = cache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log(`✅ TK Cache hit for: ${cacheKey.substring(0, 70)}...`)
-    return cached.data
+  const cached = await therapistCache.get(cacheKey)
+  if (cached) {
+    console.log(`✅ TK KV cache hit for: ${cacheKey.substring(0, 70)}...`)
+    return cached
   }
 
   console.log(`🔄 TK Cache miss, fetching from tk-aerztefuehrer.de...`)
@@ -470,10 +470,10 @@ export default defineEventHandler(async (event): Promise<TKTherapistSearchResult
     // --- THE IMPORTANT PART: CHECK THE FLAG AND TRANSFORM IF NEEDED ---
     if (compatible) {
       const compatibleResult = mapToTherapieDeFormat(nativeResult);
-      cache.set(cacheKey, { data: compatibleResult, expires: Date.now() + CACHE_DURATION })
+      await therapistCache.set(cacheKey, compatibleResult, CACHE_DURATION)
       return compatibleResult;
     } else {
-      cache.set(cacheKey, { data: nativeResult, expires: Date.now() + CACHE_DURATION })
+      await therapistCache.set(cacheKey, nativeResult, CACHE_DURATION)
       return nativeResult;
     }
 
