@@ -14,6 +14,23 @@
         </p>
       </div>
 
+      <!-- Admin Access Notification -->
+      <div v-if="adminRequired" class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-red-500/40">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-red-300 text-base flex items-center gap-2">
+            <UIcon name="i-heroicons-shield-exclamation" class="w-5 h-5" />
+            Admin Access Required
+          </h3>
+          <UBadge color="red" variant="soft">Access Denied</UBadge>
+        </div>
+        <p class="text-red-200/90 text-sm mb-3">
+          {{ getAdminErrorMessage(adminError) }}
+        </p>
+        <div v-if="adminError === 'patreon_auth_required'" class="text-xs text-purple-100/70">
+          Use the Patreon OAuth section below to authenticate and gain admin access.
+        </div>
+      </div>
+
       <!-- Debug Mode Toggle -->
       <div class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
         <div class="flex items-center justify-between mb-2">
@@ -475,6 +492,14 @@
                 Refresh
               </button>
               
+              <NuxtLink 
+                to="/admin"
+                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
+              >
+                <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
+                Admin Dashboard
+              </NuxtLink>
+              
               <button 
                 @click="patreonAuth.logout"
                 class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all text-sm"
@@ -516,6 +541,24 @@ const { debugMode, toggleDebugMode } = useDebugMode()
 
 // Patreon OAuth integration
 const patreonAuth = usePatreonOAuth()
+
+// Admin access notifications
+const route = useRoute()
+const adminRequired = computed(() => route.query.admin_required === 'true')
+const adminError = computed(() => route.query.error as string)
+
+const getAdminErrorMessage = (error: string) => {
+  switch (error) {
+    case 'patreon_auth_required':
+      return 'Please authenticate with Patreon to access the admin dashboard'
+    case 'access_denied':
+      return 'Access denied: Your Patreon email does not match the admin email'
+    case 'admin_email_not_configured':
+      return 'Admin email not configured in environment variables'
+    default:
+      return 'Unknown error occurred while accessing admin dashboard'
+  }
+}
 
 // Session status with auto-refresh
 const sessionStatus = ref(null)

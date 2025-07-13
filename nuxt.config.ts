@@ -44,6 +44,7 @@ export default defineNuxtConfig({
     gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
     patreonClientSecret: process.env.PATREON_CLIENT_SECRET,
     patreonAllowedRedirectUris: process.env.PATREON_ALLOWED_REDIRECT_URIS,
+    karlAdminPatreonEmail: process.env.KARL_ADMIN_PATREON_EMAIL,
     
     // Public keys (client-side accessible)
     public: {
