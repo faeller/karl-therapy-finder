@@ -299,6 +299,193 @@
           </div>
         </div>
 
+        <!-- Patreon OAuth Section -->
+        <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-orange-300 text-base">Patreon OAuth</h3>
+            <div class="flex gap-2">
+              <UBadge 
+                :color="patreonAuth.isAuthenticated.value ? 'green' : 'gray'" 
+                variant="soft"
+              >
+                {{ patreonAuth.isAuthenticated.value ? 'Connected' : 'Disconnected' }}
+              </UBadge>
+              <UBadge v-if="patreonAuth.isPatron.value" color="purple" variant="soft">
+                Patron
+              </UBadge>
+            </div>
+          </div>
+          
+          <p class="text-orange-100/80 text-sm mb-4">
+            Connect to Patreon to verify supporter status and access tier information
+          </p>
+
+          <!-- Authentication Status -->
+          <div v-if="!patreonAuth.isAuthenticated.value" class="space-y-3">
+            <button 
+              @click="patreonAuth.startOAuthFlow"
+              :disabled="patreonAuth.isLoading.value"
+              class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <UIcon name="i-heroicons-link" class="w-4 h-4" />
+              {{ patreonAuth.isLoading.value ? 'Connecting...' : 'Connect to Patreon' }}
+            </button>
+            
+            <div v-if="patreonAuth.authError.value" class="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+              <div class="flex items-center gap-2 mb-1">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-400" />
+                <span class="text-sm font-medium text-red-400">Authentication Error</span>
+              </div>
+              <p class="text-xs text-red-300">{{ patreonAuth.authError.value }}</p>
+            </div>
+          </div>
+
+          <!-- Connected State -->
+          <div v-else class="space-y-4">
+            <!-- Session Status -->
+            <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <UIcon name="i-heroicons-clock" class="w-4 h-4 text-blue-400" />
+                <span class="text-sm font-medium text-white">Debug Session</span>
+              </div>
+              <div class="text-sm text-blue-200">
+                <template v-if="sessionStatus">
+                  <span v-if="!sessionStatus.expired">
+                    Expires in {{ sessionStatus.timeLeftMinutes }}m {{ sessionStatus.timeLeftSeconds }}s
+                  </span>
+                  <span v-else class="text-red-300">Session expired</span>
+                </template>
+                <span v-else>Session active</span>
+              </div>
+            </div>
+
+            <!-- User Info -->
+            <div v-if="patreonAuth.user.value" class="p-3 bg-white/5 border border-white/10 rounded-lg">
+              <div class="flex items-center gap-3 mb-3">
+                <div v-if="patreonAuth.user.value.image_url" class="w-10 h-10 rounded-full overflow-hidden">
+                  <img 
+                    :src="patreonAuth.user.value.image_url" 
+                    :alt="patreonAuth.user.value.full_name"
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+                <div v-else class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <UIcon name="i-heroicons-user" class="w-5 h-5 text-orange-300" />
+                </div>
+                <div>
+                  <h4 class="font-medium text-white text-sm">{{ patreonAuth.user.value.full_name }}</h4>
+                  <p class="text-xs text-gray-300">{{ patreonAuth.user.value.email }}</p>
+                  <div class="flex items-center gap-2 mt-1">
+                    <UBadge 
+                      :color="patreonAuth.user.value.is_email_verified ? 'green' : 'yellow'" 
+                      size="xs"
+                    >
+                      {{ patreonAuth.user.value.is_email_verified ? 'Verified' : 'Unverified' }}
+                    </UBadge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tier Information -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-orange-200 text-sm">Supporter Status</h4>
+              
+              <!-- Patron Status -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="p-3 bg-white/5 border border-white/10 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <UIcon name="i-heroicons-heart" class="w-4 h-4 text-pink-400" />
+                    <span class="text-sm font-medium text-white">Patron Status</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <UBadge 
+                      :color="patreonAuth.isPatron.value ? 'green' : 'gray'" 
+                      variant="soft"
+                      size="sm"
+                    >
+                      {{ patreonAuth.isPatron.value ? 'Active Patron' : 'Not a Patron' }}
+                    </UBadge>
+                  </div>
+                </div>
+
+                <div class="p-3 bg-white/5 border border-white/10 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 text-green-400" />
+                    <span class="text-sm font-medium text-white">Lifetime Support</span>
+                  </div>
+                  <p class="text-lg font-bold text-green-300">
+                    {{ patreonAuth.formatCurrency(patreonAuth.lifetimeSupport.value) }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Current Tier -->
+              <div v-if="patreonAuth.getHighestTier.value" class="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <UIcon name="i-heroicons-star" class="w-4 h-4 text-purple-400" />
+                  <span class="text-sm font-medium text-white">Current Tier</span>
+                </div>
+                <div class="space-y-1">
+                  <h5 class="font-bold text-purple-300">{{ patreonAuth.getHighestTier.value.title }}</h5>
+                  <p class="text-sm text-purple-200">
+                    {{ patreonAuth.formatCurrency(patreonAuth.getHighestTier.value.amount_cents, patreonAuth.getHighestTier.value.currency) }} / month
+                  </p>
+                  <p v-if="patreonAuth.getHighestTier.value.description" class="text-xs text-purple-100/80">
+                    {{ patreonAuth.getHighestTier.value.description }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- All Memberships -->
+              <div v-if="patreonAuth.memberships.value.length" class="space-y-2">
+                <h5 class="font-medium text-orange-200 text-sm">All Memberships</h5>
+                <div class="space-y-2 max-h-32 overflow-y-auto">
+                  <div 
+                    v-for="membership in patreonAuth.memberships.value" 
+                    :key="membership.campaign_id"
+                    class="p-2 bg-white/5 border border-white/10 rounded text-xs"
+                  >
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-medium text-white">Campaign {{ membership.campaign_id.slice(-8) }}</span>
+                      <UBadge 
+                        :color="membership.patron_status === 'active_patron' ? 'green' : 'gray'"
+                        size="xs"
+                      >
+                        {{ membership.patron_status }}
+                      </UBadge>
+                    </div>
+                    <div class="text-gray-300">
+                      <p>Lifetime: {{ patreonAuth.formatCurrency(membership.lifetime_support_cents) }}</p>
+                      <p>Current: {{ patreonAuth.formatCurrency(membership.currently_entitled_amount_cents) }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <button 
+                @click="patreonAuth.getUserProfile"
+                :disabled="patreonAuth.isLoading.value"
+                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all text-sm disabled:opacity-50"
+              >
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+                Refresh
+              </button>
+              
+              <button 
+                @click="patreonAuth.logout"
+                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all text-sm"
+              >
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Back Button -->
         <button 
           @click="$router.push('/therapists')" 
@@ -326,6 +513,36 @@ const storageData = ref<Record<string, any>>({})
 
 // Debug mode toggle
 const { debugMode, toggleDebugMode } = useDebugMode()
+
+// Patreon OAuth integration
+const patreonAuth = usePatreonOAuth()
+
+// Session status with auto-refresh
+const sessionStatus = ref(null)
+const updateSessionStatus = () => {
+  sessionStatus.value = patreonAuth.getSessionStatus()
+}
+
+// Update session status every second when authenticated
+let sessionTimer = null
+watch(() => patreonAuth.isAuthenticated.value, (authenticated) => {
+  if (authenticated) {
+    updateSessionStatus()
+    sessionTimer = setInterval(updateSessionStatus, 1000)
+  } else {
+    if (sessionTimer) {
+      clearInterval(sessionTimer)
+      sessionTimer = null
+    }
+    sessionStatus.value = null
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (sessionTimer) {
+    clearInterval(sessionTimer)
+  }
+})
 
 // Import/Export reactive variables
 const importFormat = ref<'json' | 'base64' | 'encrypted'>('json')

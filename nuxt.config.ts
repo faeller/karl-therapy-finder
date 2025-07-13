@@ -43,12 +43,14 @@ export default defineNuxtConfig({
     // Private keys (server-side only)
     gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
     patreonClientSecret: process.env.PATREON_CLIENT_SECRET,
+    patreonAllowedRedirectUris: process.env.PATREON_ALLOWED_REDIRECT_URIS,
     
     // Public keys (client-side accessible)
     public: {
       version: pkg.version,
       gmailClientId: process.env.GMAIL_CLIENT_ID,
       patreonClientId: process.env.PATREON_CLIENT_ID,
+      patreonAllowedRedirectUris: process.env.PATREON_ALLOWED_REDIRECT_URIS,
       privacyPolicyEnabled: process.env.NUXT_PUBLIC_PRIVACY_POLICY_ENABLED,
     },
   },
