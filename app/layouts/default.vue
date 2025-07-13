@@ -88,7 +88,26 @@
           </nav>
 
           <!-- Right Side Actions -->
-          <div class="hidden md:flex items-center gap-2">            
+          <div class="hidden md:flex items-center gap-2">
+            <!-- Funding Status Button (only show when Patreon is connected) -->
+            <UButton 
+              v-if="patreonConnected"
+              to="/funding"
+              variant="ghost" 
+              :color="fundingIsCovered ? 'green' : 'orange'"
+              size="sm"
+              :class="[
+                $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
+              ]"
+              :title="`Klicken für Details - ${fundingStatusText}`"
+            >
+              <UIcon 
+                :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                class="w-5 h-5 mr-2" 
+              />
+              {{ fundingStatusText }}
+            </UButton>
+            
             <!-- GitHub Link -->
             <UButton 
               to="https://github.com/faeller/karl-therapy-finder"
@@ -126,7 +145,26 @@
           </div>
 
           <!-- Mobile Navigation -->
-          <div class="md:hidden">
+          <div class="md:hidden flex items-center gap-2">
+            <!-- Mobile Funding Button (only show when Patreon is connected) -->
+            <UButton 
+              v-if="patreonConnected"
+              to="/funding"
+              variant="ghost" 
+              :color="fundingIsCovered ? 'green' : 'orange'"
+              size="sm"
+              :class="[
+                $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
+              ]"
+              :title="`Klicken für Details - ${fundingStatusText}`"
+            >
+              <UIcon 
+                :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                class="w-5 h-5 mr-1" 
+              />
+              <span class="text-xs font-medium">{{ fundingStatusText }}</span>
+            </UButton>
+            
             <UDropdownMenu :items="mobileMenuItems" :content="{ align: 'end' }">
               <UButton variant="ghost" color="blue" size="sm">
                 <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
@@ -159,6 +197,17 @@ const { currentNavItem, setNavFromPath } = useNavigation()
 
 // Settings modal state
 const showSettingsModal = ref(false)
+
+// Funding status for badge
+const { 
+  isCovered: fundingIsCovered, 
+  statusText: fundingStatusText,
+  badgeColor: fundingBadgeColor,
+  badgeVariant: fundingBadgeVariant
+} = useFunding()
+
+// Patreon connection status
+const { isConnected: patreonConnected } = usePatreonStatus()
 
 // Import SettingsModal component
 import SettingsModal from '~/components/SettingsModal.vue'
@@ -288,7 +337,20 @@ const mobileMenuItems = computed(() => {
     target: '_blank'
   }
 
-  return [...baseItems, settingsItem, githubItem, patreonItem]
+  const fundingItem = {
+    label: 'Funding',
+    icon: fundingIsCovered.value ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle',
+    to: '/funding'
+  }
+
+  const items = [...baseItems, settingsItem, githubItem, patreonItem]
+  
+  // Only add funding item if Patreon is connected
+  if (patreonConnected.value) {
+    items.splice(-3, 0, fundingItem) // Insert before settings, github, patreon
+  }
+
+  return items
 })
 
 // Load persisted language on mount

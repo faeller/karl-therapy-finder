@@ -250,6 +250,96 @@
                 </div>
               </div>
             </div>
+
+            <!-- Patreon Integration -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <h4 class="text-sm font-medium text-purple-200 mb-3 flex items-center gap-2">
+                <UIcon name="i-simple-icons-patreon" class="w-4 h-4" />
+                Patreon Integration
+              </h4>
+              
+              <!-- Connected State -->
+              <div v-if="patreonStatus?.connected" class="space-y-3">
+                <div class="flex justify-between text-sm">
+                  <span class="text-purple-200/70">Status</span>
+                  <UBadge color="green" size="sm">Connected</UBadge>
+                </div>
+                <div v-if="patreonStatus.user" class="flex justify-between text-sm">
+                  <span class="text-purple-200/70">Account</span>
+                  <span class="text-white font-medium">{{ patreonStatus.user.name || patreonStatus.user.email }}</span>
+                </div>
+                <div v-if="patreonStatus.campaign" class="flex justify-between text-sm">
+                  <span class="text-purple-200/70">Campaign</span>
+                  <span class="text-white font-medium">{{ patreonStatus.campaign.name }}</span>
+                </div>
+                <div v-if="patreonStatus.campaign" class="flex justify-between text-sm">
+                  <span class="text-purple-200/70">Patrons</span>
+                  <span class="text-white font-medium">{{ patreonStatus.campaign.patronCount }}</span>
+                </div>
+                <div v-if="patreonStatus.campaignError" class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2">
+                  <p class="text-xs text-orange-200">
+                    <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1 inline" />
+                    {{ patreonStatus.campaignError }}
+                  </p>
+                </div>
+                <div class="pt-2 flex gap-2 flex-wrap">
+                  <UButton 
+                    @click="refreshPatreonStatus" 
+                    size="sm" 
+                    variant="soft"
+                    :loading="patreonLoading"
+                  >
+                    <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-1" />
+                    Aktualisieren
+                  </UButton>
+                  <UButton 
+                    @click="syncPatreonFunding" 
+                    size="sm" 
+                    color="green" 
+                    variant="soft"
+                    :loading="syncLoading"
+                  >
+                    <UIcon name="i-heroicons-currency-euro" class="w-4 h-4 mr-1" />
+                    Funding sync
+                  </UButton>
+                  <UButton 
+                    @click="disconnectPatreon" 
+                    size="sm" 
+                    color="red" 
+                    variant="soft"
+                    :loading="patreonLoading"
+                  >
+                    Trennen
+                  </UButton>
+                </div>
+              </div>
+
+              <!-- Not Connected State -->
+              <div v-else class="space-y-3">
+                <div class="flex justify-between text-sm">
+                  <span class="text-purple-200/70">Status</span>
+                  <UBadge color="orange" size="sm">Not Connected</UBadge>
+                </div>
+                
+                <p class="text-xs text-purple-200/60">
+                  Verbinde dein Patreon-Account, um automatisch Finanzierungsdaten zu synchronisieren.
+                </p>
+                
+                <!-- Simple Connect Button -->
+                <div class="pt-2">
+                  <UButton 
+                    @click="loginWithPatreon" 
+                    size="sm" 
+                    color="orange"
+                    :loading="patreonLoading"
+                    class="w-full justify-center"
+                  >
+                    <UIcon name="i-simple-icons-patreon" class="w-4 h-4 mr-2" />
+                    Mit Patreon anmelden
+                  </UButton>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -282,6 +372,11 @@ const error = ref<any>(null)
 // System metrics
 const systemMetrics = ref<any>(null)
 
+// Patreon integration
+const patreonStatus = ref<any>(null)
+const patreonLoading = ref(false)
+const syncLoading = ref(false)
+
 // Admin verification and redirect logic
 onMounted(async () => {
   try {
@@ -307,6 +402,13 @@ onMounted(async () => {
 
     // Get system metrics
     systemMetrics.value = await $fetch('/api/admin/system-metrics', {
+      headers: {
+        'Authorization': `Bearer ${sessionId.value}`
+      }
+    })
+
+    // Get Patreon status
+    patreonStatus.value = await $fetch('/api/admin/patreon/status', {
       headers: {
         'Authorization': `Bearer ${sessionId.value}`
       }
@@ -355,6 +457,146 @@ const formatBytes = (bytes: number) => {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// Patreon integration methods
+const loginWithPatreon = async () => {
+  try {
+    patreonLoading.value = true
+    
+    // Call the login endpoint to get the OAuth URL
+    const response = await $fetch('/api/admin/patreon/login', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionId.value}`
+      }
+    })
+
+    if (response.authUrl) {
+      // Redirect to Patreon OAuth
+      window.location.href = response.authUrl
+    } else {
+      throw new Error('No authorization URL received')
+    }
+    
+  } catch (error: any) {
+    console.error('Failed to login with Patreon:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Login failed',
+      description: error.data?.message || 'Failed to start Patreon login',
+      color: 'red',
+      timeout: 5000
+    })
+    patreonLoading.value = false
+  }
+}
+
+const refreshPatreonStatus = async () => {
+  try {
+    patreonLoading.value = true
+    
+    patreonStatus.value = await $fetch('/api/admin/patreon/status', {
+      headers: {
+        'Authorization': `Bearer ${sessionId.value}`
+      }
+    })
+    
+    const toast = useToast()
+    toast.add({
+      title: 'Status aktualisiert',
+      description: 'Patreon-Status wurde neu geladen',
+      color: 'green',
+      timeout: 2000
+    })
+  } catch (error: any) {
+    console.error('Failed to refresh Patreon status:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Aktualisierung fehlgeschlagen',
+      description: error.data?.message || 'Status konnte nicht aktualisiert werden',
+      color: 'red',
+      timeout: 5000
+    })
+  } finally {
+    patreonLoading.value = false
+  }
+}
+
+const disconnectPatreon = async () => {
+  try {
+    patreonLoading.value = true
+    
+    const response = await $fetch('/api/admin/patreon/disconnect', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionId.value}`
+      }
+    })
+
+    patreonStatus.value = { connected: false, status: 'not_configured' }
+    
+    const toast = useToast()
+    toast.add({
+      title: 'Patreon getrennt',
+      description: 'Campaign-Verbindung wurde entfernt',
+      color: 'orange',
+      timeout: 3000
+    })
+  } catch (error: any) {
+    console.error('Failed to disconnect Patreon:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Trennen fehlgeschlagen',
+      description: error.data?.message || 'Patreon konnte nicht getrennt werden',
+      color: 'red',
+      timeout: 5000
+    })
+  } finally {
+    patreonLoading.value = false
+  }
+}
+
+const syncPatreonFunding = async () => {
+  try {
+    syncLoading.value = true
+    
+    const response = await $fetch('/api/admin/sync-patreon', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionId.value}`
+      }
+    })
+
+    const toast = useToast()
+    if (response.success) {
+      const { data, patreonData } = response
+      toast.add({
+        title: 'Funding synchronisiert',
+        description: `€${patreonData?.monthlyRevenueEur?.toFixed(2) || '0.00'} von ${patreonData?.activePatronCount || 0} aktiven Patrons`,
+        color: 'green',
+        timeout: 5000
+      })
+    } else {
+      toast.add({
+        title: 'Sync teilweise erfolgreich',
+        description: 'Daten wurden aktualisiert, aber einige Informationen fehlen',
+        color: 'yellow',
+        timeout: 5000
+      })
+    }
+  } catch (error: any) {
+    console.error('Failed to sync Patreon funding:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Sync fehlgeschlagen',
+      description: error.data?.message || 'Funding-Daten konnten nicht synchronisiert werden',
+      color: 'red',
+      timeout: 5000
+    })
+  } finally {
+    syncLoading.value = false
+  }
 }
 
 </script>
