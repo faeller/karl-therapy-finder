@@ -1,8 +1,8 @@
 export const useFunding = () => {
-  // Fetch funding status (cached across components)
+  // Fetch funding status (cached across components, client-only to prevent blocking)
   const { data: fundingData, pending, error, refresh } = useFetch('/api/funding/status', {
     key: 'funding-status',
-    server: true
+    server: false
   })
 
   // Computed status for easy access

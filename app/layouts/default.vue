@@ -30,7 +30,7 @@
           </NuxtLink>
 
           <!-- Navigation Links -->
-          <nav class="hidden md:flex items-center space-x-1">
+          <nav class="hidden lg:flex items-center space-x-1">
             <UButton 
               to="/" 
               variant="ghost" 
@@ -88,7 +88,7 @@
           </nav>
 
           <!-- Right Side Actions -->
-          <div class="hidden md:flex items-center gap-2">
+          <div class="hidden lg:flex items-center gap-2">
             <!-- Funding Status Button (only show when Patreon is connected) -->
             <UButton 
               v-if="patreonConnected"
@@ -102,11 +102,18 @@
               :title="`Klicken für Details - ${fundingStatusText}`"
             >
               <UIcon 
+                v-if="!fundingPending"
                 :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
                 class="w-5 h-5 mr-2" 
               />
-              {{ fundingStatusText }}
+              <UIcon 
+                v-else
+                name="i-heroicons-arrow-path"
+                class="w-5 h-5 mr-2 animate-spin" 
+              />
+              <span class="whitespace-nowrap">{{ fundingStatusText }}</span>
             </UButton>
+            
             
             <!-- GitHub Link -->
             <UButton 
@@ -145,7 +152,7 @@
           </div>
 
           <!-- Mobile Navigation -->
-          <div class="md:hidden flex items-center gap-2">
+          <div class="lg:hidden flex items-center gap-2">
             <!-- Mobile Funding Button (only show when Patreon is connected) -->
             <UButton 
               v-if="patreonConnected"
@@ -159,11 +166,18 @@
               :title="`Klicken für Details - ${fundingStatusText}`"
             >
               <UIcon 
+                v-if="!fundingPending"
                 :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                class="w-5 h-5 mr-1" 
+                class="w-4 h-4" 
               />
-              <span class="text-xs font-medium">{{ fundingStatusText }}</span>
+              <UIcon 
+                v-else
+                name="i-heroicons-arrow-path"
+                class="w-4 h-4 animate-spin" 
+              />
+              <span class="text-xs font-medium hidden sm:inline ml-1">{{ fundingPending ? 'Laden...' : (fundingIsCovered ? 'Gedeckt' : 'Nicht gedeckt') }}</span>
             </UButton>
+            
             
             <UDropdownMenu :items="mobileMenuItems" :content="{ align: 'end' }">
               <UButton variant="ghost" color="blue" size="sm">
@@ -203,7 +217,8 @@ const {
   isCovered: fundingIsCovered, 
   statusText: fundingStatusText,
   badgeColor: fundingBadgeColor,
-  badgeVariant: fundingBadgeVariant
+  badgeVariant: fundingBadgeVariant,
+  pending: fundingPending
 } = useFunding()
 
 // Patreon connection status
@@ -352,6 +367,7 @@ const mobileMenuItems = computed(() => {
 
   return items
 })
+
 
 // Load persisted language on mount
 onMounted(() => {
