@@ -3,14 +3,17 @@ export default defineEventHandler(async (event) => {
   
   const kv = hubKV()
   
-  const [apiKey, webhookSecret] = await Promise.all([
+  const [apiKey, webhookSecret, phoneNumberId] = await Promise.all([
     kv.getItem('elevenlabs_api_key'),
-    kv.getItem('elevenlabs_webhook_secret')
+    kv.getItem('elevenlabs_webhook_secret'),
+    kv.getItem('elevenlabs_phone_number_id')
   ])
 
   return {
     hasApiKey: !!apiKey,
     hasWebhookSecret: !!webhookSecret,
-    apiKeyPreview: apiKey ? `${apiKey.slice(0, 8)}...` : null
+    hasPhoneNumberId: !!phoneNumberId,
+    apiKeyPreview: apiKey ? `${apiKey.slice(0, 8)}...` : null,
+    phoneNumberId: phoneNumberId || null
   }
 })

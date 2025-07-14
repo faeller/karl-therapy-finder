@@ -243,25 +243,37 @@ const saving = ref(false)
 
 // Load form data from localStorage on component mount
 onMounted(() => {
-  loadFormData()
+  if (process.client) {
+    loadFormData()
+  }
 })
 
 // Save form data to localStorage whenever it changes
 watch(form, () => {
-  saveFormData()
+  if (process.client) {
+    saveFormData()
+  }
 }, { deep: true })
 
 watch(variables, () => {
-  saveFormData()
+  if (process.client) {
+    saveFormData()
+  }
 }, { deep: true })
 
 const loadFormData = () => {
+  if (typeof localStorage === 'undefined') return
+  
   const savedData = localStorage.getItem('batchCallForm')
   if (savedData) {
     try {
       const parsed = JSON.parse(savedData)
-      form.value = { ...form.value, ...parsed.form }
-      variables.value = parsed.variables || []
+      if (parsed.form) {
+        form.value = { ...form.value, ...parsed.form }
+      }
+      if (parsed.variables) {
+        variables.value = parsed.variables
+      }
     } catch (e) {
       console.error('Error loading form data:', e)
     }
@@ -269,6 +281,8 @@ const loadFormData = () => {
 }
 
 const saveFormData = () => {
+  if (typeof localStorage === 'undefined') return
+  
   const dataToSave = {
     form: form.value,
     variables: variables.value

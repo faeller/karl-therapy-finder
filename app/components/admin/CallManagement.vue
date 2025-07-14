@@ -336,12 +336,28 @@
       @save="handleAgentSave"
     />
 
+    <AgentCreateModal
+      :show="showAgentCreateModal"
+      :session-id="sessionId"
+      @close="showAgentCreateModal = false"
+      @save="handleAgentCreate"
+    />
+
     <BatchCallModal
       :show="showBatchCallModal"
       :agents="agents"
       :session-id="sessionId"
       @close="showBatchCallModal = false"
       @submit="handleBatchCallSubmit"
+    />
+
+    <OutboundCallModal
+      :show="showOutboundCallModal"
+      :agents="agents"
+      :settings="settings"
+      :session-id="sessionId"
+      @close="showOutboundCallModal = false"
+      @submit="handleOutboundCallSubmit"
     />
   </div>
 </template>
@@ -350,7 +366,9 @@
 import ElevenLabsSettingsModal from '~/components/modals/ElevenLabsSettingsModal.vue'
 import ConversationDetailModal from '~/components/modals/ConversationDetailModal.vue'
 import AgentEditModal from '~/components/modals/AgentEditModal.vue'
+import AgentCreateModal from '~/components/modals/AgentCreateModal.vue'
 import BatchCallModal from '~/components/modals/BatchCallModal.vue'
+import OutboundCallModal from '~/components/modals/OutboundCallModal.vue'
 
 interface Props {
   sessionId: string
@@ -366,7 +384,9 @@ const conversationFilter = ref('')
 const showSettings = ref(false)
 const showConversationModal = ref(false)
 const showAgentEditModal = ref(false)
+const showAgentCreateModal = ref(false)
 const showBatchCallModal = ref(false)
+const showOutboundCallModal = ref(false)
 
 // Selected items
 const selectedConversation = ref(null)
@@ -415,13 +435,16 @@ const formatDate = (unixSeconds: number): string => {
 const refreshData = async () => {
   loading.value = true
   try {
-    await Promise.all([
-      loadSettings(),
-      loadConversations(),
-      loadAgents(),
-      loadBatchCalls(),
-      loadOutboundCalls()
-    ])
+    // Load settings first, then data that depends on API key
+    await loadSettings()
+    if (settings.value?.hasApiKey) {
+      await Promise.all([
+        loadConversations(),
+        loadAgents(),
+        loadBatchCalls(),
+        loadOutboundCalls()
+      ])
+    }
   } finally {
     loading.value = false
   }
@@ -570,23 +593,11 @@ const deleteAgent = async (agentId: string) => {
 }
 
 const createAgent = () => {
-  const toast = useToast()
-  toast.add({
-    title: 'Feature not implemented',
-    description: 'Agent creation UI not yet implemented',
-    color: 'orange',
-    timeout: 3000
-  })
+  showAgentCreateModal.value = true
 }
 
 const createOutboundCall = () => {
-  const toast = useToast()
-  toast.add({
-    title: 'Feature not implemented',
-    description: 'Outbound call creation UI not yet implemented',
-    color: 'orange',
-    timeout: 3000
-  })
+  showOutboundCallModal.value = true
 }
 
 const viewBatchCall = (batch: any) => {
@@ -677,6 +688,29 @@ const handleAgentSave = async (updatedAgent: any) => {
   }
 }
 
+const handleAgentCreate = async (newAgent: any) => {
+  try {
+    await loadAgents()
+    showAgentCreateModal.value = false
+    
+    const toast = useToast()
+    toast.add({
+      title: 'Agent created',
+      color: 'green',
+      timeout: 3000
+    })
+  } catch (error) {
+    console.error('Failed to create agent:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Create failed',
+      description: 'Could not create agent',
+      color: 'red',
+      timeout: 3000
+    })
+  }
+}
+
 const handleBatchCallSubmit = async (data: any) => {
   try {
     await loadBatchCalls()
@@ -694,6 +728,29 @@ const handleBatchCallSubmit = async (data: any) => {
     toast.add({
       title: 'Create failed',
       description: 'Could not create batch call',
+      color: 'red',
+      timeout: 3000
+    })
+  }
+}
+
+const handleOutboundCallSubmit = async (data: any) => {
+  try {
+    await loadOutboundCalls()
+    showOutboundCallModal.value = false
+    
+    const toast = useToast()
+    toast.add({
+      title: 'Outbound call initiated',
+      color: 'green',
+      timeout: 3000
+    })
+  } catch (error) {
+    console.error('Failed to initiate outbound call:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Call failed',
+      description: 'Could not initiate outbound call',
       color: 'red',
       timeout: 3000
     })

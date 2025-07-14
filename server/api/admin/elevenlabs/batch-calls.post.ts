@@ -7,7 +7,14 @@ export default defineEventHandler(async (event) => {
   console.log('=== BATCH CALL REQUEST DEBUG ===')
   console.log('Request body:', JSON.stringify(body, null, 2))
   
-  const { call_name, agent_id, agent_phone_number_id, scheduled_time_unix, recipients, variables } = body
+  const { call_name, agent_id, agent_phone_number_id, scheduled_time_unix, recipients, conversation_initiation_client_data } = body
+  
+  // Extract variables from conversation_initiation_client_data
+  const variables = conversation_initiation_client_data?.dynamic_variables || {}
+  
+  console.log('=== VARIABLES DEBUG ===')
+  console.log('conversation_initiation_client_data:', conversation_initiation_client_data)
+  console.log('Extracted variables:', variables)
 
   if (!call_name || typeof call_name !== 'string') {
     throw createError({

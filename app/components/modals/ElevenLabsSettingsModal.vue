@@ -73,6 +73,23 @@
               </p>
             </div>
 
+            <!-- Phone Number ID -->
+            <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+              <label class="block text-sm font-medium text-white/80 mb-2">
+                Phone Number ID (Required for outbound calls)
+              </label>
+              <input
+                v-model="form.phoneNumberId"
+                type="text"
+                placeholder="Enter your ElevenLabs phone number ID"
+                :disabled="saving"
+                class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+              <p class="text-xs text-white/60 mt-2">
+                Phone number ID from your ElevenLabs account needed to make outbound calls.
+              </p>
+            </div>
+
             <!-- Current Status -->
             <div v-if="settings?.hasApiKey" class="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
               <div class="flex items-center gap-2 mb-2">
@@ -152,7 +169,7 @@ interface Props {
 
 interface Emits {
   (event: 'close'): void
-  (event: 'save', data: { apiKey: string; webhookSecret: string }): void
+  (event: 'save', data: { apiKey: string; webhookSecret: string; phoneNumberId: string }): void
 }
 
 const props = defineProps<Props>()
@@ -163,7 +180,8 @@ const webhookBaseUrl = config.public.siteUrl || 'https://your-domain.com'
 
 const form = ref({
   apiKey: '',
-  webhookSecret: ''
+  webhookSecret: '',
+  phoneNumberId: ''
 })
 
 const saving = ref(false)
@@ -180,18 +198,21 @@ const handleSave = async () => {
       },
       body: {
         apiKey: form.value.apiKey,
-        webhookSecret: form.value.webhookSecret
+        webhookSecret: form.value.webhookSecret,
+        phoneNumberId: form.value.phoneNumberId
       }
     })
     
     emit('save', {
       apiKey: form.value.apiKey,
-      webhookSecret: form.value.webhookSecret
+      webhookSecret: form.value.webhookSecret,
+      phoneNumberId: form.value.phoneNumberId
     })
     
     // Reset form
     form.value.apiKey = ''
     form.value.webhookSecret = ''
+    form.value.phoneNumberId = ''
     
   } catch (error) {
     console.error('Failed to save settings:', error)
