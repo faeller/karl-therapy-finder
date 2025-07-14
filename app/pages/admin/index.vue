@@ -18,6 +18,10 @@
             <h1 class="text-base font-semibold text-white tracking-tight">Admin Dashboard</h1>
           </div>
           <div class="flex items-center space-x-3">
+            <NuxtLink to="/setup-calling" class="px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-100 hover:text-white text-sm font-medium transition-all border border-green-400/30 shadow-sm">
+              <UIcon name="i-heroicons-phone" class="w-4 h-4 mr-1" />
+              Setup Call
+            </NuxtLink>
             <NuxtLink to="/debug" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium transition-all border border-white/20 shadow-sm">
               Back to Debug
             </NuxtLink>
@@ -199,17 +203,9 @@
           </div>
         </div>
 
-        <!-- Jobs Tab (Future) -->
-        <div v-else-if="activeTab === 'jobs'" class="p-6">
-          <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <UIcon name="i-heroicons-queue-list" class="w-5 h-5 text-purple-400" />
-            Job Queue
-          </h3>
-          <div class="text-center py-12">
-            <UIcon name="i-heroicons-wrench-screwdriver" class="w-12 h-12 text-purple-400/50 mx-auto mb-4" />
-            <h4 class="text-lg font-medium text-white mb-2">Coming Soon</h4>
-            <p class="text-purple-200/70">Job queue management will be available here.</p>
-          </div>
+        <!-- Jobs Tab -->
+        <div v-else-if="activeTab === 'jobs'">
+          <CallSetupManagement :session-id="sessionId" />
         </div>
 
         <!-- Calls Tab -->
@@ -347,6 +343,7 @@
 
 <script setup lang="ts">
 import CallManagement from '~/components/admin/CallManagement.vue'
+import CallSetupManagement from '~/components/admin/CallSetupManagement.vue'
 
 definePageMeta({
   title: 'Admin Dashboard'
