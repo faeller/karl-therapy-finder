@@ -122,6 +122,68 @@
           </div>
         </div>
 
+        <!-- Pinia State Debug -->
+        <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-cyan-300 text-base">Pinia State (Client-Only Stores)</h3>
+            <div class="flex gap-2">
+              <UBadge color="cyan" variant="soft">{{ Object.keys(piniaData).length }} Stores</UBadge>
+              <UBadge color="green" variant="soft">Privacy Protected</UBadge>
+            </div>
+          </div>
+          
+          <p class="text-cyan-100/80 text-sm mb-4">
+            Stores are configured to only persist and operate on the client-side for privacy protection.
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <button 
+              @click="refreshPiniaData"
+              class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition-all text-sm"
+            >
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+              Refresh State
+            </button>
+            
+            <button 
+              @click="resetAllStores"
+              class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-all text-sm"
+            >
+              <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+              Reset All Stores
+            </button>
+            
+            <button 
+              @click="exportPiniaState"
+              class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm"
+            >
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+              Export State
+            </button>
+          </div>
+
+          <div class="space-y-3 max-h-64 overflow-y-auto">
+            <div v-for="(storeData, storeName) in piniaData" :key="storeName" class="p-3 rounded-lg bg-white/5 border border-white/10">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-white text-sm flex items-center gap-2">
+                  <UIcon name="i-heroicons-cube" class="w-4 h-4 text-cyan-400" />
+                  {{ storeName }}
+                </h4>
+                <div class="flex gap-1">
+                  <UBadge color="gray" size="xs">{{ getObjectSize(storeData) }}</UBadge>
+                  <UBadge v-if="storeData.__meta?.persist" color="green" size="xs">Client Persisted</UBadge>
+                </div>
+              </div>
+              <pre class="text-xs text-cyan-300 bg-black/20 p-2 rounded overflow-x-auto">{{ formatPiniaValue(storeData) }}</pre>
+            </div>
+            
+            <div v-if="Object.keys(piniaData).length === 0" class="text-center py-8">
+              <UIcon name="i-heroicons-cube-transparent" class="w-8 h-8 text-cyan-400/50 mx-auto mb-2" />
+              <p class="text-cyan-200/70 text-sm">No client-side stores found</p>
+            </div>
+          </div>
+        </div>
+
         <!-- LocalStorage Debug -->
         <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
           <div class="flex items-center justify-between mb-4">
@@ -536,11 +598,21 @@ definePageMeta({
 // Storage data for debugging
 const storageData = ref<Record<string, any>>({})
 
+// Pinia state for debugging
+const piniaData = ref<Record<string, any>>({})
+
+// Render context detection
+const renderContext = ref(typeof window === 'undefined' ? 'Server' : 'Client')
+
 // Debug mode toggle
 const { debugMode, toggleDebugMode } = useDebugMode()
 
 // Patreon OAuth integration
 const patreonAuth = usePatreonOAuth()
+
+// Load stores to demonstrate Pinia state (stores are now client-only by design)
+const languageStore = useLanguageStore()
+const onboardingStore = useOnboardingStore()
 
 // Admin access notifications
 const route = useRoute()
@@ -985,6 +1057,113 @@ const getDataSize = (value: any): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }
 
+// Get object size (similar to getDataSize but for objects)
+const getObjectSize = (value: any): string => {
+  const str = JSON.stringify(value)
+  const bytes = new Blob([str]).size
+  if (bytes < 1024) return `${bytes}B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
+}
+
+// Load Pinia state data
+const refreshPiniaData = () => {
+  try {
+    const nuxtApp = useNuxtApp()
+    const pinia = nuxtApp.$pinia
+    const data: Record<string, any> = {}
+    
+    // Get all store instances
+    if (pinia && pinia._s) {
+      for (const [storeId, store] of pinia._s.entries()) {
+        try {
+          // Extract state from store
+          const storeState = store.$state ? { ...store.$state } : {}
+          
+          // Add metadata about the store
+          data[storeId] = {
+            ...storeState,
+            __meta: {
+              storeId,
+              persist: store.$persist !== undefined,
+              actions: Object.getOwnPropertyNames(store).filter(
+                prop => typeof store[prop] === 'function' && !prop.startsWith('$')
+              ),
+              getters: Object.getOwnPropertyNames(Object.getPrototypeOf(store)).filter(
+                prop => typeof Object.getOwnPropertyDescriptor(Object.getPrototypeOf(store), prop)?.get === 'function'
+              )
+            }
+          }
+        } catch (storeError) {
+          console.warn(`Error reading store ${storeId}:`, storeError)
+          data[storeId] = { error: 'Could not read store state' }
+        }
+      }
+    }
+    
+    piniaData.value = data
+  } catch (error) {
+    console.warn('Error loading Pinia data:', error)
+    piniaData.value = { error: 'Could not access Pinia stores' }
+  }
+}
+
+// Format Pinia value for display
+const formatPiniaValue = (value: any): string => {
+  // Create a clean copy without the __meta property for display
+  const cleanValue = { ...value }
+  const meta = cleanValue.__meta
+  delete cleanValue.__meta
+  
+  let display = JSON.stringify(cleanValue, null, 2)
+  
+  // Add meta information
+  if (meta) {
+    display += `\n\n// Store Metadata:\n// Actions: ${meta.actions.join(', ') || 'none'}\n// Getters: ${meta.getters.join(', ') || 'none'}`
+  }
+  
+  // Truncate if too long
+  if (display.length > 500) {
+    display = display.substring(0, 500) + '...'
+  }
+  
+  return display
+}
+
+// Reset all Pinia stores
+const resetAllStores = () => {
+  if (confirm('Are you sure you want to reset all Pinia stores? This will clear all state data.')) {
+    try {
+      const nuxtApp = useNuxtApp()
+      const pinia = nuxtApp.$pinia
+      if (pinia && pinia._s) {
+        for (const [storeId, store] of pinia._s.entries()) {
+          if (typeof store.$reset === 'function') {
+            store.$reset()
+          }
+        }
+        refreshPiniaData()
+      }
+    } catch (error) {
+      console.warn('Error resetting stores:', error)
+    }
+  }
+}
+
+// Export Pinia state
+const exportPiniaState = () => {
+  if (typeof window !== 'undefined') {
+    const dataStr = JSON.stringify(piniaData.value, null, 2)
+    const blob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `karl-pinia-state-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+}
+
 // Use shared PDF generator
 const { previewPdf } = usePdfGenerator()
 
@@ -1058,5 +1237,6 @@ const generateSpecialCharsPdf = async () => {
 onMounted(() => {
   loadStorageData()
   checkEncryptionSupport()
+  refreshPiniaData()
 })
 </script>

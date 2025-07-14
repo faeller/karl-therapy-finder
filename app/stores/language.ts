@@ -9,5 +9,5 @@ export const useLanguageStore = defineStore('language', {
     }
   },
 
-  persist: true
+  persist: process.client
 })

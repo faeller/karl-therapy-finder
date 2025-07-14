@@ -47,5 +47,5 @@ export const useOnboardingStore = defineStore('onboarding', {
     }
   },
 
-  persist: true
+  persist: process.client
 })
