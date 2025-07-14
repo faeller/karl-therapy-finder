@@ -19,6 +19,16 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
+      ],
+      script: [
+        {
+          defer: true,
+          'data-domain': 'karl-helps.org',
+          src: 'https://plausible.io/js/script.hash.js'
+        },
+        {
+          innerHTML: 'window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }'
+        }
       ]
     }
   },
