@@ -442,9 +442,10 @@ const loadConversations = async () => {
   
   conversationsLoading.value = true
   try {
-    conversations.value = await $fetch('/api/admin/elevenlabs/conversations', {
+    const result = await $fetch('/api/admin/elevenlabs/conversations', {
       headers: { 'Authorization': `Bearer ${props.sessionId}` }
     })
+    conversations.value = result.conversations || []
   } catch (error) {
     console.error('Failed to load conversations:', error)
   } finally {
@@ -457,9 +458,10 @@ const loadAgents = async () => {
   
   agentsLoading.value = true
   try {
-    agents.value = await $fetch('/api/admin/elevenlabs/agents', {
+    const result = await $fetch('/api/admin/elevenlabs/agents', {
       headers: { 'Authorization': `Bearer ${props.sessionId}` }
     })
+    agents.value = result.agents || []
   } catch (error) {
     console.error('Failed to load agents:', error)
   } finally {
@@ -472,9 +474,10 @@ const loadBatchCalls = async () => {
   
   batchCallsLoading.value = true
   try {
-    batchCalls.value = await $fetch('/api/admin/elevenlabs/batch-calls', {
+    const result = await $fetch('/api/admin/elevenlabs/batch-calls', {
       headers: { 'Authorization': `Bearer ${props.sessionId}` }
     })
+    batchCalls.value = result.batch_calls || []
   } catch (error) {
     console.error('Failed to load batch calls:', error)
   } finally {
@@ -487,9 +490,10 @@ const loadOutboundCalls = async () => {
   
   outboundCallsLoading.value = true
   try {
-    outboundCalls.value = await $fetch('/api/admin/elevenlabs/outbound-calls', {
+    const result = await $fetch('/api/admin/elevenlabs/outbound-calls', {
       headers: { 'Authorization': `Bearer ${props.sessionId}` }
     })
+    outboundCalls.value = result.calls || []
   } catch (error) {
     console.error('Failed to load outbound calls:', error)
   } finally {
