@@ -90,29 +90,31 @@
           <!-- Right Side Actions -->
           <div class="hidden lg:flex items-center gap-2">
             <!-- Funding Status Button (only show when Patreon is connected) -->
-            <UButton 
-              v-if="patreonConnected"
-              to="/funding"
-              variant="ghost" 
-              :color="fundingIsCovered ? 'green' : 'orange'"
-              size="sm"
-              :class="[
-                $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
-              ]"
-              :title="`Klicken für Details - ${fundingStatusText}`"
-            >
-              <UIcon 
-                v-if="!fundingPending"
-                :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                class="w-5 h-5 mr-2" 
-              />
-              <UIcon 
-                v-else
-                name="i-heroicons-arrow-path"
-                class="w-5 h-5 mr-2 animate-spin" 
-              />
-              <span class="whitespace-nowrap">{{ fundingStatusText }}</span>
-            </UButton>
+            <ClientOnly>
+              <UButton 
+                v-if="patreonConnected"
+                to="/funding"
+                variant="ghost" 
+                :color="fundingIsCovered ? 'green' : 'orange'"
+                size="sm"
+                :class="[
+                  $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
+                ]"
+                :title="`Klicken für Details - ${fundingStatusText}`"
+              >
+                <UIcon 
+                  v-if="!fundingPending"
+                  :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                  class="w-5 h-5 mr-2" 
+                />
+                <UIcon 
+                  v-else
+                  name="i-heroicons-arrow-path"
+                  class="w-5 h-5 mr-2 animate-spin" 
+                />
+                <span class="whitespace-nowrap">{{ fundingStatusText }}</span>
+              </UButton>
+            </ClientOnly>
             
             
             <!-- GitHub Link -->
@@ -154,29 +156,31 @@
           <!-- Mobile Navigation -->
           <div class="lg:hidden flex items-center gap-2">
             <!-- Mobile Funding Button (only show when Patreon is connected) -->
-            <UButton 
-              v-if="patreonConnected"
-              to="/funding"
-              variant="ghost" 
-              :color="fundingIsCovered ? 'green' : 'orange'"
-              size="sm"
-              :class="[
-                $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
-              ]"
-              :title="`Klicken für Details - ${fundingStatusText}`"
-            >
-              <UIcon 
-                v-if="!fundingPending"
-                :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                class="w-4 h-4" 
-              />
-              <UIcon 
-                v-else
-                name="i-heroicons-arrow-path"
-                class="w-4 h-4 animate-spin" 
-              />
-              <span class="text-xs font-medium hidden sm:inline ml-1">{{ fundingPending ? 'Laden...' : (fundingIsCovered ? 'Gedeckt' : 'Nicht gedeckt') }}</span>
-            </UButton>
+            <ClientOnly>
+              <UButton 
+                v-if="patreonConnected"
+                to="/funding"
+                variant="ghost" 
+                :color="fundingIsCovered ? 'green' : 'orange'"
+                size="sm"
+                :class="[
+                  $route.path === '/funding' ? 'bg-blue-500/20 text-blue-200' : 'text-blue-100/80 hover:text-blue-200 hover:bg-white/10'
+                ]"
+                :title="`Klicken für Details - ${fundingStatusText}`"
+              >
+                <UIcon 
+                  v-if="!fundingPending"
+                  :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                  class="w-4 h-4" 
+                />
+                <UIcon 
+                  v-else
+                  name="i-heroicons-arrow-path"
+                  class="w-4 h-4 animate-spin" 
+                />
+                <span class="text-xs font-medium hidden sm:inline ml-1">{{ fundingPending ? 'Laden...' : (fundingIsCovered ? 'Gedeckt' : 'Nicht gedeckt') }}</span>
+              </UButton>
+            </ClientOnly>
             
             
             <UDropdownMenu :items="mobileMenuItems" :content="{ align: 'end' }">
