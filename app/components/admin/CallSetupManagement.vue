@@ -159,16 +159,30 @@
               {{ setup.status }}
             </UBadge>
             <UBadge
+              v-if="setup.call_successful"
+              :color="getCallResultColor(setup.call_successful)"
+              size="sm"
+            >
+              {{ setup.call_successful }}
+            </UBadge>
+            <UBadge
               v-if="setup.hasVoiceRecording"
               color="blue"
               size="sm"
             >
               Voice Recording
             </UBadge>
+            <UBadge
+              v-if="setup.transcript_available"
+              color="purple"
+              size="sm"
+            >
+              Transcript
+            </UBadge>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <p class="text-xs text-purple-200/70 mb-1">Address</p>
             <p class="text-white text-sm">{{ setup.patient_address }}</p>
@@ -182,6 +196,40 @@
                 Scheduled: {{ formatDate(setup.scheduled_date) }} at {{ setup.scheduled_time }}
               </span>
             </p>
+          </div>
+          <div v-if="setup.call_status">
+            <p class="text-xs text-purple-200/70 mb-1">Call Results</p>
+            <p class="text-white text-sm">
+              Status: <span :class="getCallStatusTextColor(setup.call_status)">{{ setup.call_status }}</span>
+            </p>
+            <p v-if="setup.call_duration_secs" class="text-white text-sm">
+              Duration: {{ formatDuration(setup.call_duration_secs) }}
+            </p>
+            <p v-if="setup.call_ended_at" class="text-white text-sm">
+              Ended: {{ formatDateTime(setup.call_ended_at) }}
+            </p>
+          </div>
+        </div>
+        
+        <!-- Appointment Preferences -->
+        <div v-if="setup.appointment_days || setup.appointment_time_from || setup.appointment_notes" class="bg-white/5 rounded-xl p-4 mb-4">
+          <h5 class="text-sm font-medium text-purple-200 mb-3 flex items-center gap-2">
+            <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+            Terminpräferenzen
+          </h5>
+          <div class="space-y-2 text-sm">
+            <div v-if="setup.appointment_days" class="flex justify-between">
+              <span class="text-purple-200/70">Verfügbare Tage:</span>
+              <span class="text-white">{{ setup.appointment_days }}</span>
+            </div>
+            <div v-if="setup.appointment_time_from && setup.appointment_time_to" class="flex justify-between">
+              <span class="text-purple-200/70">Uhrzeiten:</span>
+              <span class="text-white">{{ setup.appointment_time_from }} - {{ setup.appointment_time_to }}</span>
+            </div>
+            <div v-if="setup.appointment_notes" class="space-y-1">
+              <div class="text-purple-200/70">Zusätzliche Hinweise:</div>
+              <div class="text-white bg-white/5 rounded px-2 py-1 text-xs">{{ setup.appointment_notes }}</div>
+            </div>
           </div>
         </div>
 
@@ -198,7 +246,29 @@
               :loading="loadingVoice === setup.id"
             >
               <UIcon name="i-heroicons-speaker-wave" class="w-4 h-4 mr-1" />
-              Play Recording
+              Consent
+            </UButton>
+            <UButton
+              v-if="setup.conversation_id && setup.transcript_available"
+              @click="viewTranscript(setup.conversation_id)"
+              size="sm"
+              variant="soft"
+              color="purple"
+              :loading="loadingTranscript === setup.conversation_id"
+            >
+              <UIcon name="i-heroicons-document-text" class="w-4 h-4 mr-1" />
+              Transcript
+            </UButton>
+            <UButton
+              v-if="setup.conversation_id && setup.audio_available"
+              @click="playCallAudio(setup.conversation_id)"
+              size="sm"
+              variant="soft"
+              color="blue"
+              :loading="loadingCallAudio === setup.conversation_id"
+            >
+              <UIcon name="i-heroicons-speaker-wave" class="w-4 h-4 mr-1" />
+              Call Audio
             </UButton>
             <UButton
               @click="initiateTestCall(setup)"
@@ -259,6 +329,20 @@ interface CallSetup {
   createdAt: number
   createdBy: string
   hasVoiceRecording: boolean
+  // Call result fields
+  conversation_id?: string
+  batch_call_id?: string
+  call_status?: string
+  call_successful?: 'success' | 'failure' | 'unknown'
+  call_duration_secs?: number
+  call_ended_at?: number
+  transcript_available?: boolean
+  audio_available?: boolean
+  // Appointment preferences
+  appointment_days?: string
+  appointment_time_from?: string
+  appointment_time_to?: string
+  appointment_notes?: string
 }
 
 interface Job {
@@ -296,6 +380,8 @@ const error = ref<string | null>(null)
 const refreshing = ref(false)
 const savingSettings = ref(false)
 const loadingVoice = ref<string | null>(null)
+const loadingTranscript = ref<string | null>(null)
+const loadingCallAudio = ref<string | null>(null)
 const testingCall = ref<string | null>(null)
 const deletingSetup = ref<string | null>(null)
 const audioPlayer = ref<HTMLAudioElement>()
@@ -479,6 +565,106 @@ const initiateTestCall = async (setup: CallSetup) => {
   }
 }
 
+const viewTranscript = async (conversationId: string) => {
+  try {
+    loadingTranscript.value = conversationId
+    
+    const response = await $fetch(`/api/admin/conversation/${conversationId}/transcript`, {
+      headers: {
+        'Authorization': `Bearer ${props.sessionId}`
+      }
+    })
+    
+    // Open transcript in a new window or modal
+    const transcriptWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes')
+    if (transcriptWindow) {
+      transcriptWindow.document.write(`
+        <html>
+          <head>
+            <title>Call Transcript - ${conversationId}</title>
+            <style>
+              body { font-family: system-ui, sans-serif; padding: 20px; background: #1f2937; color: white; }
+              .transcript { max-width: 800px; margin: 0 auto; }
+              .message { margin: 10px 0; padding: 10px; border-radius: 8px; }
+              .user { background: #3b82f6; }
+              .agent { background: #6366f1; }
+              .timestamp { font-size: 0.8em; opacity: 0.7; }
+            </style>
+          </head>
+          <body>
+            <div class="transcript">
+              <h1>Call Transcript</h1>
+              <p><strong>Conversation ID:</strong> ${conversationId}</p>
+              <hr>
+              ${response.transcript.map((msg: any) => `
+                <div class="message ${msg.role}">
+                  <div class="timestamp">${msg.time_in_call_secs}s - ${msg.role}</div>
+                  <div>${msg.message}</div>
+                </div>
+              `).join('')}
+            </div>
+          </body>
+        </html>
+      `)
+      transcriptWindow.document.close()
+    }
+  } catch (err: any) {
+    console.error('Failed to load transcript:', err)
+    const toast = useToast()
+    toast.add({
+      title: 'Transcript failed',
+      description: 'Unable to load call transcript',
+      color: 'red',
+      timeout: 3000
+    })
+  } finally {
+    loadingTranscript.value = null
+  }
+}
+
+const playCallAudio = async (conversationId: string) => {
+  try {
+    loadingCallAudio.value = conversationId
+    
+    const response = await fetch(`/api/admin/conversation/${conversationId}/audio`, {
+      headers: {
+        'Authorization': `Bearer ${props.sessionId}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to load call audio')
+    }
+    
+    const blob = await response.blob()
+    const audioUrl = URL.createObjectURL(blob)
+    
+    if (audioPlayer.value) {
+      audioPlayer.value.src = audioUrl
+      await audioPlayer.value.play()
+    }
+    
+    const toast = useToast()
+    toast.add({
+      title: 'Playing call audio',
+      description: 'Call recording is now playing',
+      color: 'blue',
+      timeout: 3000
+    })
+  } catch (err: any) {
+    console.error('Failed to play call audio:', err)
+    const toast = useToast()
+    toast.add({
+      title: 'Audio playback failed',
+      description: 'Unable to play call audio',
+      color: 'red',
+      timeout: 3000
+    })
+  } finally {
+    loadingCallAudio.value = null
+  }
+}
+
 const deleteCallSetup = async (setupId: string) => {
   try {
     deletingSetup.value = setupId
@@ -544,5 +730,30 @@ const getJobStatusColor = (status: string) => {
     case 'running': return 'blue'
     default: return 'gray'
   }
+}
+
+const getCallResultColor = (result: string) => {
+  switch (result) {
+    case 'success': return 'green'
+    case 'failure': return 'red'
+    case 'unknown': return 'gray'
+    default: return 'gray'
+  }
+}
+
+const getCallStatusTextColor = (status: string) => {
+  switch (status) {
+    case 'completed': return 'text-green-400'
+    case 'failed': return 'text-red-400'
+    case 'in-progress': return 'text-blue-400'
+    case 'processing': return 'text-yellow-400'
+    default: return 'text-gray-400'
+  }
+}
+
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}m ${remainingSeconds}s`
 }
 </script>

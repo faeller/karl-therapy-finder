@@ -15,6 +15,11 @@ export interface CallSetupFormData {
   voice_recording_base64: string | null
   voice_recording_filename: string | null
   voice_recording_type: string | null
+  // Appointment preferences
+  appointment_days: string[]
+  appointment_time_from: string
+  appointment_time_to: string
+  appointment_notes: string
 }
 
 export const useCallSetupStore = defineStore('callSetup', {
@@ -33,7 +38,12 @@ export const useCallSetupStore = defineStore('callSetup', {
       scheduled_time: '',
       voice_recording_base64: null,
       voice_recording_filename: null,
-      voice_recording_type: null
+      voice_recording_type: null,
+      // Appointment preferences
+      appointment_days: [],
+      appointment_time_from: '',
+      appointment_time_to: '',
+      appointment_notes: ''
     } as CallSetupFormData,
     currentStep: 0,
     isCompleted: false
@@ -63,7 +73,12 @@ export const useCallSetupStore = defineStore('callSetup', {
         scheduled_time: '',
         voice_recording_base64: null,
         voice_recording_filename: null,
-        voice_recording_type: null
+        voice_recording_type: null,
+        // Appointment preferences
+        appointment_days: [],
+        appointment_time_from: '',
+        appointment_time_to: '',
+        appointment_notes: ''
       }
       this.currentStep = 0
       this.isCompleted = false

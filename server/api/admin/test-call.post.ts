@@ -67,7 +67,12 @@ export default defineEventHandler(async (event) => {
             patient_postal_code: parsedCallSetup.patient_postal_code,
             patient_city: parsedCallSetup.patient_city,
             call_type: 'test_call',
-            original_call_setup_id: validatedData.callSetupId
+            original_call_setup_id: validatedData.callSetupId,
+            // Appointment preferences
+            appointment_days: parsedCallSetup.appointment_days || '',
+            appointment_time_from: parsedCallSetup.appointment_time_from || '',
+            appointment_time_to: parsedCallSetup.appointment_time_to || '',
+            appointment_notes: parsedCallSetup.appointment_notes || ''
           }
         }
       }]

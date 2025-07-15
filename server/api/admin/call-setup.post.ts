@@ -11,7 +11,12 @@ const CallSetupSchema = z.object({
   patient_city: z.string().min(1, 'City is required'),
   call_timing: z.enum(['now', 'scheduled']),
   scheduled_date: z.string().optional(),
-  scheduled_time: z.string().optional()
+  scheduled_time: z.string().optional(),
+  // Appointment preferences
+  appointment_days: z.string().optional(),
+  appointment_time_from: z.string().optional(),
+  appointment_time_to: z.string().optional(),
+  appointment_notes: z.string().optional()
 })
 
 export default defineEventHandler(async (event) => {

@@ -263,7 +263,115 @@
           </div>
         </template>
 
-        <!-- Step 4: Schedule Call -->
+        <!-- Step 4: Appointment Preferences -->
+        <template #appointment-preferences>
+          <div class="w-full max-w-md mx-auto space-y-4">
+            <div class="text-center mb-6">
+              <h2 class="text-xl font-semibold text-white mb-2">Terminwunsch</h2>
+              <p class="text-blue-100/70 text-sm">Wann hast du Zeit für einen Termin?</p>
+            </div>
+            
+            <div class="space-y-4">
+              <!-- Days Selection -->
+              <div>
+                <label class="block text-sm font-medium text-blue-100/80 mb-3">Verfügbare Wochentage</label>
+                <div class="grid grid-cols-7 gap-2">
+                  <div 
+                    v-for="day in daysOfWeek" 
+                    :key="day.value"
+                    class="flex flex-col items-center"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :id="day.value"
+                      :value="day.value"
+                      v-model="formData.appointment_days"
+                      class="sr-only"
+                    />
+                    <label 
+                      :for="day.value"
+                      class="w-full h-16 flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all duration-200 text-xs font-medium border-2"
+                      :class="formData.appointment_days.includes(day.value) 
+                        ? 'bg-blue-500 border-blue-400 text-white' 
+                        : 'bg-white/5 border-white/20 text-blue-100/80 hover:bg-white/10'"
+                    >
+                      <span class="mb-1">{{ day.short }}</span>
+                      <span class="text-xs opacity-80">{{ day.date }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Time Range -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-blue-100/80 mb-2">Früheste Zeit</label>
+                  <UInput 
+                    v-model="formData.appointment_time_from" 
+                    type="time"
+                    color="primary"
+                    variant="outline"
+                    size="lg"
+                    class="w-full"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-blue-100/80 mb-2">Späteste Zeit</label>
+                  <UInput 
+                    v-model="formData.appointment_time_to" 
+                    type="time"
+                    color="primary"
+                    variant="outline"
+                    size="lg"
+                    class="w-full"
+                  />
+                </div>
+              </div>
+              
+              <!-- Additional Notes -->
+              <div>
+                <label class="block text-sm font-medium text-blue-100/80 mb-2">Zusätzliche Hinweise (optional)</label>
+                <UTextarea 
+                  v-model="formData.appointment_notes"
+                  placeholder="z.B. Nur vormittags, nicht am Freitag nachmittag, flexibel bei Absagen..."
+                  :rows="3"
+                  color="primary"
+                  variant="outline"
+                  size="lg"
+                  class="w-full"
+                />
+                <p class="text-xs text-blue-200/60 mt-1">Diese Informationen helfen KARL bei der Terminvereinbarung</p>
+              </div>
+              
+              <!-- Preview -->
+              <div class="bg-white/5 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4">
+                <h4 class="text-white font-medium mb-2 flex items-center">
+                  <UIcon name="i-heroicons-clock" class="w-5 h-5 mr-2 text-blue-400" />
+                  Deine Verfügbarkeit
+                </h4>
+                <div class="space-y-2 text-sm">
+                  <div v-if="formData.appointment_days.length > 0">
+                    <span class="text-blue-100/80">Tage: </span>
+                    <span class="text-white font-medium">{{ getDaysText() }}</span>
+                  </div>
+                  <div v-if="formData.appointment_time_from && formData.appointment_time_to">
+                    <span class="text-blue-100/80">Zeit: </span>
+                    <span class="text-white font-medium">{{ formData.appointment_time_from }} - {{ formData.appointment_time_to }}</span>
+                  </div>
+                  <div v-if="formData.appointment_notes">
+                    <span class="text-blue-100/80">Hinweise: </span>
+                    <span class="text-white font-medium">{{ formData.appointment_notes }}</span>
+                  </div>
+                  <div v-if="formData.appointment_days.length === 0 && !formData.appointment_time_from">
+                    <span class="text-blue-100/60 italic">Keine Präferenzen angegeben</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Step 5: Schedule Call -->
         <template #schedule>
           <div class="w-full max-w-md mx-auto space-y-4">
             <div class="text-center mb-6">
@@ -364,6 +472,21 @@
                 <div class="flex justify-between">
                   <span class="text-blue-100/80">Stimmaufnahme:</span>
                   <span class="text-green-400 font-medium">{{ callSetupStore.hasVoiceRecording() ? 'Verfügbar' : 'Fehlt' }}</span>
+                </div>
+                <div v-if="formData.appointment_days.length > 0 || formData.appointment_time_from || formData.appointment_notes" class="border-t border-white/10 pt-3">
+                  <div class="text-blue-100/80 font-medium mb-2">Terminpräferenzen:</div>
+                  <div v-if="formData.appointment_days.length > 0" class="flex justify-between text-sm">
+                    <span class="text-blue-100/60">Tage:</span>
+                    <span class="text-white">{{ getDaysText() }}</span>
+                  </div>
+                  <div v-if="formData.appointment_time_from && formData.appointment_time_to" class="flex justify-between text-sm">
+                    <span class="text-blue-100/60">Zeit:</span>
+                    <span class="text-white">{{ formData.appointment_time_from }} - {{ formData.appointment_time_to }}</span>
+                  </div>
+                  <div v-if="formData.appointment_notes" class="text-sm">
+                    <span class="text-blue-100/60">Hinweise:</span>
+                    <span class="text-white block mt-1">{{ formData.appointment_notes }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -467,6 +590,26 @@ const currentAudio = ref<HTMLAudioElement | null>(null)
 // Form data from store
 const formData = computed(() => callSetupStore.formData)
 
+// Days of week for appointment preferences
+const daysOfWeek = computed(() => {
+  const today = new Date()
+  const days = []
+  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+  const fullDayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+    days.push({
+      value: fullDayNames[date.getDay()],
+      short: dayNames[date.getDay()],
+      date: date.getDate().toString().padStart(2, '0')
+    })
+  }
+  
+  return days
+})
+
 // Stepper configuration
 const setupSteps = ref([
   {
@@ -488,6 +631,12 @@ const setupSteps = ref([
     icon: 'i-heroicons-microphone'
   },
   {
+    slot: 'appointment-preferences',
+    title: 'Terminwunsch',
+    description: 'Verfügbare Zeiten',
+    icon: 'i-heroicons-clock'
+  },
+  {
     slot: 'schedule',
     title: 'Zeitplanung',
     description: 'Anruf terminieren',
@@ -500,6 +649,13 @@ const setupSteps = ref([
     icon: 'i-heroicons-paper-airplane'
   }
 ])
+
+// Helper functions
+const getDaysText = () => {
+  if (formData.value.appointment_days.length === 0) return 'Keine Angabe'
+  if (formData.value.appointment_days.length === 7) return 'Täglich'
+  return formData.value.appointment_days.join(', ')
+}
 
 // Validation logic
 const canProceed = computed(() => {
@@ -516,11 +672,13 @@ const canProceed = computed(() => {
       return formData.value.consent_given
     case 2: // Voice recording
       return callSetupStore.hasVoiceRecording()
-    case 3: // Schedule
+    case 3: // Appointment preferences (optional, always allowed to proceed)
+      return true
+    case 4: // Schedule
       return formData.value.call_timing && 
              (formData.value.call_timing === 'now' || 
               (formData.value.scheduled_date && formData.value.scheduled_time))
-    case 4: // Confirmation
+    case 5: // Confirmation
       return true
     default:
       return false
@@ -685,6 +843,20 @@ const submitCallSetup = async () => {
     if (formData.value.call_timing === 'scheduled') {
       formDataToSend.append('scheduled_date', formData.value.scheduled_date)
       formDataToSend.append('scheduled_time', formData.value.scheduled_time)
+    }
+    
+    // Append appointment preferences
+    if (formData.value.appointment_days.length > 0) {
+      formDataToSend.append('appointment_days', formData.value.appointment_days.join(','))
+    }
+    if (formData.value.appointment_time_from) {
+      formDataToSend.append('appointment_time_from', formData.value.appointment_time_from)
+    }
+    if (formData.value.appointment_time_to) {
+      formDataToSend.append('appointment_time_to', formData.value.appointment_time_to)
+    }
+    if (formData.value.appointment_notes) {
+      formDataToSend.append('appointment_notes', formData.value.appointment_notes)
     }
     
     const voiceBlob = callSetupStore.getVoiceRecordingBlob()

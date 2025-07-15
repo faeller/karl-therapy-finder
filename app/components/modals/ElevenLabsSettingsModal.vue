@@ -126,9 +126,18 @@
                     {{ webhookBaseUrl }}/api/webhooks/elevenlabs/audio
                   </code>
                 </div>
+                <div>
+                  <span class="text-xs font-medium text-blue-300/80">Postcall Webhook:</span>
+                  <code class="block text-blue-300 bg-blue-900/40 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {{ webhookBaseUrl }}/api/webhooks/elevenlabs/postcall
+                  </code>
+                  <p class="text-xs text-blue-300/60 mt-1">
+                    Updates call status and results when calls complete
+                  </p>
+                </div>
               </div>
               <p class="text-xs text-blue-300/60 mt-3">
-                Configure these URLs in your ElevenLabs dashboard under webhook settings.
+                Configure these URLs in your ElevenLabs dashboard under webhook settings. The postcall webhook is essential for tracking call completion and results.
               </p>
             </div>
           </div>
