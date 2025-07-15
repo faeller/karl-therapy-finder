@@ -212,19 +212,23 @@
         </div>
         
         <!-- Appointment Preferences -->
-        <div v-if="setup.appointment_days || setup.appointment_time_from || setup.appointment_notes" class="bg-white/5 rounded-xl p-4 mb-4">
+        <div class="bg-white/5 rounded-xl p-4 mb-4">
           <h5 class="text-sm font-medium text-purple-200 mb-3 flex items-center gap-2">
             <UIcon name="i-heroicons-clock" class="w-4 h-4" />
             Terminpräferenzen
           </h5>
           <div class="space-y-2 text-sm">
-            <div v-if="setup.appointment_days" class="flex justify-between">
+            <div class="flex justify-between">
               <span class="text-purple-200/70">Verfügbare Tage:</span>
-              <span class="text-white">{{ setup.appointment_days }}</span>
+              <span class="text-white">{{ setup.appointment_days || 'Jederzeit' }}</span>
             </div>
-            <div v-if="setup.appointment_time_from && setup.appointment_time_to" class="flex justify-between">
+            <div class="flex justify-between">
               <span class="text-purple-200/70">Uhrzeiten:</span>
-              <span class="text-white">{{ setup.appointment_time_from }} - {{ setup.appointment_time_to }}</span>
+              <span class="text-white">
+                {{ setup.appointment_time_from && setup.appointment_time_to 
+                  ? `${setup.appointment_time_from} - ${setup.appointment_time_to}` 
+                  : 'Jederzeit' }}
+              </span>
             </div>
             <div v-if="setup.appointment_notes" class="space-y-1">
               <div class="text-purple-200/70">Zusätzliche Hinweise:</div>
