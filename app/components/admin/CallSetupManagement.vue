@@ -230,9 +230,15 @@
                   : 'Jederzeit' }}
               </span>
             </div>
-            <div v-if="setup.appointment_notes" class="space-y-1">
+            <div class="flex justify-between">
+              <span class="text-purple-200/70">Flexibilität:</span>
+              <span class="text-white">
+                {{ getFlexibilityText(setup.appointment_notes) }}
+              </span>
+            </div>
+            <div v-if="getUserNotes(setup.appointment_notes)" class="space-y-1">
               <div class="text-purple-200/70">Zusätzliche Hinweise:</div>
-              <div class="text-white bg-white/5 rounded px-2 py-1 text-xs">{{ setup.appointment_notes }}</div>
+              <div class="text-white bg-white/5 rounded px-2 py-1 text-xs">{{ getUserNotes(setup.appointment_notes) }}</div>
             </div>
           </div>
         </div>
@@ -759,5 +765,27 @@ const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
   return `${minutes}m ${remainingSeconds}s`
+}
+
+const getFlexibilityText = (notes: string | undefined) => {
+  if (!notes) return 'Unbekannt'
+  if (notes.includes('FLEXIBILITÄT: KARL darf nach 2 Ablehnungen auch Termine außerhalb der Präferenzen annehmen')) {
+    return 'Termine außerhalb Präferenzen erlaubt'
+  }
+  if (notes.includes('FLEXIBILITÄT: KARL soll nach 2 Ablehnungen KEINEN Termin außerhalb der Präferenzen annehmen')) {
+    return 'Nur Termine in Präferenzen'
+  }
+  return 'Unbekannt'
+}
+
+const getUserNotes = (notes: string | undefined) => {
+  if (!notes) return ''
+  // Remove the flexibility setting from the notes
+  return notes
+    .replace(/\n\nFLEXIBILITÄT: KARL darf nach 2 Ablehnungen auch Termine außerhalb der Präferenzen annehmen\./, '')
+    .replace(/\n\nFLEXIBILITÄT: KARL soll nach 2 Ablehnungen KEINEN Termin außerhalb der Präferenzen annehmen\./, '')
+    .replace(/^FLEXIBILITÄT: KARL darf nach 2 Ablehnungen auch Termine außerhalb der Präferenzen annehmen\./, '')
+    .replace(/^FLEXIBILITÄT: KARL soll nach 2 Ablehnungen KEINEN Termin außerhalb der Präferenzen annehmen\./, '')
+    .trim()
 }
 </script>

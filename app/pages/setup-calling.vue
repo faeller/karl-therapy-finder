@@ -347,6 +347,27 @@
                 <p class="text-xs text-blue-200/60 mt-1">Diese Informationen helfen KARL bei der Terminvereinbarung</p>
               </div>
               
+              <!-- Appointment Flexibility Toggle -->
+              <div class="bg-white/5 rounded-xl p-4">
+                <div class="flex items-start space-x-3">
+                  <UCheckbox 
+                    v-model="formData.appointment_flexibility" 
+                    color="primary"
+                    size="md"
+                    class="mt-1"
+                  />
+                  <div class="flex-1">
+                    <label class="text-sm font-medium text-blue-100/80 cursor-pointer">
+                      Falls beide Terminvorschläge nicht passen: KARL darf einen Termin außerhalb meiner Präferenzen annehmen
+                    </label>
+                    <p class="text-xs text-blue-200/60 mt-1">
+                      Wenn aktiviert, nimmt KARL nach 2 Ablehnungen auch Termine an, die nicht deinen Präferenzen entsprechen. 
+                      Andernfalls wird kein Termin vereinbart.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               <!-- 116117 Process Information -->
               <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
                 <h4 class="text-sm font-medium text-blue-300 mb-2 flex items-center">
@@ -391,6 +412,12 @@
                   <div v-if="formData.appointment_notes">
                     <span class="text-blue-100/80">Hinweise: </span>
                     <span class="text-white font-medium">{{ formData.appointment_notes }}</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-100/80">Flexibilität: </span>
+                    <span class="text-white font-medium">
+                      {{ formData.appointment_flexibility ? 'Termine außerhalb Präferenzen erlaubt' : 'Nur Termine in Präferenzen' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -517,6 +544,12 @@
                   <div v-if="formData.appointment_notes" class="text-sm">
                     <span class="text-blue-100/60">Hinweise:</span>
                     <span class="text-white block mt-1">{{ formData.appointment_notes }}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-blue-100/60">Flexibilität:</span>
+                    <span class="text-white">
+                      {{ formData.appointment_flexibility ? 'Termine außerhalb Präferenzen erlaubt' : 'Nur Termine in Präferenzen' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -877,8 +910,15 @@ const submitCallSetup = async () => {
     if (formData.value.appointment_time_to) {
       formDataToSend.append('appointment_time_to', formData.value.appointment_time_to)
     }
-    if (formData.value.appointment_notes) {
-      formDataToSend.append('appointment_notes', formData.value.appointment_notes)
+    // Append appointment notes with flexibility setting
+    let appointmentNotes = formData.value.appointment_notes
+    if (formData.value.appointment_flexibility) {
+      appointmentNotes += (appointmentNotes ? '\n\n' : '') + 'FLEXIBILITÄT: KARL darf nach 2 Ablehnungen auch Termine außerhalb der Präferenzen annehmen.'
+    } else {
+      appointmentNotes += (appointmentNotes ? '\n\n' : '') + 'FLEXIBILITÄT: KARL soll nach 2 Ablehnungen KEINEN Termin außerhalb der Präferenzen annehmen.'
+    }
+    if (appointmentNotes) {
+      formDataToSend.append('appointment_notes', appointmentNotes)
     }
     
     const voiceBlob = callSetupStore.getVoiceRecordingBlob()

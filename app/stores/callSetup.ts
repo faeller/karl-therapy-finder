@@ -20,6 +20,7 @@ export interface CallSetupFormData {
   appointment_time_from: string
   appointment_time_to: string
   appointment_notes: string
+  appointment_flexibility: boolean
 }
 
 export const useCallSetupStore = defineStore('callSetup', {
@@ -43,7 +44,8 @@ export const useCallSetupStore = defineStore('callSetup', {
       appointment_days: [],
       appointment_time_from: '',
       appointment_time_to: '',
-      appointment_notes: ''
+      appointment_notes: '',
+      appointment_flexibility: false
     } as CallSetupFormData,
     currentStep: 0,
     isCompleted: false
@@ -78,7 +80,8 @@ export const useCallSetupStore = defineStore('callSetup', {
         appointment_days: [],
         appointment_time_from: '',
         appointment_time_to: '',
-        appointment_notes: ''
+        appointment_notes: '',
+        appointment_flexibility: false
       }
       this.currentStep = 0
       this.isCompleted = false
