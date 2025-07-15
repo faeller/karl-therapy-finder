@@ -105,12 +105,12 @@
                 <UIcon 
                   v-if="!fundingPending"
                   :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                  class="w-5 h-5 mr-2" 
+                  class="w-6 h-6 mr-2" 
                 />
                 <UIcon 
                   v-else
                   name="i-heroicons-arrow-path"
-                  class="w-5 h-5 mr-2 animate-spin" 
+                  class="w-6 h-6 mr-2 animate-spin" 
                 />
                 <span class="whitespace-nowrap">{{ fundingStatusText }}</span>
               </UButton>
@@ -171,14 +171,14 @@
                 <UIcon 
                   v-if="!fundingPending"
                   :name="fundingIsCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                  class="w-4 h-4" 
+                  class="w-6 h-6 mr-2" 
                 />
                 <UIcon 
                   v-else
                   name="i-heroicons-arrow-path"
-                  class="w-4 h-4 animate-spin" 
+                  class="w-6 h-6 mr-2 animate-spin" 
                 />
-                <span class="text-xs font-medium hidden sm:inline ml-1">{{ fundingPending ? 'Laden...' : (fundingIsCovered ? 'Gedeckt' : 'Nicht gedeckt') }}</span>
+                <span class="whitespace-nowrap">{{ fundingStatusText }}</span>
               </UButton>
             </ClientOnly>
             

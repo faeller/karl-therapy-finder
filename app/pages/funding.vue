@@ -69,7 +69,7 @@
         
         <!-- Loading or Loaded Content -->
         <div v-else class="rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 p-8">
-          <div class="text-center mb-8">
+          <div class="text-center mb-6">
             <!-- Loading State -->
             <div v-if="pending">
               <div class="flex items-center justify-center mb-4">
@@ -86,17 +86,17 @@
             <!-- Loaded Content -->
             <div v-else>
               <div class="flex items-center justify-center mb-4">
-                <div class="flex items-center gap-3">
+                <div class="flex items-start gap-4">
                   <UIcon 
                     :name="fundingData?.funding?.isCovered ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'" 
                     :class="fundingData?.funding?.isCovered ? 'text-green-400' : 'text-orange-400'"
-                    class="w-8 h-8" 
+                    class="w-10 h-10 flex-shrink-0" 
                   />
                   <div>
-                    <h2 class="text-2xl font-bold text-white">
+                    <h2 class="text-3xl font-bold text-white leading-tight">
                       {{ fundingData?.funding?.isCovered ? 'Kosten gedeckt ✓' : 'Kosten nicht gedeckt' }}
                     </h2>
-                    <p class="text-blue-200/70 text-sm">{{ currentPeriod }}</p>
+                    <p class="text-blue-200/70 text-sm mt-1">{{ currentPeriod }}</p>
                   </div>
                 </div>
               </div>
