@@ -1,3 +1,5 @@
+import { generateUUID } from '../../utils/uuid'
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { tokens } = body
@@ -11,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Generate a secure session ID
-    const sessionId = crypto.randomUUID()
+    const sessionId = generateUUID()
     
     // Store tokens in KV with 30-minute expiry
     const expirationTtl = 30 * 60 // 30 minutes in seconds

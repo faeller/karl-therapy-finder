@@ -55,8 +55,13 @@ export default defineEventHandler(async (event) => {
     const storage = hubKV()
     await storage.setItem('patreon_campaign_config', JSON.stringify(patreonConfig))
 
-    // Generate OAuth authorization URL
-    const state = crypto.randomUUID()
+    // Generate OAuth state parameter tied to admin session for better CSRF protection
+    const sessionId = getCookie(event, 'patreon_session') || 'no-session'
+    const encoder = new TextEncoder()
+    const data = encoder.encode(sessionId + Date.now().toString())
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const state = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32)
     await storage.setItem(`patreon_oauth_state:${state}`, JSON.stringify({
       adminEmail: adminUser.email,
       createdAt: new Date().toISOString()
