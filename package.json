@@ -45,6 +45,7 @@
     "@pinia/colada-nuxt": "0.2.1",
     "@pinia/nuxt": "^0.11.1",
     "@types/uuid": "^10.0.0",
+    "@vuepic/vue-datepicker": "^11.0.2",
     "canvas-confetti": "^1.9.3",
     "cheerio": "^1.1.0",
     "crypto-js": "^4.2.0",

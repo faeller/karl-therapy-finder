@@ -29,6 +29,9 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@vuepic/vue-datepicker':
+        specifier: ^11.0.2
+        version: 11.0.2(vue@3.5.16(typescript@5.8.3))
       canvas-confetti:
         specifier: ^1.9.3
         version: 1.9.3
@@ -2061,6 +2064,12 @@ packages:
 
   '@vue/shared@3.5.17':
     resolution: {integrity: sha512-CabR+UN630VnsJO/jHWYBC1YVXyMq94KKp6iF5MQgZJs5I8cmjw6oVMO1oDbtBkENSHSSn/UadWlW/OAgdmKrg==}
+
+  '@vuepic/vue-datepicker@11.0.2':
+    resolution: {integrity: sha512-uHh78mVBXCEjam1uVfTzZ/HkyDwut/H6b2djSN9YTF+l/EA+XONfdCnOVSi1g+qVGSy65DcQAwyBNidAssnudQ==}
+    engines: {node: '>=18.12.0'}
+    peerDependencies:
+      vue: '>=3.3.0'
 
   '@vueuse/core@10.11.1':
     resolution: {integrity: sha512-guoy26JQktXPcz+0n3GukWIy/JDNKti9v6VEMu6kV2sYBsWuGiTU8OWdg+ADfUbHg3/3DlqySDe7JmdHrktiww==}
@@ -7720,6 +7729,11 @@ snapshots:
   '@vue/shared@3.5.16': {}
 
   '@vue/shared@3.5.17': {}
+
+  '@vuepic/vue-datepicker@11.0.2(vue@3.5.16(typescript@5.8.3))':
+    dependencies:
+      date-fns: 4.1.0
+      vue: 3.5.16(typescript@5.8.3)
 
   '@vueuse/core@10.11.1(vue@3.5.16(typescript@5.8.3))':
     dependencies:
