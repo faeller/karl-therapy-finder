@@ -466,108 +466,105 @@ const getLocationAndPLZ = async () => {
             <p class="text-blue-100/80 text-sm">Auch optional - aber kann die Suche eingrenzen</p>
           </div>
           
-          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-lg mx-auto">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Gender preference -->
-                <div>
-                  <label class="block text-xs font-medium text-blue-100/90 mb-3">Therapeut*in Geschlecht</label>
-                  <div class="grid grid-cols-2 gap-2">
-                    <div
-                      v-for="option in genderOptions"
-                      :key="option.value"
-                      @click="onboardingStore.updateFormData({ therapistGender: option.value })"
-                      :class="[
-                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
-                        formData.therapistGender === option.value
-                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
-                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
-                      ]"
-                    >
-                      <div class="flex items-center justify-between">
-                        <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
-                        <UIcon 
-                          v-if="formData.therapistGender === option.value"
-                          name="i-heroicons-check-circle"
-                          class="w-4 h-4 text-blue-400"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Recent therapy -->
-                <div>
-                  <label class="block text-xs font-medium text-blue-100/90 mb-3">Hattest du in den letzten 2 Jahren eine ambulante Psychotherapie?</label>
-                  <div class="grid grid-cols-2 gap-2">
-                    <div
-                      @click="() => onboardingStore.updateFormData({ hadRecentTherapy: false })"
-                      :class="[
-                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
-                        formData.hadRecentTherapy === false
-                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
-                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
-                      ]"
-                    >
-                      <div class="flex items-center justify-between">
-                        <span class="text-white font-medium text-xs">Nein</span>
-                        <UIcon 
-                          v-if="formData.hadRecentTherapy === false"
-                          name="i-heroicons-check-circle"
-                          class="w-4 h-4 text-blue-400"
-                        />
-                      </div>
-                    </div>
-                    <div
-                      @click="() => onboardingStore.updateFormData({ hadRecentTherapy: true })"
-                      :class="[
-                        'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
-                        formData.hadRecentTherapy === true
-                          ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
-                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
-                      ]"
-                    >
-                      <div class="flex items-center justify-between">
-                        <span class="text-white font-medium text-xs">Ja</span>
-                        <UIcon 
-                          v-if="formData.hadRecentTherapy === true"
-                          name="i-heroicons-check-circle"
-                          class="w-4 h-4 text-blue-400"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <p class="text-xs text-blue-200/60 mt-2">Bei Ja ist noch ein Gutachten nötig, aber darum kümmert sich die Therapeut*in</p>
-                </div>
-              </div>
-
-              <!-- Therapy method -->
-              <div class="mt-6">
-                <label class="block text-xs font-medium text-blue-100/90 mb-3">Therapie-Verfahren (Mehrfachauswahl)</label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div
-                    v-for="option in therapyMethodOptions"
-                    :key="option.value"
-                    @click="toggleTherapyMethod(option.value, !formData.therapyMethods.includes(option.value))"
-                    :class="[
-                      'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 min-h-[3rem]',
-                      formData.therapyMethods.includes(option.value)
-                        ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
-                        : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
-                    ]"
-                  >
-                    <div class="flex items-center justify-between">
-                      <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
-                      <UIcon 
-                        v-if="formData.therapyMethods.includes(option.value)"
-                        name="i-heroicons-check-circle"
-                        class="w-4 h-4 text-blue-400"
-                      />
-                    </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <!-- Gender preference -->
+            <div>
+              <label class="block text-sm font-medium text-blue-100/90 mb-3">Therapeut*in Geschlecht</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div
+                  v-for="option in genderOptions"
+                  :key="option.value"
+                  @click="onboardingStore.updateFormData({ therapistGender: option.value })"
+                  :class="[
+                    'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                    formData.therapistGender === option.value
+                      ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                      : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                  ]"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
+                    <UIcon 
+                      v-if="formData.therapistGender === option.value"
+                      name="i-heroicons-check-circle"
+                      class="w-4 h-4 text-blue-400"
+                    />
                   </div>
                 </div>
               </div>
-
             </div>
+
+            <!-- Recent therapy -->
+            <div>
+              <label class="block text-sm font-medium text-blue-100/90 mb-3">Hattest du in den letzten 2 Jahren eine ambulante Psychotherapie?</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div
+                  @click="() => onboardingStore.updateFormData({ hadRecentTherapy: false })"
+                  :class="[
+                    'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                    formData.hadRecentTherapy === false
+                      ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                      : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                  ]"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-white font-medium text-xs">Nein</span>
+                    <UIcon 
+                      v-if="formData.hadRecentTherapy === false"
+                      name="i-heroicons-check-circle"
+                      class="w-4 h-4 text-blue-400"
+                    />
+                  </div>
+                </div>
+                <div
+                  @click="() => onboardingStore.updateFormData({ hadRecentTherapy: true })"
+                  :class="[
+                    'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                    formData.hadRecentTherapy === true
+                      ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                      : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                  ]"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-white font-medium text-xs">Ja</span>
+                    <UIcon 
+                      v-if="formData.hadRecentTherapy === true"
+                      name="i-heroicons-check-circle"
+                      class="w-4 h-4 text-blue-400"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-blue-200/60 mt-2">Bei Ja ist noch ein Gutachten nötig, aber darum kümmert sich die Therapeut*in</p>
+            </div>
+          </div>
+
+          <!-- Therapy method -->
+          <div class="max-w-2xl mx-auto">
+            <label class="block text-sm font-medium text-blue-100/90 mb-3">Therapie-Verfahren (Mehrfachauswahl)</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="option in therapyMethodOptions"
+                :key="option.value"
+                @click="toggleTherapyMethod(option.value, !formData.therapyMethods.includes(option.value))"
+                :class="[
+                  'cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 min-h-[3rem]',
+                  formData.therapyMethods.includes(option.value)
+                    ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                    : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/10'
+                ]"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-white font-medium text-xs leading-tight">{{ option.label }}</span>
+                  <UIcon 
+                    v-if="formData.therapyMethods.includes(option.value)"
+                    name="i-heroicons-check-circle"
+                    class="w-4 h-4 text-blue-400"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </template>
   

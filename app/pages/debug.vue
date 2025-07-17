@@ -611,7 +611,6 @@ const { debugMode, toggleDebugMode } = useDebugMode()
 const patreonAuth = usePatreonOAuth()
 
 // Load stores to demonstrate Pinia state (stores are now client-only by design)
-const languageStore = useLanguageStore()
 const onboardingStore = useOnboardingStore()
 
 // Admin access notifications
