@@ -44,6 +44,7 @@
     "@pinia/colada": "^0.17.1",
     "@pinia/colada-nuxt": "0.2.1",
     "@pinia/nuxt": "^0.11.1",
+    "@types/uuid": "^10.0.0",
     "canvas-confetti": "^1.9.3",
     "cheerio": "^1.1.0",
     "crypto-js": "^4.2.0",
@@ -56,6 +57,7 @@
     "nuxt": "^3.17.5",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.4.1",
+    "uuid": "^11.1.0",
     "vue": "latest",
     "vue-router": "latest",
     "zod": "^3.25.67"
