@@ -1537,6 +1537,8 @@
 </template>
 
 <script setup lang="ts">
+import { generateId } from '~/utils/uuid'
+
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -2742,8 +2744,8 @@ const submitContactAttempt = () => {
     
     // Create new attempt
     const attempt: ContactAttempt = {
-      id: Date.now().toString(),
-      therapistId: currentTherapist.value?.id || 'manual-' + Date.now(),
+      id: generateId(),
+      therapistId: currentTherapist.value?.id || 'manual-' + generateId(),
       contactDate: contactForm.value.contactDate,
       contactTime: contactForm.value.contactTime,
       replyReceived: contactForm.value.replyReceived,

@@ -1,4 +1,5 @@
 import { createElevenLabsClient, ElevenLabsError } from '../../../../utils/elevenlabs'
+import { generateCallId } from '../../../../utils/uuid'
 
 export default defineEventHandler(async (event) => {
   // Authentication handled by middleware
@@ -39,7 +40,7 @@ export default defineEventHandler(async (event) => {
     })
     
     // Generate unique call ID and store call data in KV
-    const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const callId = `call_${generateCallId()}`
     const kv = hubKV()
     
     const callData = {

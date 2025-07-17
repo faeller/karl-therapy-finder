@@ -1,5 +1,6 @@
 import { verifyAdminSession } from '../../utils/adminAuth'
 import { createElevenLabsClient } from '../../utils/elevenlabs'
+import { generateCallId } from '../../utils/uuid'
 import { z } from 'zod'
 
 const testCallSchema = z.object({
@@ -47,7 +48,7 @@ export default defineEventHandler(async (event) => {
     
     // Create ElevenLabs batch call
     const client = await createElevenLabsClient(event)
-    const testCallId = `test_call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const testCallId = `test_call_${generateCallId()}`
     
     // Prepare batch call payload
     const batchCallPayload = {

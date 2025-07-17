@@ -926,17 +926,9 @@ const submitCallSetup = async () => {
       formDataToSend.append('voice_recording', voiceBlob, formData.value.voice_recording_filename || 'consent.wav')
     }
     
-    // Get session ID for authentication
-    const sessionId = localStorage.getItem('patreon_debug_session')
-    if (!sessionId) {
-      throw new Error('No admin session found')
-    }
-
+    // Make API call with HttpOnly cookies for authentication
     const response = await $fetch('/api/admin/call-setup', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${sessionId}`
-      },
       body: formDataToSend
     })
     

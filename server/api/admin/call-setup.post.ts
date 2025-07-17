@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { verifyAdminSession } from '../../utils/adminAuth'
+import { generateCallId } from '../../utils/uuid'
 
 const CallSetupSchema = z.object({
   patient_name: z.string().min(1, 'Patient name is required'),
@@ -70,7 +71,7 @@ export default defineEventHandler(async (event) => {
     }
     
     // Generate unique ID for this call setup
-    const callSetupId = `call_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const callSetupId = `call_${generateCallId()}`
     
     // Store voice recording in KV with expiration (7 days)
     const voiceRecordingKey = `voice_recording:${callSetupId}`
