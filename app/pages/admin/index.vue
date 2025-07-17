@@ -380,18 +380,20 @@ const syncLoading = ref(false)
 // Admin verification and redirect logic
 onMounted(async () => {
   try {
-    sessionId.value = localStorage.getItem('patreon_debug_session')
-    const sessionExpiry = localStorage.getItem('patreon_debug_session_expires')
+    // Verify admin access via API (uses HttpOnly cookies)
+    const adminData = await $fetch('/api/admin/verify', {
+      method: 'GET'
+    })
     
-    if (!sessionId.value || !sessionExpiry || Date.now() >= parseInt(sessionExpiry)) {
-      await navigateTo('/login?access_required=true&error=patreon_auth_required&return_to=%2Fadmin')
+    if (!adminData.isAdmin) {
+      await navigateTo('/login?access_required=true&error=access_denied&return_to=%2Fadmin')
       return
     }
 
     // Verify admin access (server will check email)
     adminData.value = await $fetch('/api/admin/verify', {
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 
@@ -404,14 +406,14 @@ onMounted(async () => {
     // Get system metrics
     systemMetrics.value = await $fetch('/api/admin/system-metrics', {
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 
     // Get Patreon status
     patreonStatus.value = await $fetch('/api/admin/patreon/status', {
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 
@@ -486,7 +488,7 @@ const loginWithPatreon = async () => {
     const response = await $fetch('/api/admin/patreon/login', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 
@@ -516,7 +518,7 @@ const refreshPatreonStatus = async () => {
     
     patreonStatus.value = await $fetch('/api/admin/patreon/status', {
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
     
@@ -548,7 +550,7 @@ const disconnectPatreon = async () => {
     const response = await $fetch('/api/admin/patreon/disconnect', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 
@@ -582,7 +584,7 @@ const syncPatreonFunding = async () => {
     const response = await $fetch('/api/admin/sync-patreon', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionId.value}`
+        // No authorization header needed - uses HttpOnly cookies
       }
     })
 

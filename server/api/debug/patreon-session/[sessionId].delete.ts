@@ -11,15 +11,15 @@ export default defineEventHandler(async (event) => {
   try {
     // Delete session from KV
     const storage = hubKV()
-    await storage.removeItem(`patreon_debug_session:${sessionId}`)
+    await storage.removeItem(`patreon_session:${sessionId}`)
 
-    console.log('🗑️ Deleted debug Patreon session:', sessionId.substring(0, 8) + '...')
+    console.log('🗑️ Deleted Patreon session:', sessionId.substring(0, 8) + '...')
 
     return {
       success: true
     }
   } catch (error: any) {
-    console.error('❌ Failed to delete debug session:', error)
+    console.error('❌ Failed to delete session:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to delete session'

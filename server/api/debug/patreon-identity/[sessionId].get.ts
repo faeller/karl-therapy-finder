@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   try {
     // Retrieve session data from KV
     const storage = hubKV()
-    const sessionData = await storage.getItem(`patreon_debug_session:${sessionId}`)
+    const sessionData = await storage.getItem(`patreon_session:${sessionId}`)
 
     if (!sessionData) {
       throw createError({
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     // Check if session is still valid
     if (Date.now() > parsedData.expiresAt) {
       // Clean up expired session
-      await storage.removeItem(`patreon_debug_session:${sessionId}`)
+      await storage.removeItem(`patreon_session:${sessionId}`)
       throw createError({
         statusCode: 410,
         statusMessage: 'Session expired'
@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
     const tokens = parsedData.tokens
 
-    console.log('🔍 Fetching Patreon user identity via debug session')
+    console.log('🔍 Fetching Patreon user identity via session')
 
     // Fetch user identity with memberships using stored tokens
     const response = await $fetch('https://www.patreon.com/api/oauth2/v2/identity', {
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    console.log('✅ Patreon identity fetch successful via debug session')
+    console.log('✅ Patreon identity fetch successful via session')
 
     // Extract user data
     const userData = response.data
@@ -127,7 +127,7 @@ export default defineEventHandler(async (event) => {
       throw error
     }
     
-    console.error('❌ Patreon identity fetch error via debug session:', error)
+    console.error('❌ Patreon identity fetch error via session:', error)
     
     if (error.data) {
       console.error('❌ Patreon error details:', error.data)

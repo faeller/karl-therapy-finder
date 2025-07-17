@@ -5,19 +5,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   try {
-    // Check for Patreon debug session (matching admin page pattern)
-    const sessionId = localStorage.getItem('patreon_debug_session')
-    const sessionExpiry = localStorage.getItem('patreon_debug_session_expires')
-    
-    if (!sessionId || !sessionExpiry || Date.now() >= parseInt(sessionExpiry)) {
-      return navigateTo(`/login?access_required=true&error=patreon_auth_required&return_to=${encodeURIComponent(to.path)}`)
-    }
-
-    // Verify admin access via API (this will check the session and admin email)
+    // Verify admin access via API (this will check the HttpOnly cookie and admin email)
     const adminData = await $fetch('/api/admin/verify', {
-      headers: {
-        'Authorization': `Bearer ${sessionId}`
-      }
+      method: 'GET'
     })
 
     if (!adminData.isAdmin) {

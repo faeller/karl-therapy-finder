@@ -19,6 +19,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // SECURITY: Validate redirect URI against whitelist to prevent OAuth hijacking
+    if (redirectUri) {
+      const config = useRuntimeConfig()
+      const allowedRedirectUris = config.patreonAllowedRedirectUris?.split(',').map(uri => uri.trim()) || []
+      
+      if (!allowedRedirectUris.includes(redirectUri)) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Invalid redirect URI. Must be in the allowed redirect URIs list.'
+        })
+      }
+    }
+
     // Store Patreon OAuth configuration
     const storage = hubKV()
     const patreonConfig = {

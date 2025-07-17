@@ -22,10 +22,25 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Get the host for dynamic redirect URI
+    // SECURITY: Use validated redirect URI from whitelist instead of dynamic host
+    const allowedRedirectUris = config.patreonAllowedRedirectUris?.split(',').map(uri => uri.trim()) || []
+    
+    // Get the host for dynamic redirect URI and validate it
     const host = getHeader(event, 'host') || 'karl-helps.org'
     const protocol = host.includes('localhost') ? 'http' : 'https'
-    const redirectUri = `${protocol}://${host}/admin/patreon/callback`
+    const proposedRedirectUri = `${protocol}://${host}/admin/patreon/callback`
+    
+    // Only use the proposed URI if it's in the whitelist
+    const redirectUri = allowedRedirectUris.includes(proposedRedirectUri) 
+      ? proposedRedirectUri 
+      : allowedRedirectUris.find(uri => uri.includes('/admin/patreon/callback')) || allowedRedirectUris[0]
+    
+    if (!redirectUri) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'No valid redirect URI found in configuration'
+      })
+    }
     
     // Store Patreon OAuth configuration
     const patreonConfig = {

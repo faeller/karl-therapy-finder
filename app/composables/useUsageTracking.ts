@@ -110,15 +110,8 @@ export const useUsageTracking = () => {
 
     isLoading.value = true
     try {
-      const sessionId = localStorage.getItem('patreon_debug_session')
-      if (!sessionId) {
-        return
-      }
-
       const response = await $fetch('/api/usage/current', {
-        headers: {
-          'Authorization': `Bearer ${sessionId}`
-        }
+        method: 'GET'
       })
 
       if (response.success) {
@@ -151,16 +144,8 @@ export const useUsageTracking = () => {
     isHistoryLoading.value = true
     
     try {
-      const sessionId = localStorage.getItem('patreon_debug_session')
-      if (!sessionId) {
-        usageHistory.value = []
-        return
-      }
-
       const response = await $fetch('/api/usage/history', {
-        headers: {
-          'Authorization': `Bearer ${sessionId}`
-        }
+        method: 'GET'
       })
 
       if (response.success && Array.isArray(response.data)) {
@@ -205,14 +190,8 @@ export const useUsageTracking = () => {
     if (!patreonAuth.isAuthenticated.value) return
 
     try {
-      const sessionId = localStorage.getItem('patreon_debug_session')
-      if (!sessionId) return
-
       const response = await $fetch('/api/usage/track', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${sessionId}`
-        },
         body: {
           type,
           description,

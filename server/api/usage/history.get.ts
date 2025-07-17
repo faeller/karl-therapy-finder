@@ -1,18 +1,16 @@
 export default defineEventHandler(async (event) => {
-  // Check authentication
-  const authHeader = getHeader(event, 'authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Check authentication via HttpOnly cookie
+  const sessionId = getCookie(event, 'patreon_session')
+  if (!sessionId) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Unauthorized'
+      statusMessage: 'Session cookie is missing'
     })
   }
-
-  const sessionId = authHeader.substring(7)
   
   try {
     // Get session data from KV
-    const sessionData = await hubKV().getItem(`patreon_debug_session:${sessionId}`)
+    const sessionData = await hubKV().getItem(`patreon_session:${sessionId}`)
     if (!sessionData) {
       throw createError({
         statusCode: 401,

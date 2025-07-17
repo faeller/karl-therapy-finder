@@ -15,16 +15,15 @@ export async function verifyAdminSession(event: H3Event): Promise<AdminUser> {
     throw createError({ statusCode: 500, statusMessage: 'Admin email not configured' })
   }
 
-  // Get sessionId from Authorization header
-  const authHeader = getHeader(event, 'authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError({ statusCode: 401, statusMessage: 'Authorization header is missing or invalid' })
+  // Get sessionId from HttpOnly cookie
+  const sessionId = getCookie(event, 'patreon_session')
+  if (!sessionId) {
+    throw createError({ statusCode: 401, statusMessage: 'Session cookie is missing' })
   }
-  const sessionId = authHeader.substring(7) // Remove "Bearer "
 
   // Get session data from KV
   const storage = hubKV()
-  const sessionData = await storage.getItem(`patreon_debug_session:${sessionId}`)
+  const sessionData = await storage.getItem(`patreon_session:${sessionId}`)
   if (!sessionData) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid or expired session' })
   }
@@ -33,7 +32,7 @@ export async function verifyAdminSession(event: H3Event): Promise<AdminUser> {
   
   // Check if session is still valid
   if (Date.now() > parsedData.expiresAt) {
-    await storage.removeItem(`patreon_debug_session:${sessionId}`)
+    await storage.removeItem(`patreon_session:${sessionId}`)
     throw createError({ statusCode: 410, statusMessage: 'Session expired' })
   }
 
