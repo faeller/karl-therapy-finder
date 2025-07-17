@@ -10,7 +10,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const sessionExpiry = localStorage.getItem('patreon_debug_session_expires')
     
     if (!sessionId || !sessionExpiry || Date.now() >= parseInt(sessionExpiry)) {
-      return navigateTo('/debug?admin_required=true&error=patreon_auth_required')
+      return navigateTo(`/login?access_required=true&error=patreon_auth_required&return_to=${encodeURIComponent(to.path)}`)
     }
 
     // Verify admin access via API (this will check the session and admin email)
@@ -21,13 +21,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     })
 
     if (!adminData.isAdmin) {
-      return navigateTo('/debug?admin_required=true&error=access_denied')
+      return navigateTo(`/login?access_required=true&error=access_denied&return_to=${encodeURIComponent(to.path)}`)
     }
 
     // Session is valid and user is admin, allow access
     return
   } catch (error) {
     console.error('Admin auth middleware error:', error)
-    return navigateTo('/debug?admin_required=true&error=auth_failed')
+    return navigateTo(`/login?access_required=true&error=auth_failed&return_to=${encodeURIComponent(to.path)}`)
   }
 })

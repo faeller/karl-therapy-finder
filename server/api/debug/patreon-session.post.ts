@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     // Generate a secure session ID
     const sessionId = crypto.randomUUID()
     
-    // Store tokens in KV with 30-minute expiry for debug sessions
+    // Store tokens in KV with 30-minute expiry
     const expirationTtl = 30 * 60 // 30 minutes in seconds
     
     const sessionData = {
@@ -24,21 +24,30 @@ export default defineEventHandler(async (event) => {
 
     // Store in Cloudflare KV via NuxtHub
     const storage = hubKV()
-    await storage.setItem(`patreon_debug_session:${sessionId}`, JSON.stringify(sessionData), {
+    await storage.setItem(`patreon_session:${sessionId}`, JSON.stringify(sessionData), {
       ttl: expirationTtl
     })
 
-    console.log('🔐 Created debug Patreon session:', sessionId.substring(0, 8) + '...')
+    console.log('🔐 Created Patreon session:', sessionId.substring(0, 8) + '...')
+
+    // Set HttpOnly cookie instead of returning sessionId
+    setCookie(event, 'patreon_session', sessionId, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: expirationTtl,
+      path: '/'
+    })
 
     return {
-      sessionId,
+      success: true,
       expiresAt: sessionData.expiresAt
     }
   } catch (error: any) {
-    console.error('❌ Failed to create debug session:', error)
+    console.error('❌ Failed to create session:', error)
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to create debug session'
+      statusMessage: 'Failed to create session'
     })
   }
 })

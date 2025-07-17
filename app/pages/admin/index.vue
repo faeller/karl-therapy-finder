@@ -384,7 +384,7 @@ onMounted(async () => {
     const sessionExpiry = localStorage.getItem('patreon_debug_session_expires')
     
     if (!sessionId.value || !sessionExpiry || Date.now() >= parseInt(sessionExpiry)) {
-      await navigateTo('/debug?admin_required=true&error=patreon_auth_required')
+      await navigateTo('/login?access_required=true&error=patreon_auth_required&return_to=%2Fadmin')
       return
     }
 
@@ -396,7 +396,8 @@ onMounted(async () => {
     })
 
     if (!adminData.value.isAdmin) {
-      await navigateTo('/debug?admin_required=true&error=access_denied')
+      // Don't redirect - show error on admin page to prevent loop
+      error.value = new Error('Du hast keinen Zugriff auf die Admin-Funktionen')
       return
     }
 
@@ -418,13 +419,14 @@ onMounted(async () => {
   } catch (err: any) {
     console.error('Admin access error:', err)
     if (err.statusCode === 403) {
-      await navigateTo('/debug?admin_required=true&error=access_denied')
+      // Don't redirect for 403 - show error on admin page to prevent loop
+      error.value = new Error('Du hast keinen Zugriff auf die Admin-Funktionen')
     } else if (err.statusCode === 401) {
-      await navigateTo('/debug?admin_required=true&error=patreon_auth_required')
+      await navigateTo('/login?access_required=true&error=patreon_auth_required&return_to=%2Fadmin')
     } else if (err.statusCode === 500 && err.data?.message?.includes('Admin email not configured')) {
-      await navigateTo('/debug?admin_required=true&error=admin_email_not_configured')
+      error.value = new Error('Administrator-E-Mail ist nicht in den Umgebungsvariablen konfiguriert')
     } else {
-      await navigateTo('/debug?admin_required=true&error=unknown')
+      error.value = new Error('Fehler beim Laden des Admin-Dashboards: ' + (err.data?.message || err.message))
     }
   } finally {
     pending.value = false

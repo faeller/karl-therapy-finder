@@ -40,6 +40,7 @@ export const usePatreonOAuth = () => {
   const sessionExpiresAt = ref<number | null>(null)
   const isAuthenticated = ref(false)
   const isLoading = ref(false)
+  const isInitializing = ref(true)
   const authError = ref<string | null>(null)
   const user = ref<PatreonUser | null>(null)
   const memberships = ref<PatreonMembership[]>([])
@@ -71,58 +72,58 @@ export const usePatreonOAuth = () => {
     response_type: 'code'
   }
 
-  // Load session from localStorage
-  const loadSession = () => {
-    if (!process.client) return
+  // Load session from HttpOnly cookie (via server)
+  const loadSession = async () => {
+    if (!process.client) {
+      isInitializing.value = false
+      return
+    }
 
     try {
-      const storedSessionId = localStorage.getItem('patreon_debug_session')
-      const storedExpiry = localStorage.getItem('patreon_debug_session_expires')
+      // Check if we have a session by making a request that will read the cookie
+      const response = await $fetch('/api/debug/patreon-identity/current', {
+        method: 'GET'
+      })
       
-      if (storedSessionId && storedExpiry) {
-        const expiryTime = parseInt(storedExpiry)
-        
-        // Check if session is still valid
-        if (Date.now() < expiryTime) {
-          sessionId.value = storedSessionId
-          sessionExpiresAt.value = expiryTime
-          isAuthenticated.value = true
-          getUserProfile()
-        } else {
-          // Session expired, clean up
-          clearSession()
-        }
+      if (response.user) {
+        isAuthenticated.value = true
+        user.value = response.user
+        memberships.value = response.memberships || []
+        sessionExpiresAt.value = response.sessionExpiresAt
       }
-    } catch (error) {
-      console.error('Error loading Patreon session:', error)
+    } catch (error: any) {
+      // If no session or expired, that's fine - user is not authenticated
+      if (error.statusCode !== 401 && error.statusCode !== 404) {
+        console.error('Error loading Patreon session:', error)
+      }
       clearSession()
     }
+    
+    // Always set initializing to false, even if errors occurred
+    isInitializing.value = false
   }
 
-  // Save session to localStorage (only session ID, not tokens)
-  const saveSession = (newSessionId: string, expiresAt: number) => {
+  // Save session state (cookie is set by server)
+  const saveSession = (expiresAt: number) => {
     if (!process.client) return
 
-    sessionId.value = newSessionId
     sessionExpiresAt.value = expiresAt
     isAuthenticated.value = true
-    localStorage.setItem('patreon_debug_session', newSessionId)
-    localStorage.setItem('patreon_debug_session_expires', expiresAt.toString())
+    console.log('💾 Session saved, auth state updated:', { isAuthenticated: isAuthenticated.value })
+    // No need to store sessionId - it's in HttpOnly cookie
   }
 
   // Clear session
   const clearSession = async () => {
     if (!process.client) return
 
-    // Delete session from server if it exists
-    if (sessionId.value) {
-      try {
-        await $fetch(`/api/debug/patreon-session/${sessionId.value}`, {
-          method: 'DELETE'
-        })
-      } catch (error) {
-        console.error('Error deleting server session:', error)
-      }
+    // Delete session from server (will clear cookie)
+    try {
+      await $fetch('/api/logout', {
+        method: 'POST'
+      })
+    } catch (error) {
+      console.error('Error deleting server session:', error)
     }
 
     sessionId.value = null
@@ -130,8 +131,7 @@ export const usePatreonOAuth = () => {
     isAuthenticated.value = false
     user.value = null
     memberships.value = []
-    localStorage.removeItem('patreon_debug_session')
-    localStorage.removeItem('patreon_debug_session_expires')
+    // No localStorage cleanup needed - using HttpOnly cookies
   }
 
   // Start OAuth flow
@@ -195,9 +195,17 @@ export const usePatreonOAuth = () => {
         }
       })
 
-      // Save only the session ID locally
-      saveSession(sessionResponse.sessionId, sessionResponse.expiresAt)
+      // Save session state (cookie is set by server)
+      saveSession(sessionResponse.expiresAt)
+      
+      // Get user profile to populate auth state
       await getUserProfile()
+      
+      console.log('✅ Authentication completed successfully')
+      console.log('Auth state:', { 
+        isAuthenticated: isAuthenticated.value, 
+        user: user.value?.full_name 
+      })
       
       return true
     } catch (error: any) {
@@ -211,8 +219,6 @@ export const usePatreonOAuth = () => {
 
   // Get user profile and memberships using session
   const getUserProfile = async () => {
-    if (!sessionId.value) return
-
     try {
       // Check if session is still valid
       if (sessionExpiresAt.value && Date.now() >= sessionExpiresAt.value) {
@@ -220,7 +226,7 @@ export const usePatreonOAuth = () => {
         return
       }
 
-      const response = await $fetch(`/api/debug/patreon-identity/${sessionId.value}`, {
+      const response = await $fetch('/api/debug/patreon-identity/current', {
         method: 'GET'
       })
 
@@ -230,29 +236,34 @@ export const usePatreonOAuth = () => {
       // Update session expiry if provided
       if (response.sessionExpiresAt) {
         sessionExpiresAt.value = response.sessionExpiresAt
-        if (process.client) {
-          localStorage.setItem('patreon_debug_session_expires', response.sessionExpiresAt.toString())
-        }
       }
+      
+      console.log('✅ User profile loaded:', {
+        user: user.value?.full_name,
+        isAuthenticated: isAuthenticated.value
+      })
     } catch (error: any) {
       console.error('Error getting Patreon user profile:', error)
       
       // If session expired or not found, clear it
-      if (error.statusCode === 404 || error.statusCode === 410) {
+      if (error.statusCode === 404 || error.statusCode === 410 || error.statusCode === 401) {
         await clearSession()
       }
     }
   }
 
-  // Get highest tier information
+  // Get highest tier information (only from our campaign)
   const getHighestTier = computed(() => {
     if (!memberships.value.length) return null
+    
+    const validCampaignId = config.public.patreonCampaignId
+    if (!validCampaignId) return null
     
     let highestTier: PatreonTier | null = null
     let highestAmount = 0
     
     for (const membership of memberships.value) {
-      if (membership.patron_status === 'active_patron') {
+      if (membership.patron_status === 'active_patron' && membership.campaign_id === validCampaignId) {
         for (const tier of membership.tiers) {
           if (tier.amount_cents > highestAmount) {
             highestAmount = tier.amount_cents
@@ -265,15 +276,27 @@ export const usePatreonOAuth = () => {
     return highestTier
   })
 
-  // Check if user is patron
+  // Check if user is patron of our campaign
   const isPatron = computed(() => {
-    return memberships.value.some(m => m.patron_status === 'active_patron')
+    const validCampaignId = config.public.patreonCampaignId
+    if (!validCampaignId) return false
+    
+    return memberships.value.some(m => 
+      m.patron_status === 'active_patron' && 
+      m.campaign_id === validCampaignId
+    )
   })
 
-  // Get total lifetime support
+  // Get total lifetime support (only from our campaign)
   const lifetimeSupport = computed(() => {
+    const validCampaignId = config.public.patreonCampaignId
+    if (!validCampaignId) return 0
+    
     return memberships.value.reduce((total, membership) => {
-      return total + membership.lifetime_support_cents
+      if (membership.campaign_id === validCampaignId) {
+        return total + membership.lifetime_support_cents
+      }
+      return total
     }, 0)
   })
 
@@ -320,9 +343,13 @@ export const usePatreonOAuth = () => {
       window.addEventListener('message', (event) => {
         if (event.origin !== window.location.origin) return
         
+        console.log('📨 Received OAuth message:', event.data)
+        
         if (event.data.type === 'PATREON_OAUTH_SUCCESS' && event.data.code && event.data.state) {
+          console.log('🎉 OAuth success, exchanging token...')
           exchangeCodeForToken(event.data.code, event.data.state)
         } else if (event.data.type === 'PATREON_OAUTH_ERROR') {
+          console.error('❌ OAuth error:', event.data.error)
           authError.value = event.data.error || 'Authentication failed'
         }
       })
@@ -333,6 +360,7 @@ export const usePatreonOAuth = () => {
     // State
     isAuthenticated: readonly(isAuthenticated),
     isLoading: readonly(isLoading),
+    isInitializing: readonly(isInitializing),
     authError: readonly(authError),
     user: readonly(user),
     memberships: readonly(memberships),
