@@ -65,15 +65,15 @@ You can verify KV is working by checking the debug page at `/debug` and connecti
 ## KV Usage in the App
 
 The Patreon OAuth implementation uses KV to store:
-- Debug session tokens (30-minute TTL)
+- Session tokens (30-minute TTL) stored in HttpOnly cookies
 - Session metadata (creation time, expiry)
 - User authentication state
 
-Keys are formatted as: `patreon_debug_session:{uuid}`
+Keys are formatted as: `patreon_session:{uuid}`
 
 ## Cleanup
 
 KV entries automatically expire after 30 minutes. Manual cleanup can be done via:
 ```bash
-wrangler kv:key delete --binding KARL_KV "patreon_debug_session:session-id"
+wrangler kv:key delete --binding KARL_KV "patreon_session:session-id"
 ```
