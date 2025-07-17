@@ -32,10 +32,10 @@
 
     <!-- Loading State -->
     <div v-if="pending" class="relative z-10 flex items-center justify-center h-64">
-      <div class="text-center">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-purple-400 mx-auto mb-3" />
-        <p class="text-purple-200 text-sm">Loading admin dashboard...</p>
-      </div>
+      <LoadingSpinner 
+        message="Loading admin dashboard..." 
+        color="purple" 
+      />
     </div>
 
     <!-- Error State -->

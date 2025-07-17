@@ -3,7 +3,11 @@
     <div class="text-center text-white">
       <div class="mb-8">
         <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
-          <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin" />
+          <LoadingSpinner 
+            type="icon" 
+            color="white" 
+            container-class="py-0"
+          />
         </div>
         <h1 class="text-2xl font-bold mb-2">Connecting to Patreon</h1>
         <p class="text-orange-100">Processing your authentication...</p>

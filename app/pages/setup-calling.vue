@@ -2,8 +2,10 @@
   <PageCard>
     <div class="relative z-10 flex w-full max-w-4xl flex-col items-center gap-6">
       <!-- Loading Animation -->
-      <div v-if="isLoading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div v-if="isLoading">
+        <LoadingSpinner 
+          container-class="py-12"
+        />
       </div>
 
       <!-- Main Content -->

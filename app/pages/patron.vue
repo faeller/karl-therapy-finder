@@ -2,10 +2,11 @@
   <PageCard>
     <!-- Loading State -->
     <div v-if="isAuthChecking" class="relative z-10 flex w-full max-w-md flex-col items-center justify-center py-16 px-4 sm:px-6">
-      <div class="text-center">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-purple-400 mx-auto mb-3" />
-        <p class="text-purple-200 text-sm">Lade Daten...</p>
-      </div>
+      <LoadingSpinner 
+        message="Lade Daten..." 
+        color="purple" 
+        container-class="py-0"
+      />
     </div>
 
     <!-- Authenticated Content -->
@@ -127,11 +128,11 @@
           </div>
           
           <!-- Loading State for Usage Data -->
-          <div v-if="usage.isLoading.value" class="flex items-center justify-center py-8">
-            <div class="text-center">
-              <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-blue-400 mx-auto mb-3" />
-              <p class="text-blue-200 text-sm">Lade Nutzungsdaten...</p>
-            </div>
+          <div v-if="usage.isLoading.value">
+            <LoadingSpinner 
+              message="Lade Nutzungsdaten..." 
+              color="blue" 
+            />
           </div>
           
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -242,18 +243,19 @@
                 :disabled="usage.isLoading.value || usage.isHistoryLoading.value"
                 class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-all text-sm disabled:opacity-50"
               >
-                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" :class="{ 'animate-spin': usage.isLoading.value || usage.isHistoryLoading.value }" />
+                <LoadingSpinner v-if="usage.isLoading.value || usage.isHistoryLoading.value" type="icon" size="sm" color="blue" container-class="py-0" />
+                <UIcon v-else name="i-heroicons-arrow-path" class="w-4 h-4" />
                 {{ (usage.isLoading.value || usage.isHistoryLoading.value) ? 'Lädt...' : 'Aktualisieren' }}
               </button>
             </div>
           </div>
           
           <!-- Loading State for Usage History -->
-          <div v-if="usage.isHistoryLoading.value" class="flex items-center justify-center py-8">
-            <div class="text-center">
-              <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-blue-400 mx-auto mb-3" />
-              <p class="text-blue-200 text-sm">Lade Nutzungshistorie...</p>
-            </div>
+          <div v-if="usage.isHistoryLoading.value">
+            <LoadingSpinner 
+              message="Lade Nutzungshistorie..." 
+              color="blue" 
+            />
           </div>
           
           <div v-else class="space-y-4">
