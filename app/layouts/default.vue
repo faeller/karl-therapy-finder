@@ -208,7 +208,6 @@
 
 <script setup>
 const route = useRoute()
-const { locale, locales, setLocale } = useI18n()
 
 // Use navigation state management
 const { currentNavItem, setNavFromPath } = useNavigation()
@@ -277,38 +276,6 @@ watch(() => route.path, (newPath) => {
   }
 })
 
-// Language configuration
-const languageConfig = {
-  de: { name: 'Deutsch', flag: '🇩🇪' },
-  en: { name: 'English', flag: '🇬🇧' }
-}
-
-// Switch language function with persistence
-const switchLanguage = async (newLocale) => {
-  if (newLocale === locale.value) return
-  
-  try {
-    // Set the locale
-    await setLocale(newLocale)
-    
-    // Persist to localStorage
-    if (process.client) {
-      localStorage.setItem('karl-language', newLocale)
-    }
-    
-    // Show success toast
-    const toast = useToast()
-    const langName = languageConfig[newLocale]?.name || newLocale
-    toast.add({
-      title: newLocale === 'de' ? 'Sprache geändert' : 'Language changed',
-      description: newLocale === 'de' ? `Auf Deutsch umgestellt` : `Switched to ${langName}`,
-      color: 'blue',
-      timeout: 2000
-    })
-  } catch (error) {
-    console.error('Failed to switch language:', error)
-  }
-}
 
 // Mobile menu items (language switcher hidden)
 const mobileMenuItems = computed(() => {
@@ -373,23 +340,6 @@ const mobileMenuItems = computed(() => {
 })
 
 
-// Load persisted language on mount
-onMounted(() => {
-  if (process.client) {
-    const savedLanguage = localStorage.getItem('karl-language')
-    if (savedLanguage && savedLanguage !== locale.value) {
-      // Check if saved language exists in available locales
-      const hasLocale = locales.value.some(l => {
-        const localeCode = typeof l === 'string' ? l : l.code
-        return localeCode === savedLanguage
-      })
-      
-      if (hasLocale) {
-        setLocale(savedLanguage)
-      }
-    }
-  }
-})
 </script>
 
 <style lang="postcss">

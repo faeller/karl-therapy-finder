@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   future: { compatibilityVersion: 4 },
-  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui', '@nuxtjs/i18n'],
+  modules: ['@nuxthub/core', '@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/ui'],
   css: ['~/assets/css/main.css'],
   app: {
     head: {
@@ -41,22 +41,12 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'dark',
   },
-  i18n: {
-    locales: ['de', 'en'],
-    defaultLocale: 'de',
-    strategy: 'prefix_except_default',
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: 'i18n_redirected',
-      redirectOn: 'root'
-    },
-    vueI18n: './i18n.config.ts'
-  },
   runtimeConfig: {
     // Private keys (server-side only)
     gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
     patreonClientSecret: process.env.PATREON_CLIENT_SECRET,
     patreonAllowedRedirectUris: process.env.PATREON_ALLOWED_REDIRECT_URIS,
+    patreonCampaignId: process.env.PATREON_CAMPAIGN_ID,
     karlAdminPatreonEmail: process.env.KARL_ADMIN_PATREON_EMAIL,
     
     // Public keys (client-side accessible)
@@ -64,6 +54,7 @@ export default defineNuxtConfig({
       version: pkg.version,
       gmailClientId: process.env.GMAIL_CLIENT_ID,
       patreonClientId: process.env.PATREON_CLIENT_ID,
+      patreonCampaignId: process.env.PATREON_CAMPAIGN_ID,
       patreonAllowedRedirectUris: process.env.PATREON_ALLOWED_REDIRECT_URIS,
       privacyPolicyEnabled: process.env.NUXT_PUBLIC_PRIVACY_POLICY_ENABLED,
     },
