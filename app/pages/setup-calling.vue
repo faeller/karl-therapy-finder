@@ -69,12 +69,13 @@
                       openOnFocus: false
                     }"
                     :format-locale="deLocale"
-                    @text-input="handleBirthDateTextInput"
+                    ref="birthDatePicker"
+                    input-class-name="custom-datepicker-input"
+                    :input-icon="false"
                     :class="[
                       'w-full',
                       birthDateError ? 'dp-error' : ''
                     ]"
-                    :input-class-name="'w-full px-4 py-4 text-lg bg-white/5 border rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:border-blue-500 transition-colors'"
                   />
                   <p v-if="birthDateError" class="text-red-400 text-xs mt-1">{{ birthDateError }}</p>
                 </div>
@@ -490,12 +491,13 @@
                         openOnFocus: false
                       }"
                       :format-locale="deLocale"
-                      @text-input="handleScheduledDateTextInput"
+                      ref="scheduledDatePicker"
+                      input-class-name="custom-datepicker-input-small"
+                      :input-icon="false"
                       :class="[
                         'w-full',
                         scheduledDateError ? 'dp-error' : ''
                       ]"
-                      :input-class-name="'w-full px-4 py-3 bg-white/5 border rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:border-blue-500 transition-colors'"
                     />
                     <p v-if="scheduledDateError" class="text-red-400 text-xs mt-1">{{ scheduledDateError }}</p>
                   </div>
@@ -783,6 +785,8 @@ const birthDate = ref<Date | null>(null)
 const birthDateError = ref('')
 const scheduledDate = ref<Date | null>(null)
 const scheduledDateError = ref('')
+const birthDatePicker = ref()
+const scheduledDatePicker = ref()
 
 // German locale for date-fns
 const deLocale = de
@@ -886,6 +890,181 @@ const formatDateForDisplay = (dateString: string) => {
     month: '2-digit',
     year: 'numeric'
   })
+}
+
+// Simple and robust German date formatting
+const formatGermanDateInput = (input: string): string => {
+  // Keep only digits
+  const digits = input.replace(/\D/g, '')
+  
+  if (digits.length === 0) return ''
+  
+  let formatted = ''
+  
+  // Day part (first 2 digits)
+  if (digits.length >= 1) {
+    const day = digits.slice(0, 2)
+    
+    if (digits.length === 1) {
+      // Single digit - check if it needs auto-prefix
+      if (parseInt(digits[0]) > 3) {
+        formatted = '0' + digits[0] + '.'
+      } else {
+        formatted = digits[0]
+      }
+    } else if (digits.length === 2) {
+      // Exactly two digits for day - always add dot
+      formatted = day + '.'
+    } else {
+      // More than two digits - day is complete
+      formatted = day + '.'
+    }
+  }
+  
+  // Month part (next 2 digits)
+  if (digits.length >= 3) {
+    const month = digits.slice(2, 4)
+    
+    if (digits.length === 3) {
+      // Single digit month - check if it needs auto-prefix
+      if (parseInt(digits[2]) > 1) {
+        formatted += '0' + digits[2] + '.'
+      } else {
+        formatted += digits[2]
+      }
+    } else if (digits.length === 4) {
+      // Exactly two digits for month - always add dot
+      formatted += month + '.'
+    } else {
+      // More than two digits - month is complete
+      formatted += month + '.'
+    }
+  }
+  
+  // Year part (last 4 digits)
+  if (digits.length >= 5) {
+    const year = digits.slice(4, 8)
+    formatted += year
+  }
+  
+  return formatted
+}
+
+const handleBirthDateInput = (event: any) => {
+  const input = event.target?.value || ''
+  const cursorPos = event.target?.selectionStart || 0
+  const oldValue = input
+  
+  const formatted = formatGermanDateInput(input)
+  
+  if (event.target) {
+    event.target.value = formatted
+    
+    // Smart cursor positioning
+    setTimeout(() => {
+      if (event.target) {
+        let newCursorPos = cursorPos
+        
+        // Handle deletion - if cursor is at a dot position, move it back
+        if (formatted.length < oldValue.length) {
+          // We deleted something
+          newCursorPos = Math.min(formatted.length, cursorPos)
+          
+          // If cursor ends up at a dot, move it before the dot
+          if (formatted[newCursorPos] === '.') {
+            newCursorPos = Math.max(0, newCursorPos - 1)
+          }
+        } else if (formatted.length > oldValue.length) {
+          // We added something (likely a dot)
+          newCursorPos = Math.min(formatted.length, cursorPos + (formatted.length - oldValue.length))
+        }
+        
+        event.target.setSelectionRange(newCursorPos, newCursorPos)
+      }
+    }, 0)
+  }
+  
+  // Clear error when typing
+  birthDateError.value = ''
+}
+
+const handleScheduledDateInput = (event: any) => {
+  const input = event.target?.value || ''
+  const cursorPos = event.target?.selectionStart || 0
+  const oldValue = input
+  
+  const formatted = formatGermanDateInput(input)
+  
+  if (event.target) {
+    event.target.value = formatted
+    
+    // Smart cursor positioning
+    setTimeout(() => {
+      if (event.target) {
+        let newCursorPos = cursorPos
+        
+        // Handle deletion - if cursor is at a dot position, move it back
+        if (formatted.length < oldValue.length) {
+          // We deleted something
+          newCursorPos = Math.min(formatted.length, cursorPos)
+          
+          // If cursor ends up at a dot, move it before the dot
+          if (formatted[newCursorPos] === '.') {
+            newCursorPos = Math.max(0, newCursorPos - 1)
+          }
+        } else if (formatted.length > oldValue.length) {
+          // We added something (likely a dot)
+          newCursorPos = Math.min(formatted.length, cursorPos + (formatted.length - oldValue.length))
+        }
+        
+        event.target.setSelectionRange(newCursorPos, newCursorPos)
+      }
+    }, 0)
+  }
+  
+  // Clear error when typing
+  scheduledDateError.value = ''
+}
+
+// Handle keydown events to skip over dots when deleting
+const handleKeyDown = (event: any) => {
+  const input = event.target?.value || ''
+  const cursorPos = event.target?.selectionStart || 0
+  
+  // Handle backspace when cursor is right after a dot
+  if (event.key === 'Backspace' && cursorPos > 0 && input[cursorPos - 1] === '.') {
+    event.preventDefault()
+    // Move cursor before the dot and delete the digit before it
+    const newCursorPos = Math.max(0, cursorPos - 2)
+    const newValue = input.slice(0, newCursorPos) + input.slice(cursorPos)
+    event.target.value = newValue
+    event.target.setSelectionRange(newCursorPos, newCursorPos)
+    
+    // Trigger formatting
+    setTimeout(() => {
+      const formatted = formatGermanDateInput(newValue)
+      event.target.value = formatted
+      const finalCursorPos = Math.min(formatted.length, newCursorPos)
+      event.target.setSelectionRange(finalCursorPos, finalCursorPos)
+    }, 0)
+  }
+  
+  // Handle delete when cursor is right before a dot
+  if (event.key === 'Delete' && cursorPos < input.length && input[cursorPos] === '.') {
+    event.preventDefault()
+    // Delete the digit after the dot
+    const newValue = input.slice(0, cursorPos) + input.slice(cursorPos + 2)
+    event.target.value = newValue
+    event.target.setSelectionRange(cursorPos, cursorPos)
+    
+    // Trigger formatting
+    setTimeout(() => {
+      const formatted = formatGermanDateInput(newValue)
+      event.target.value = formatted
+      const finalCursorPos = Math.min(formatted.length, cursorPos)
+      event.target.setSelectionRange(finalCursorPos, finalCursorPos)
+    }, 0)
+  }
 }
 
 // Date watchers to update store when dates change
@@ -1133,7 +1312,7 @@ const submitCallSetup = async () => {
     
     toast.add({
       title: 'Anruf erfolgreich beauftragt',
-      description: 'KARL wird dich in Kürze anrufen',
+      description: 'KARL wird ihn bald bearbeiten.',
       color: 'green'
     })
     
@@ -1203,6 +1382,33 @@ onMounted(() => {
   
   nextTick(() => {
     isLoading.value = false
+    
+    // Add event listeners to datepicker inputs for smart formatting
+    setTimeout(() => {
+      if (birthDatePicker.value) {
+        const birthInput = birthDatePicker.value.$el.querySelector('input')
+        if (birthInput) {
+          birthInput.addEventListener('input', handleBirthDateInput)
+          birthInput.addEventListener('keyup', handleBirthDateInput)
+          birthInput.addEventListener('keydown', handleKeyDown)
+          birthInput.addEventListener('paste', (e) => {
+            setTimeout(() => handleBirthDateInput(e), 0)
+          })
+        }
+      }
+      
+      if (scheduledDatePicker.value) {
+        const scheduledInput = scheduledDatePicker.value.$el.querySelector('input')
+        if (scheduledInput) {
+          scheduledInput.addEventListener('input', handleScheduledDateInput)
+          scheduledInput.addEventListener('keyup', handleScheduledDateInput)
+          scheduledInput.addEventListener('keydown', handleKeyDown)
+          scheduledInput.addEventListener('paste', (e) => {
+            setTimeout(() => handleScheduledDateInput(e), 0)
+          })
+        }
+      }
+    }, 100)
   })
 })
 </script>
@@ -1335,7 +1541,44 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.02) !important;
 }
 
-/* Input field styling */
+/* Custom input classes for datepicker */
+.custom-datepicker-input {
+  width: 100% !important;
+  padding: 1rem !important; /* py-4 px-4 */
+  font-size: 1.125rem !important; /* text-lg */
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
+  min-height: 3.5rem !important;
+}
+
+.custom-datepicker-input-small {
+  width: 100% !important;
+  padding: 0.75rem 1rem !important; /* py-3 px-4 */
+  font-size: 1.125rem !important; /* text-lg */
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
+  min-height: 3rem !important;
+}
+
+.custom-datepicker-input:focus,
+.custom-datepicker-input-small:focus {
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+}
+
+.custom-datepicker-input::placeholder,
+.custom-datepicker-input-small::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Input field styling to match other form fields */
 .dp__input_wrap {
   position: relative !important;
 }
@@ -1345,37 +1588,51 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
   transition: all 0.2s ease !important;
+  /* Ensure exact match with other inputs */
+  font-size: 1.125rem !important; /* text-lg */
+  line-height: 1.75rem !important;
 }
 
 .dp__input_wrap input:focus {
   border-color: #3b82f6 !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 .dp__input_wrap input::placeholder {
   color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Input icon */
+/* Hide any default datepicker icons */
 .dp__input_icon {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.dp__input_icon:hover {
-  color: #3b82f6 !important;
+  display: none !important;
 }
 
 /* Error states */
-.dp-error .dp__input_wrap input {
+.dp-error .dp__input_wrap input,
+.dp-error .custom-datepicker-input,
+.dp-error .custom-datepicker-input-small {
   border-color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.05) !important;
 }
 
-.dp-error .dp__input_wrap input:focus {
+.dp-error .dp__input_wrap input:focus,
+.dp-error .custom-datepicker-input:focus,
+.dp-error .custom-datepicker-input-small:focus {
   border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Override any default datepicker styling that might interfere */
+.dp__input_wrap .dp__input {
+  height: auto !important;
+  padding: 1rem !important; /* py-4 px-4 */
+}
+
+/* Ensure consistent height with other inputs */
+.dp__input_wrap input {
+  min-height: 3.5rem !important; /* Match py-4 with text-lg */
 }
 
 /* Action buttons */
