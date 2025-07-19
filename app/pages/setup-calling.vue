@@ -189,7 +189,7 @@
                   <p class="text-sm text-blue-100/80">Bitte sprich folgenden Text:</p>
                   <div class="bg-white/5 rounded-lg p-3">
                     <p class="text-white font-medium text-sm">
-                      "Ich bin {{ formData.patient_name }} und bestätige, dass KARL in meinem Namen bei der 116117 anrufen darf, um einen Termin für eine psychotherapeutische Sprechstunde zu vereinbaren."
+                      "Ich bin {{ formData.patient_name }} und bestätige, dass KARL in meinem Namen bei der 116117 anrufen darf, um einen Termin zu vereinbaren."
                     </p>
                   </div>
                 </div>
