@@ -152,7 +152,7 @@
       <div class="w-full max-w-7xl space-y-6">
         <!-- Stepper Title -->
         <div class="text-center space-y-2">
-          <h2 class="text-xl font-semibold text-white">Deine nächsten Schritte</h2>
+          <h2 id="steps-section" class="text-xl font-semibold text-white">Deine nächsten Schritte</h2>
           <p class="text-blue-100/80 text-sm">
             Du hast schon <span class="font-medium text-blue-200">{{ completedSteps }} von {{ stepperItems.length }}</span> Schritten geschafft!
           </p>
@@ -168,7 +168,7 @@
                 ref="stepperRef"
                 :default-value="currentStepIndex"
                 :model-value="currentStepIndex"
-                @update:model-value="(value) => currentStepIndex = value"
+                @update:model-value="handleStepperClick"
                 :items="visibleStepperItems" 
                 class="w-full min-w-[1200px] xl:min-w-[1400px] 2xl:min-w-[1600px]"
                 color="primary"
@@ -1487,6 +1487,71 @@
       </template>
     </div>
   </PageCard>
+
+  <!-- Step Confirmation Modal -->
+  <div v-if="showStepConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div 
+      @click="cancelStepNavigation"
+      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+    ></div>
+    
+    <!-- Modal -->
+    <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+      <!-- Header -->
+      <div class="text-center mb-6">
+        <div class="mx-auto w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
+          <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-amber-400" />
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">Schritt noch nicht abgeschlossen</h3>
+        <p class="text-blue-100/80 text-sm">
+          Du hast den aktuellen Schritt noch nicht als erledigt markiert.
+        </p>
+        <p class="text-blue-100/60 text-xs mt-2">
+          Möchtest du trotzdem zum nächsten Schritt wechseln oder den aktuellen Schritt erst abschließen?
+        </p>
+      </div>
+      
+      <!-- Actions -->
+      <div class="space-y-3">
+        <!-- Primary action -->
+        <UButton 
+          @click="completeStepAndProceed"
+          color="green" 
+          variant="outline"
+          size="lg"
+          trailing-icon="i-heroicons-check-circle"
+          class="w-full justify-center border-2 border-green-500 text-green-400 hover:bg-green-500/10"
+        >
+          Schritt abschließen und weiter
+        </UButton>
+        
+        <!-- Secondary actions -->
+        <div class="grid grid-cols-2 gap-3">
+          <UButton 
+            @click="cancelStepNavigation"
+            color="gray" 
+            variant="soft"
+            size="sm"
+            class="w-full justify-center"
+          >
+            Abbrechen
+          </UButton>
+          
+          <UButton 
+            @click="proceedToNextStep"
+            color="primary"
+            variant="soft"
+            size="sm"
+            trailing-icon="i-heroicons-chevron-right"
+            class="w-full justify-center"
+          >
+            Trotzdem weiter
+          </UButton>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -1907,11 +1972,87 @@ const motivationalMessage = computed(() => {
   return messages[currentStep.value - 1] || "Du schaffst das! 💙"
 })
 
+// Modal state for step confirmation
+const showStepConfirmModal = ref(false)
+const pendingNextStep = ref<number | boolean>(false)
+
+// Scroll to stepper section
+const scrollToStepperContent = () => {
+  const stepsSection = document.getElementById('steps-section')
+  
+  if (stepsSection) {
+    stepsSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
+  } else {
+    // Fallback: scroll to a reasonable position near the stepper
+    window.scrollTo({
+      top: 180,
+      behavior: 'smooth'
+    })
+  }
+}
+
 // Navigation
 const nextStep = () => {
   if (currentStep.value < stepperItems.value.length) {
+    // Check if current step is completed
+    const isCurrentStepCompleted = stepProgress.value[currentStep.value]
+    
+    if (!isCurrentStepCompleted) {
+      // Show confirmation modal for unfinished step
+      pendingNextStep.value = true  // boolean for sequential navigation
+      showStepConfirmModal.value = true
+    } else {
+      // Proceed directly to next step
+      proceedToNextStep()
+    }
+  }
+}
+
+const proceedToNextStep = () => {
+  if (pendingNextStep.value && typeof pendingNextStep.value === 'number') {
+    // Direct navigation to specific step (from stepper click)
+    currentStep.value = pendingNextStep.value
+    currentStepIndex.value = pendingNextStep.value - 1
+  } else {
+    // Sequential navigation (from next button)
     currentStep.value++
-    scrollToCurrentStep()
+  }
+  
+  scrollToCurrentStep()
+  scrollToStepperContent()
+  showStepConfirmModal.value = false
+  pendingNextStep.value = false
+}
+
+const cancelStepNavigation = () => {
+  showStepConfirmModal.value = false
+  pendingNextStep.value = false
+}
+
+const completeStepAndProceed = () => {
+  // Mark current step as completed
+  completeStep(currentStep.value)
+  // Then proceed to next step
+  proceedToNextStep()
+}
+
+// Handle stepper click navigation
+const handleStepperClick = (newStepIndex: number) => {
+  const newStep = newStepIndex + 1
+  const isCurrentStepCompleted = stepProgress.value[currentStep.value]
+  
+  // If moving to a later step and current step is not completed, show confirmation
+  if (newStep > currentStep.value && !isCurrentStepCompleted) {
+    // Store the target step
+    pendingNextStep.value = newStep
+    showStepConfirmModal.value = true
+  } else {
+    // Allow direct navigation
+    currentStepIndex.value = newStepIndex
+    scrollToStepperContent()
   }
 }
 
@@ -1919,6 +2060,7 @@ const prevStep = () => {
   if (currentStep.value > 1) {
     currentStep.value--
     scrollToCurrentStep()
+    scrollToStepperContent()
   }
 }
 
