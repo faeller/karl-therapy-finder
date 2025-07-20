@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   
   const { call_name, agent_id, agent_phone_number_id, scheduled_time_unix, recipients, conversation_initiation_client_data } = body
   
-  // Extract variables from conversation_initiation_client_data
+  // Extract variables from conversation_initiation_client_data (fallback for legacy calls)
   const variables = conversation_initiation_client_data?.dynamic_variables || {}
   
   console.log('=== VARIABLES DEBUG ===')
@@ -60,11 +60,11 @@ export default defineEventHandler(async (event) => {
       }
     }
     
-    // Add variables to each recipient
+    // Keep existing recipient variables or use fallback variables
     const recipientsWithVariables = recipients.map(recipient => ({
       ...recipient,
       conversation_initiation_client_data: {
-        dynamic_variables: variables || {}
+        dynamic_variables: recipient.conversation_initiation_client_data?.dynamic_variables || variables || {}
       }
     }))
     

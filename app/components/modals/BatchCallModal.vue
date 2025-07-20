@@ -315,12 +315,17 @@ const handleSubmit = async () => {
       }
     })
 
-    // Parse recipients
+    // Parse recipients and include dynamic variables for each
     const recipientNumbers = form.value.recipients
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0)
-      .map(phone => ({ phone_number: phone }))
+      .map(phone => ({ 
+        phone_number: phone,
+        conversation_initiation_client_data: {
+          dynamic_variables: variableData
+        }
+      }))
 
     // Convert datetime to Unix timestamp if provided
     let scheduledTimeUnix = null
@@ -333,10 +338,7 @@ const handleSubmit = async () => {
       agent_id: form.value.agent_id,
       agent_phone_number_id: form.value.agent_phone_number_id,
       recipients: recipientNumbers,
-      scheduled_time_unix: scheduledTimeUnix,
-      conversation_initiation_client_data: {
-        dynamic_variables: variableData
-      }
+      scheduled_time_unix: scheduledTimeUnix
     }
 
     await $fetch('/api/admin/elevenlabs/batch-calls', {
