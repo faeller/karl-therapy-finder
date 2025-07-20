@@ -3,6 +3,16 @@ import { createElevenLabsClient } from '../../utils/elevenlabs'
 import { generateCallId } from '../../utils/uuid'
 import { z } from 'zod'
 
+// Generate current date/time variables consistently
+const getCurrentDateTimeVariables = () => {
+  const now = new Date()
+  return {
+    currentDate: now.toISOString().split('T')[0],
+    currentTime: now.toTimeString().split(' ')[0],
+    currentDateTime: now.toISOString().replace('T', ' ').split('.')[0]
+  }
+}
+
 const testCallSchema = z.object({
   callSetupId: z.string().min(1, 'Call setup ID is required'),
   testPhoneNumber: z.string().min(1, 'Test phone number is required')
@@ -60,6 +70,7 @@ export default defineEventHandler(async (event) => {
         phone_number: validatedData.testPhoneNumber,
         conversation_initiation_client_data: {
           dynamic_variables: {
+            ...getCurrentDateTimeVariables(),
             patient_name: parsedCallSetup.patient_name,
             patient_dob: parsedCallSetup.patient_dob,
             patient_insurance: parsedCallSetup.patient_insurance,
