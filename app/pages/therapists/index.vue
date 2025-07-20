@@ -62,8 +62,8 @@
               <div class="flex items-center justify-center gap-2">
                 <UIcon name="i-heroicons-document-text" class="w-4 h-4 flex-shrink-0" />
                 <span class="truncate">Kontaktprotokoll</span>
-                <UBadge v-if="bookmarkedTherapists.length > 0" color="white" variant="solid" size="xs" class="ml-1 flex-shrink-0">
-                  {{ bookmarkedTherapists.length }}
+                <UBadge v-if="allTrackableTherapists.length > 0" color="white" variant="solid" size="xs" class="ml-1 flex-shrink-0">
+                  {{ allTrackableTherapists.length }}
                 </UBadge>
               </div>
             </button>
@@ -630,12 +630,12 @@
           </div>
         </div>
 
-        <!-- Bookmarked Therapists -->
-        <div v-if="bookmarkedTherapists.length > 0" class="space-y-3">
+        <!-- All Tracked Therapists -->
+        <div v-if="allTrackableTherapists.length > 0" class="space-y-3">
           <div class="rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/20">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="font-bold text-blue-300 text-base">Gespeicherte Therapeuten</h3>
-              <UBadge color="blue" variant="soft">{{ bookmarkedTherapists.length }}</UBadge>
+              <h3 class="font-bold text-blue-300 text-base">Kontaktierte Therapeuten</h3>
+              <UBadge color="blue" variant="soft">{{ allTrackableTherapists.length }}</UBadge>
             </div>
             
             <!-- Active Therapists Title -->
@@ -929,9 +929,9 @@
         <div v-else class="w-full rounded-xl bg-white/10 backdrop-blur-sm p-6 border border-white/20">
           <div class="text-center space-y-3">
             <div class="text-blue-300 text-lg">📋</div>
-            <h3 class="font-bold text-blue-300 text-base">Keine Therapeuten gespeichert</h3>
+            <h3 class="font-bold text-blue-300 text-base">Keine Kontaktversuche</h3>
             <p class="text-blue-100/80 text-sm">
-              Speichere Therapeuten im "Therapeuten suchen" Tab, um hier deine Kontaktversuche zu dokumentieren.
+              Füge Kontaktversuche im "Therapeuten suchen" Tab hinzu, um hier deine Kontakte zu dokumentieren.
             </p>
             <button 
               @click="activeTab = 'search'"
@@ -2900,9 +2900,46 @@ const qualifyingContactAttempts = computed(() => {
   return Array.from(therapistAttempts.values())
 })
 
-// Sort bookmarked therapists by completion status
-const sortedBookmarkedTherapists = computed(() => {
-  return [...bookmarkedTherapists.value].sort((a, b) => {
+// Get all therapists that have contact attempts or are bookmarked
+const allTrackableTherapists = computed(() => {
+  const therapistMap = new Map<string, TherapistData>()
+  
+  // Add all bookmarked therapists
+  bookmarkedTherapists.value.forEach(therapist => {
+    therapistMap.set(therapist.id, therapist)
+  })
+  
+  // Add therapists that have contact attempts but aren't bookmarked
+  contactAttempts.value.forEach(attempt => {
+    if (!therapistMap.has(attempt.therapistId)) {
+      // Create minimal therapist object from contact attempt data
+      const minimalTherapist: TherapistData = {
+        id: attempt.therapistId,
+        name: attempt.therapistName || 'Unbekannter Therapeut',
+        qualification: '',
+        phone: '',
+        email: '',
+        website: '',
+        address: attempt.therapistAddress || '',
+        distance: 0,
+        therapyTypes: [],
+        acceptsPrivatePatients: false,
+        acceptsPublicInsurance: false,
+        paymentMethods: [],
+        languages: [],
+        specialties: [],
+        image: null
+      }
+      therapistMap.set(attempt.therapistId, minimalTherapist)
+    }
+  })
+  
+  return Array.from(therapistMap.values())
+})
+
+// Sort all trackable therapists by completion status
+const sortedTrackableTherapists = computed(() => {
+  return [...allTrackableTherapists.value].sort((a, b) => {
     const attemptsA = getContactAttempts(a.id)
     const attemptsB = getContactAttempts(b.id)
     
@@ -2979,11 +3016,11 @@ const confirmRemoveBookmark = (therapist: TherapistData) => {
 
 // Get completed and incomplete therapists separately
 const incompleteTherapists = computed(() => {
-  return sortedBookmarkedTherapists.value.filter(t => !isTherapistCompleted(t.id))
+  return sortedTrackableTherapists.value.filter(t => !isTherapistCompleted(t.id))
 })
 
 const completedTherapists = computed(() => {
-  return sortedBookmarkedTherapists.value
+  return sortedTrackableTherapists.value
     .filter(t => isTherapistCompleted(t.id))
     .sort((a, b) => {
       // Sort by PDF inclusion first (Im PDF first)
