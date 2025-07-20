@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+
 const today = new Date();
 const formattedDate = {
   day: format(today, 'dd'),
-  monthAndYear: format(today, "MMM''yy"),
-  weekDay: format(today, 'EEEE'),
+  monthAndYear: format(today, "MMM''yy", { locale: de }),
+  weekDay: format(today, 'EEEE', { locale: de }),
 };
 </script>
 
