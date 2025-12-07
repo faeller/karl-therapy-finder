@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
+	import { t } from '$lib/i18n';
 	import KarlAvatar from './KarlAvatar.svelte';
 	import { Pencil } from 'lucide-svelte';
 
 	interface Props {
 		role: 'karl' | 'user';
 		content: string;
+		contentKey?: string;
+		contentParams?: Record<string, unknown>;
 		onEdit?: () => void;
 	}
 
-	let { role, content, onEdit }: Props = $props();
+	let { role, content, contentKey, contentParams, onEdit }: Props = $props();
+
+	const displayText = $derived(
+		contentKey ? t(contentKey, content, contentParams) : content
+	);
 </script>
 
 <div class="flex items-end gap-2" class:flex-row-reverse={role === 'user'}>
@@ -24,7 +31,7 @@
 			class:user={role === 'user'}
 			style:border-radius={role === 'karl' ? wobbly.bubble : wobbly.bubbleAlt}
 		>
-			{content}
+			{displayText}
 		</div>
 
 		{#if onEdit}
@@ -50,6 +57,7 @@
 	.bubble {
 		border: 2px solid var(--color-pencil);
 		padding: 0.75rem 1rem;
+		white-space: pre-line;
 	}
 
 	.bubble.karl {

@@ -3,9 +3,30 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { execSync } from 'child_process';
+
+// Custom plugin to extract i18n keys before Paraglide runs
+function i18nExtractPlugin() {
+	let hasRun = false;
+	return {
+		name: 'i18n-extract',
+		buildStart() {
+			if (!hasRun) {
+				hasRun = true;
+				console.log('\n[i18n] Extracting keys...');
+				try {
+					execSync('node scripts/extract-i18n.js', { stdio: 'inherit' });
+				} catch {
+					// Non-fatal - extraction might have no new keys
+				}
+			}
+		}
+	};
+}
 
 export default defineConfig({
 	plugins: [
+		i18nExtractPlugin(),
 		tailwindcss(),
 		sveltekit(),
 		paraglideVitePlugin({

@@ -183,6 +183,8 @@
 							<MessageBubble
 								role={message.role}
 								content={message.content}
+								contentKey={message.contentKey}
+								contentParams={message.contentParams}
 								onEdit={message.role === 'user' ? () => handleEdit(i) : undefined}
 							/>
 
@@ -218,7 +220,12 @@
 			{#if resultsMessages.length > 0}
 				<div class="space-y-4 mt-4">
 					{#each resultsMessages.filter((m) => !m.therapists?.length) as message (message.id)}
-						<MessageBubble role={message.role} content={message.content} />
+						<MessageBubble
+							role={message.role}
+							content={message.content}
+							contentKey={message.contentKey}
+							contentParams={message.contentParams}
+						/>
 
 						{#if message.options?.length && message === lastMessage}
 							<div class="mt-4">

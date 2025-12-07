@@ -35,12 +35,13 @@ export interface ChatMessage {
 	id: string;
 	role: 'karl' | 'user';
 	content: string;
+	contentKey?: string;
+	contentParams?: Record<string, unknown>;
 	options?: ChatOption[];
 	multiSelect?: boolean;
 	inputType?: 'text' | 'plz';
 	therapists?: Therapist[];
 	timestamp: number;
-	/** Which campaign field this user message answers */
 	field?: EditableField;
 }
 

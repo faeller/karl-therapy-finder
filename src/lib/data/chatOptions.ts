@@ -183,46 +183,63 @@ export const noResultsOptions: ChatOption[] = [
 	}
 ];
 
-// Karl's messages for each state
-export const karlMessages: Record<string, string> = {
-	greeting:
-		'Hey! Ich bin KARL. Ich helfe dir dabei, freie Therapieplätze zu finden - damit du dich nicht durch 30 Praxen telefonieren musst.',
-	for_other_name: 'Okay! Wie heißt die Person, für die du suchst? (Vorname reicht)',
-	location_default: 'Wo soll ich suchen? Gib mir eine PLZ oder einen Ort.',
-	location_with_name: 'Alles klar, ich such für {name}. Wo soll ich suchen? Gib mir eine PLZ oder einen Ort.',
-	insurance_type: 'Wie bist du versichert?',
-	insurance_details: 'Bist du über oder unter 21?',
-	therapy_type: 'Was für eine Therapie suchst du?',
-	preferences: 'Noch besondere Wünsche? Wähl aus was passt, dann klick "Weiter".',
-	searching: 'Suche Therapeut:innen in deiner Nähe...',
-	results_found: 'Ich habe {count} Therapeut:innen gefunden! Klick auf "E-Mail schreiben" um sie direkt zu kontaktieren.',
-	results_empty: 'Hmm, ich habe leider keine passenden Therapeut:innen gefunden. Möchtest du die Kriterien anpassen?',
-	email_confirm: 'E-Mail abgeschickt?',
-	location_error: 'Das hab ich nicht ganz verstanden. Kannst du mir eine Postleitzahl geben?'
+// karl message keys with german fallbacks
+export const karlMessages: Record<string, { key: string; fallback: string }> = {
+	greeting: {
+		key: 'karl_greeting',
+		fallback: 'Hey! Ich bin KARL. Ich helfe dir dabei, freie Therapieplätze zu finden - damit du dich nicht durch 30 Praxen telefonieren musst.'
+	},
+	for_other_name: {
+		key: 'karl_for_other_name',
+		fallback: 'Okay! Wie heißt die Person, für die du suchst? (Vorname reicht)'
+	},
+	location_default: {
+		key: 'karl_location',
+		fallback: 'Wo soll ich suchen? Gib mir eine PLZ oder einen Ort.'
+	},
+	location_with_name: {
+		key: 'karl_location_with_name',
+		fallback: 'Alles klar, ich such für {name}. Wo soll ich suchen? Gib mir eine PLZ oder einen Ort.'
+	},
+	insurance_type: {
+		key: 'karl_insurance_type',
+		fallback: 'Wie bist du versichert?'
+	},
+	insurance_details: {
+		key: 'karl_age_group',
+		fallback: 'Bist du über oder unter 21?'
+	},
+	therapy_type: {
+		key: 'karl_therapy_type',
+		fallback: 'Was für eine Therapie suchst du?'
+	},
+	preferences: {
+		key: 'karl_preferences',
+		fallback: 'Noch besondere Wünsche? Wähl aus was passt, dann klick "Weiter".'
+	},
+	searching: {
+		key: 'karl_searching',
+		fallback: 'Suche Therapeut:innen in deiner Nähe...'
+	},
+	results_found: {
+		key: 'karl_results_found',
+		fallback: 'Ich habe {count} Therapeut:innen gefunden! Klick auf "E-Mail schreiben" um sie direkt zu kontaktieren.'
+	},
+	results_empty: {
+		key: 'karl_no_results',
+		fallback: 'Hmm, ich habe leider keine passenden Therapeut:innen gefunden. Möchtest du die Kriterien anpassen?'
+	},
+	email_confirm: {
+		key: 'email_sent_question',
+		fallback: 'E-Mail abgeschickt?'
+	},
+	location_error: {
+		key: 'karl_location_error',
+		fallback: 'Das hab ich nicht ganz verstanden. Kannst du mir eine Postleitzahl geben?'
+	},
+	summary: {
+		key: 'karl_summary_intro',
+		fallback: 'Alles klar! Ich suche für dich:'
+	}
 };
 
-// Helper to build summary text
-export function buildSummaryText(draft: {
-	city?: string;
-	plz?: string;
-	radiusKm: number;
-	insuranceType?: string;
-	therapyTypes: string[];
-	genderPref?: string | null;
-	languages: string[];
-	specialties: string[];
-}): string {
-	let text = `Alles klar! Ich suche für dich:\n\n📍 ${draft.city || draft.plz} (${draft.radiusKm}km Umkreis)\n🏥 ${draft.insuranceType}\n💭 ${draft.therapyTypes.length ? draft.therapyTypes.join(', ') : 'Alle Therapieformen'}`;
-
-	if (draft.genderPref) {
-		text += `\n👤 ${draft.genderPref === 'w' ? 'Weiblich' : 'Männlich'}`;
-	}
-	if (draft.languages.includes('en')) {
-		text += '\n🌐 Englisch sprechend';
-	}
-	if (draft.specialties.length) {
-		text += `\n🎯 ${draft.specialties.join(', ')}`;
-	}
-
-	return text;
-}

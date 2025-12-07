@@ -14,8 +14,7 @@ import {
 	summaryOptions,
 	emailConfirmOptions,
 	noResultsOptions,
-	karlMessages,
-	buildSummaryText
+	karlMessages
 } from '$lib/data/chatOptions';
 
 const state = writable<ChatState>('greeting');
@@ -23,7 +22,6 @@ const messages = writable<ChatMessage[]>([]);
 const isTyping = writable(false);
 const currentTherapist = writable<Therapist | null>(null);
 
-// hydrate from localStorage on client
 if (browser) {
 	const savedState = localStorage.getItem('karl-chat-state');
 	const savedMessages = localStorage.getItem('karl-chat-messages');
@@ -31,7 +29,6 @@ if (browser) {
 	if (savedMessages) messages.set(JSON.parse(savedMessages));
 }
 
-// persist on change
 state.subscribe((s) => {
 	if (browser) localStorage.setItem('karl-chat-state', s);
 });
@@ -39,13 +36,17 @@ messages.subscribe((m) => {
 	if (browser) localStorage.setItem('karl-chat-messages', JSON.stringify(m));
 });
 
-async function addKarlMessage(
-	content: string,
-	options?: ChatOption[],
-	inputType?: 'text' | 'plz',
-	therapists?: Therapist[],
-	multiSelect?: boolean
-) {
+interface KarlMessageOpts {
+	key: string;
+	fallback: string;
+	params?: Record<string, unknown>;
+	options?: ChatOption[];
+	inputType?: 'text' | 'plz';
+	therapists?: Therapist[];
+	multiSelect?: boolean;
+}
+
+async function addKarlMessage(opts: KarlMessageOpts) {
 	isTyping.set(true);
 	await delay(800 + Math.random() * 400);
 	isTyping.set(false);
@@ -55,11 +56,13 @@ async function addKarlMessage(
 		{
 			id: nanoid(),
 			role: 'karl',
-			content,
-			options,
-			multiSelect,
-			inputType,
-			therapists,
+			content: opts.fallback,
+			contentKey: opts.key,
+			contentParams: opts.params,
+			options: opts.options,
+			multiSelect: opts.multiSelect,
+			inputType: opts.inputType,
+			therapists: opts.therapists,
 			timestamp: Date.now()
 		}
 	]);
@@ -83,42 +86,73 @@ async function transitionTo(newState: ChatState) {
 
 	switch (newState) {
 		case 'greeting':
-			await addKarlMessage(karlMessages.greeting, forWhomOptions);
+			await addKarlMessage({
+				...karlMessages.greeting,
+				options: forWhomOptions
+			});
 			break;
 
 		case 'for_other_name':
-			await addKarlMessage(karlMessages.for_other_name, undefined, 'text');
+			await addKarlMessage({
+				...karlMessages.for_other_name,
+				inputType: 'text'
+			});
 			break;
 
 		case 'location': {
 			const draft = get(campaignDraft);
-			const message = draft.clientName
-				? karlMessages.location_with_name.replace('{name}', draft.clientName)
-				: karlMessages.location_default;
-			await addKarlMessage(message, undefined, 'plz');
+			if (draft.clientName) {
+				await addKarlMessage({
+					...karlMessages.location_with_name,
+					params: { name: draft.clientName },
+					inputType: 'plz'
+				});
+			} else {
+				await addKarlMessage({
+					...karlMessages.location_default,
+					inputType: 'plz'
+				});
+			}
 			break;
 		}
 
 		case 'insurance_type':
-			await addKarlMessage(karlMessages.insurance_type, insuranceTypeOptions);
+			await addKarlMessage({
+				...karlMessages.insurance_type,
+				options: insuranceTypeOptions
+			});
 			break;
 
 		case 'insurance_details':
-			await addKarlMessage(karlMessages.insurance_details, ageGroupOptions);
+			await addKarlMessage({
+				...karlMessages.insurance_details,
+				options: ageGroupOptions
+			});
 			break;
 
 		case 'therapy_type':
-			await addKarlMessage(karlMessages.therapy_type, therapyTypeOptions);
+			await addKarlMessage({
+				...karlMessages.therapy_type,
+				options: therapyTypeOptions
+			});
 			break;
 
 		case 'preferences':
-			await addKarlMessage(karlMessages.preferences, preferenceOptions, undefined, undefined, true);
+			await addKarlMessage({
+				...karlMessages.preferences,
+				options: preferenceOptions,
+				multiSelect: true
+			});
 			break;
 
 		case 'summary': {
 			const d = get(campaignDraft);
-			const summaryText = buildSummaryText(d);
-			await addKarlMessage(summaryText, summaryOptions);
+			const details = buildSummaryDetails(d);
+			await addKarlMessage({
+				...karlMessages.summary,
+				params: { details },
+				options: summaryOptions
+			});
 			break;
 		}
 
@@ -137,24 +171,49 @@ async function transitionTo(newState: ChatState) {
 			});
 
 			if (filtered.length === 0) {
-				await addKarlMessage(karlMessages.results_empty, noResultsOptions);
+				await addKarlMessage({
+					...karlMessages.results_empty,
+					options: noResultsOptions
+				});
 			} else {
-				const message = karlMessages.results_found.replace('{count}', String(filtered.length));
-				await addKarlMessage(message, undefined, undefined, filtered);
+				await addKarlMessage({
+					...karlMessages.results_found,
+					params: { count: filtered.length },
+					therapists: filtered
+				});
 			}
 			break;
 		}
 
 		case 'email_sent_confirm':
-			await addKarlMessage(karlMessages.email_confirm, emailConfirmOptions);
+			await addKarlMessage({
+				...karlMessages.email_confirm,
+				options: emailConfirmOptions
+			});
 			break;
 	}
+}
+
+function buildSummaryDetails(d: {
+	city?: string;
+	plz?: string;
+	radiusKm: number;
+	insuranceType?: string;
+	therapyTypes: string[];
+	genderPref?: string | null;
+	languages: string[];
+	specialties: string[];
+}): string {
+	let text = `\n\n${d.city || d.plz} (${d.radiusKm}km)\n${d.insuranceType}\n${d.therapyTypes.length ? d.therapyTypes.join(', ') : 'Alle Therapieformen'}`;
+	if (d.genderPref) text += `\n${d.genderPref === 'w' ? 'Weiblich' : 'Männlich'}`;
+	if (d.languages.includes('en')) text += '\nEnglisch';
+	if (d.specialties.length) text += `\n${d.specialties.join(', ')}`;
+	return text;
 }
 
 async function handleOption(option: ChatOption) {
 	const currentState = get(state);
 
-	// Determine which field this answers
 	const fieldMap: Record<string, EditableField> = {
 		greeting: 'forSelf',
 		insurance_type: 'insuranceType',
@@ -173,7 +232,6 @@ async function handleOption(option: ChatOption) {
 			campaignDraft.update((d) => ({ ...d, insuranceType: option.value as 'GKV' | 'PKV' | 'Selbstzahler' }));
 			break;
 		case 'insurance_details':
-			// Age group (adult/youth for KJP)
 			campaignDraft.update((d) => ({ ...d, ageGroup: option.value as 'adult' | 'youth' }));
 			break;
 		case 'therapy_type':
@@ -192,7 +250,6 @@ async function handleOption(option: ChatOption) {
 async function handleInput(text: string) {
 	const currentState = get(state);
 
-	// Determine which field this answers
 	const fieldMap: Record<string, EditableField> = {
 		for_other_name: 'clientName',
 		location: 'location'
@@ -219,7 +276,10 @@ async function handleInput(text: string) {
 					campaignDraft.update((d) => ({ ...d, plz: cityMatch.plz, city: cityMatch.city }));
 					await transitionTo('insurance_type');
 				} else {
-					await addKarlMessage(karlMessages.location_error, undefined, 'plz');
+					await addKarlMessage({
+						...karlMessages.location_error,
+						inputType: 'plz'
+					});
 				}
 			}
 			break;
@@ -268,57 +328,45 @@ function reset() {
 	transitionTo('greeting');
 }
 
-// Rewind conversation to a specific message index
 function rewindTo(messageIndex: number) {
 	const currentMessages = get(messages);
 	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
 
-	// Slice messages to just before the user message (keep the Karl question)
 	const previousMessages = currentMessages.slice(0, messageIndex);
 	messages.set(previousMessages);
-
-	// Reset campaign draft
 	campaignDraft.reset();
 
-	// Find the last karl message to determine what state to show
 	const lastKarlMessage = previousMessages[previousMessages.length - 1];
 
 	if (previousMessages.length === 0) {
 		transitionTo('greeting');
 	} else if (lastKarlMessage?.options) {
-		// Show the options again by re-rendering
 		state.set('greeting');
 	} else if (lastKarlMessage?.inputType) {
 		state.set('greeting');
 	}
 }
 
-// Update a message's content in place (for editing without rewinding)
 function updateMessage(messageIndex: number, newContent: string, option?: ChatOption) {
 	messages.update((msgs) =>
 		msgs.map((m, i) => (i === messageIndex ? { ...m, content: newContent } : m))
 	);
 
-	// Optionally update campaign draft based on the option's value
 	if (option?.value !== undefined) {
 		const val = option.value;
 		campaignDraft.update((d) => {
-			// Handle different value types
 			if (typeof val === 'boolean') {
 				return { ...d, forSelf: val };
 			}
 			if (typeof val === 'string') {
-				// Could be insurance type
 				if (['GKV', 'PKV', 'Selbstzahler'].includes(val)) {
 					return { ...d, insuranceType: val as 'GKV' | 'PKV' | 'Selbstzahler' };
 				}
 			}
 			if (Array.isArray(val)) {
-				// Therapy types
 				return { ...d, therapyTypes: val };
 			}
 			if (typeof val === 'object' && val !== null) {
-				// Preferences object
 				return { ...d, ...(val as object) };
 			}
 			return d;

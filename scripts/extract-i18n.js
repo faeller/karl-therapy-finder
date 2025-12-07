@@ -48,18 +48,6 @@ function getFiles(dir, extensions, files = []) {
 function extractCalls(content, filePath) {
 	const results = [];
 
-	// Pattern explanation:
-	// \bt\(        - word boundary + t(
-	// \s*          - optional whitespace
-	// (['"])       - opening quote (capture group 1)
-	// ([^'"]+)     - key (capture group 2) - no quotes inside
-	// \1           - matching closing quote
-	// \s*,\s*      - comma with optional whitespace
-	// (['"])       - opening quote for value (capture group 3)
-	// ([\s\S]*?)   - value (capture group 4) - non-greedy, any char including newline
-	// \3           - matching closing quote
-	// (?:\s*,|\s*\)) - followed by comma (params) or closing paren
-
 	// Simple patterns for common cases
 	const patterns = [
 		// t('key', 'value') or t('key', 'value', params)
@@ -95,7 +83,7 @@ function extractCalls(content, filePath) {
  * Main extraction logic
  */
 async function extract() {
-	console.log('🔍 Scanning for t() calls...\n');
+	console.log('[i18n] Scanning for t() calls...\n');
 
 	const files = getFiles(SRC_DIR, ['.svelte', '.ts', '.js']);
 	const extracted = new Map();
@@ -128,7 +116,7 @@ async function extract() {
 
 	// Report conflicts
 	if (conflicts.length > 0) {
-		console.log('⚠️  Conflicts (same key, different defaults):\n');
+		console.log('[warn] Conflicts (same key, different defaults):\n');
 		for (const conflict of conflicts) {
 			console.log(`   "${conflict.key}":`);
 			for (const v of conflict.values) {
@@ -194,27 +182,27 @@ async function extract() {
 	fs.writeFileSync(EN_MESSAGES, JSON.stringify(enMessages, null, '\t') + '\n');
 
 	// Report results
-	console.log('📊 Results:\n');
+	console.log('[i18n] Results:\n');
 	console.log(`   Found: ${extracted.size} t() calls`);
 	console.log(`   Already in de.json: ${existing.length}`);
 	console.log(`   Added to de.json: ${added.length}`);
 
 	if (added.length > 0) {
-		console.log('\n✅ Added keys:\n');
+		console.log('\n[i18n] Added keys:\n');
 		for (const { key, value, file } of added) {
 			console.log(`   + "${key}": "${value}"`);
-			console.log(`     └─ ${file}\n`);
+			console.log(`     from ${file}\n`);
 		}
 	}
 
 	if (added.length > 0) {
-		console.log('\n💡 Run `pnpm run dev` to regenerate Paraglide types.\n');
+		console.log('\n[i18n] Run `pnpm run dev` to regenerate Paraglide types.\n');
 	} else {
-		console.log('\n✨ All keys already exist. Nothing to do.\n');
+		console.log('\n[i18n] All keys already exist. Nothing to do.\n');
 	}
 }
 
 extract().catch((err) => {
-	console.error('❌ Error:', err);
+	console.error('[i18n] Error:', err);
 	process.exit(1);
 });

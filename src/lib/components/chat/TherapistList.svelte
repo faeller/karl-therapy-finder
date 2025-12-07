@@ -3,6 +3,7 @@
 	import TherapistCard from './TherapistCard.svelte';
 	import type { Therapist } from '$lib/types';
 	import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-svelte';
+	import { t } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
@@ -58,7 +59,7 @@
 				{:else}
 					<ChevronRight size={16} />
 				{/if}
-				<span>{m.chat_already_contacted()}</span>
+				<span>{t('chat_already_contacted', 'Bereits kontaktiert')}</span>
 			</span>
 			<span class="badge muted">{contactedTherapists.length}</span>
 		</button>
