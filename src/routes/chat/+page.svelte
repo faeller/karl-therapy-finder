@@ -9,7 +9,7 @@
 	import TherapistList from '$lib/components/chat/TherapistList.svelte';
 	import ChatSection from '$lib/components/chat/ChatSection.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon, Pencil } from 'lucide-svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
 	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
 
@@ -140,25 +140,16 @@
 			{#if onboardingMessages.length > 0}
 				<ChatSection
 					title="Deine Angaben"
-					icon="📋"
 					collapsible={isInResults}
 					defaultOpen={!isInResults}
 				>
 					<div class="space-y-4">
 						{#each onboardingMessages as message, i (message.id)}
-							<div class="message-row" class:user-message={message.role === 'user'}>
-								<MessageBubble role={message.role} content={message.content} />
-
-								{#if message.role === 'user' && isInResults}
-									<button
-										onclick={() => handleEdit(i)}
-										class="edit-btn"
-										title="Ändern"
-									>
-										<Pencil size={14} />
-									</button>
-								{/if}
-							</div>
+							<MessageBubble
+								role={message.role}
+								content={message.content}
+								onEdit={message.role === 'user' && isInResults ? () => handleEdit(i) : undefined}
+							/>
 
 							{#if message.options?.length && message === lastMessage && !isInResults}
 								<div class="mt-4">
@@ -179,7 +170,6 @@
 			{#if allTherapists.length > 0}
 				<ChatSection
 					title="Gefundene Therapeut:innen"
-					icon="🔍"
 					collapsible={false}
 				>
 					<TherapistList
@@ -228,31 +218,3 @@
 	{/if}
 </div>
 
-<style>
-	.message-row {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.5rem;
-	}
-
-	.message-row.user-message {
-		flex-direction: row-reverse;
-	}
-
-	.edit-btn {
-		padding: 0.25rem;
-		border-radius: 0.25rem;
-		color: var(--color-pencil);
-		opacity: 0;
-		transition: opacity 150ms;
-	}
-
-	.message-row:hover .edit-btn {
-		opacity: 0.4;
-	}
-
-	.edit-btn:hover {
-		opacity: 1 !important;
-		color: var(--color-blue-pen);
-	}
-</style>
