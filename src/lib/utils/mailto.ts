@@ -1,33 +1,49 @@
 import type { CampaignDraft } from '$lib/types';
+import { m } from '$lib/paraglide/messages';
 
 export function generateMailto(
 	email: string,
 	therapistName: string,
 	campaign: CampaignDraft
 ): string {
-	const insuranceText = campaign.insuranceType === 'GKV'
-		? `gesetzlich versichert${campaign.insuranceName ? ` (${campaign.insuranceName})` : ''}`
-		: campaign.insuranceType === 'PKV'
-			? 'privat versichert'
-			: 'Selbstzahler';
+	// Build insurance text based on type
+	let insuranceText: string;
+	if (campaign.insuranceType === 'GKV') {
+		insuranceText = m.email_insurance_gkv();
+	} else if (campaign.insuranceType === 'PKV') {
+		insuranceText = m.email_insurance_pkv();
+	} else {
+		insuranceText = m.email_insurance_self();
+	}
 
+	// Build therapy text
 	const therapyText = campaign.therapyTypes.length > 0
-		? campaign.therapyTypes.join(' oder ')
+		? campaign.therapyTypes.join(' / ')
 		: 'Psychotherapie';
 
-	const subject = encodeURIComponent(`Anfrage Therapieplatz - ${insuranceText}`);
+	// Build subject
+	const subject = encodeURIComponent(m.email_subject({ insurance: insuranceText }));
 
-	const body = encodeURIComponent(`Sehr geehrte Damen und Herren,
+	// Build body parts
+	const greeting = m.email_body_greeting();
+	const intro = m.email_body_intro({ therapy: therapyText, insurance: insuranceText });
+	const location = m.email_body_location({ plz: campaign.plz || '[PLZ]' });
+	const question = m.email_body_question();
+	const urgent = campaign.urgency === 'high' ? m.email_body_urgent() + '\n\n' : '';
+	const thanks = m.email_body_thanks();
+	const closing = m.email_body_closing();
 
-ich suche einen Therapieplatz für ${therapyText} und bin ${insuranceText}.
+	const body = encodeURIComponent(`${greeting}
 
-Meine Postleitzahl ist ${campaign.plz || '[PLZ]'}.
+${intro}
 
-Könnten Sie mir mitteilen, ob Sie derzeit neue Patient:innen aufnehmen? Falls nicht, wie lange wäre die ungefähre Wartezeit?
+${location}
 
-${campaign.urgency === 'high' ? 'Meine Situation ist dringend, daher wäre ich für eine baldige Rückmeldung sehr dankbar.\n\n' : ''}Vielen Dank im Voraus für Ihre Rückmeldung.
+${question}
 
-Mit freundlichen Grüßen`);
+${urgent}${thanks}
+
+${closing}`);
 
 	return `mailto:${email}?subject=${subject}&body=${body}`;
 }

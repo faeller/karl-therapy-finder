@@ -2,6 +2,7 @@
 	import { wobbly } from '$lib/utils/wobbly';
 	import { X } from 'lucide-svelte';
 	import type { ChatMessage, ChatOption } from '$lib/types';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		/** The Karl message that prompted this answer (has options or inputType) */
@@ -81,7 +82,7 @@
 				<input
 					type="text"
 					bind:value={textValue}
-					placeholder={karlMessage.inputType === 'plz' ? 'PLZ oder Ort eingeben...' : 'Eingabe...'}
+					placeholder={karlMessage.inputType === 'plz' ? m.chat_plz_placeholder() : m.chat_placeholder()}
 					class="input"
 					style:border-radius={wobbly.sm}
 					autofocus
@@ -92,7 +93,7 @@
 					style:border-radius={wobbly.button}
 					disabled={!textValue.trim() || textValue.trim() === currentValue}
 				>
-					Ändern
+					{m.chat_change()}
 				</button>
 			</div>
 		{/if}

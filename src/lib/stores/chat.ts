@@ -4,19 +4,19 @@ import { nanoid } from 'nanoid';
 import type { ChatState, ChatMessage, ChatOption, Therapist, EditableField } from '$lib/types';
 import { campaignDraft } from './campaign';
 import { mockTherapists, filterTherapists } from '$lib/data/mockTherapists';
-
-const plzLookup: Record<string, string> = {
-	'90402': 'Nürnberg',
-	'90403': 'Nürnberg',
-	'90419': 'Nürnberg',
-	'90429': 'Nürnberg',
-	'90491': 'Nürnberg',
-	'10115': 'Berlin',
-	'10178': 'Berlin',
-	'80331': 'München',
-	'50667': 'Köln',
-	'20095': 'Hamburg'
-};
+import { getCityFromPlz, findPlzByCity, extractPlz } from '$lib/data/plzLookup';
+import {
+	forWhomOptions,
+	insuranceTypeOptions,
+	ageGroupOptions,
+	therapyTypeOptions,
+	preferenceOptions,
+	summaryOptions,
+	emailConfirmOptions,
+	noResultsOptions,
+	karlMessages,
+	buildSummaryText
+} from '$lib/data/chatOptions';
 
 const state = writable<ChatState>('greeting');
 const messages = writable<ChatMessage[]>([]);
@@ -83,194 +83,47 @@ async function transitionTo(newState: ChatState) {
 
 	switch (newState) {
 		case 'greeting':
-			await addKarlMessage(
-				'Hey! Ich bin KARL. Ich helfe dir dabei, freie Therapieplätze zu finden - damit du dich nicht durch 30 Praxen telefonieren musst.',
-				[
-					{
-						id: 'self',
-						label: 'For myself',
-						labelDe: 'Für mich selbst',
-						emoji: '🙋',
-						value: true,
-						nextState: 'location'
-					},
-					{
-						id: 'other',
-						label: 'For someone else',
-						labelDe: 'Für jemand anderen',
-						emoji: '🤝',
-						value: false,
-						nextState: 'for_other_name'
-					}
-				]
-			);
+			await addKarlMessage(karlMessages.greeting, forWhomOptions);
 			break;
 
 		case 'for_other_name':
-			await addKarlMessage(
-				'Okay! Wie heißt die Person, für die du suchst? (Vorname reicht)',
-				undefined,
-				'text'
-			);
+			await addKarlMessage(karlMessages.for_other_name, undefined, 'text');
 			break;
 
-		case 'location':
+		case 'location': {
 			const draft = get(campaignDraft);
-			const prefix = draft.clientName ? `Alles klar, ich such für ${draft.clientName}. ` : '';
-			await addKarlMessage(`${prefix}Wo soll ich suchen? Gib mir eine PLZ oder einen Ort.`, undefined, 'plz');
+			const message = draft.clientName
+				? karlMessages.location_with_name.replace('{name}', draft.clientName)
+				: karlMessages.location_default;
+			await addKarlMessage(message, undefined, 'plz');
 			break;
+		}
 
 		case 'insurance_type':
-			await addKarlMessage('Wie bist du versichert?', [
-				{
-					id: 'gkv',
-					label: 'Statutory',
-					labelDe: 'Gesetzlich (GKV)',
-					emoji: '🏥',
-					value: 'GKV',
-					nextState: 'insurance_details'
-				},
-				{
-					id: 'pkv',
-					label: 'Private',
-					labelDe: 'Privat (PKV)',
-					emoji: '💳',
-					value: 'PKV',
-					nextState: 'therapy_type'
-				},
-				{
-					id: 'selbst',
-					label: 'Self-pay',
-					labelDe: 'Selbstzahler',
-					emoji: '💶',
-					value: 'Selbstzahler',
-					nextState: 'therapy_type'
-				}
-			]);
+			await addKarlMessage(karlMessages.insurance_type, insuranceTypeOptions);
 			break;
 
 		case 'insurance_details':
-			await addKarlMessage('Bist du über oder unter 21?', [
-				{
-					id: 'adult',
-					label: 'Over 21',
-					labelDe: 'Über 21 (Erwachsene)',
-					emoji: '🧑',
-					value: 'adult',
-					nextState: 'therapy_type'
-				},
-				{
-					id: 'youth',
-					label: 'Under 21',
-					labelDe: 'Unter 21 (KJP möglich)',
-					emoji: '👶',
-					value: 'youth',
-					nextState: 'therapy_type'
-				}
-			]);
+			await addKarlMessage(karlMessages.insurance_details, ageGroupOptions);
 			break;
 
 		case 'therapy_type':
-			await addKarlMessage('Was für eine Therapie suchst du?', [
-				{
-					id: 'vt',
-					label: 'CBT',
-					labelDe: 'Verhaltenstherapie',
-					value: ['VT', 'Verhaltenstherapie'],
-					nextState: 'preferences'
-				},
-				{
-					id: 'tp',
-					label: 'Psychodynamic',
-					labelDe: 'Tiefenpsychologie',
-					value: ['TP', 'Tiefenpsychologie'],
-					nextState: 'preferences'
-				},
-				{
-					id: 'analyse',
-					label: 'Psychoanalysis',
-					labelDe: 'Psychoanalyse',
-					value: ['Analyse', 'Psychoanalyse'],
-					nextState: 'preferences'
-				},
-				{
-					id: 'egal',
-					label: "Doesn't matter",
-					labelDe: 'Ist mir egal',
-					emoji: '🤷',
-					value: [],
-					nextState: 'preferences'
-				}
-			]);
+			await addKarlMessage(karlMessages.therapy_type, therapyTypeOptions);
 			break;
 
 		case 'preferences':
-			await addKarlMessage(
-				'Noch besondere Wünsche? Wähl aus was passt, dann klick "Weiter".',
-				[
-					{
-						id: 'female',
-						label: 'Female',
-						labelDe: 'Weibliche Therapeutin',
-						emoji: '👩',
-						value: { genderPref: 'w' }
-					},
-					{
-						id: 'male',
-						label: 'Male',
-						labelDe: 'Männlicher Therapeut',
-						emoji: '👨',
-						value: { genderPref: 'm' }
-					},
-					{
-						id: 'english',
-						label: 'English',
-						labelDe: 'Englisch',
-						emoji: '🇬🇧',
-						value: { languages: ['de', 'en'] }
-					},
-					{
-						id: 'trauma',
-						label: 'Trauma',
-						labelDe: 'Traumatherapie',
-						value: { specialties: ['trauma'] }
-					}
-				],
-				undefined,
-				undefined,
-				true
-			);
+			await addKarlMessage(karlMessages.preferences, preferenceOptions, undefined, undefined, true);
 			break;
 
 		case 'summary': {
 			const d = get(campaignDraft);
-			let summaryText = `Alles klar! Ich suche für dich:\n\n📍 ${d.city || d.plz} (${d.radiusKm}km Umkreis)\n🏥 ${d.insuranceType}${d.insuranceName ? ` (${d.insuranceName})` : ''}\n💭 ${d.therapyTypes.length ? d.therapyTypes.join(', ') : 'Alle Therapieformen'}`;
-			if (d.genderPref) summaryText += `\n👤 ${d.genderPref === 'w' ? 'Weiblich' : 'Männlich'}`;
-			if (d.languages.includes('en')) summaryText += '\n🌐 Englisch sprechend';
-			if (d.specialties.length) summaryText += `\n🎯 ${d.specialties.join(', ')}`;
-			await addKarlMessage(summaryText, [
-				{
-					id: 'search',
-					label: 'Start search',
-					labelDe: "Los geht's!",
-					emoji: '🔍',
-					value: true,
-					nextState: 'searching'
-				},
-				{
-					id: 'change',
-					label: 'Change criteria',
-					labelDe: 'Nochmal ändern',
-					emoji: '✏️',
-					value: false,
-					nextState: 'greeting'
-				}
-			]);
+			const summaryText = buildSummaryText(d);
+			await addKarlMessage(summaryText, summaryOptions);
 			break;
 		}
 
 		case 'searching':
-			await addKarlMessage('Suche Therapeut:innen in deiner Nähe...');
+			await addKarlMessage(karlMessages.searching);
 			await delay(1500);
 			await transitionTo('results');
 			break;
@@ -284,48 +137,16 @@ async function transitionTo(newState: ChatState) {
 			});
 
 			if (filtered.length === 0) {
-				await addKarlMessage(
-					'Hmm, ich habe leider keine passenden Therapeut:innen gefunden. Möchtest du die Kriterien anpassen?',
-					[
-						{
-							id: 'retry',
-							label: 'Change criteria',
-							labelDe: 'Kriterien ändern',
-							value: true,
-							nextState: 'greeting'
-						}
-					]
-				);
+				await addKarlMessage(karlMessages.results_empty, noResultsOptions);
 			} else {
-				await addKarlMessage(
-					`Ich habe ${filtered.length} Therapeut:innen gefunden! Klick auf "E-Mail schreiben" um sie direkt zu kontaktieren.`,
-					undefined,
-					undefined,
-					filtered
-				);
+				const message = karlMessages.results_found.replace('{count}', String(filtered.length));
+				await addKarlMessage(message, undefined, undefined, filtered);
 			}
 			break;
 		}
 
 		case 'email_sent_confirm':
-			await addKarlMessage('E-Mail abgeschickt?', [
-				{
-					id: 'yes',
-					label: 'Yes',
-					labelDe: 'Ja, abgeschickt',
-					emoji: '✅',
-					value: true,
-					nextState: 'results'
-				},
-				{
-					id: 'no',
-					label: 'No',
-					labelDe: 'Nein, abgebrochen',
-					emoji: '❌',
-					value: false,
-					nextState: 'results'
-				}
-			]);
+			await addKarlMessage(karlMessages.email_confirm, emailConfirmOptions);
 			break;
 	}
 }
@@ -353,7 +174,7 @@ async function handleOption(option: ChatOption) {
 			break;
 		case 'insurance_details':
 			// Age group (adult/youth for KJP)
-			campaignDraft.update((d) => ({ ...d, ageGroup: option.value as string }));
+			campaignDraft.update((d) => ({ ...d, ageGroup: option.value as 'adult' | 'youth' }));
 			break;
 		case 'therapy_type':
 			campaignDraft.update((d) => ({ ...d, therapyTypes: option.value as string[] }));
@@ -374,8 +195,7 @@ async function handleInput(text: string) {
 	// Determine which field this answers
 	const fieldMap: Record<string, EditableField> = {
 		for_other_name: 'clientName',
-		location: 'location',
-		insurance_details: 'insuranceName'
+		location: 'location'
 	};
 	const field = fieldMap[currentState];
 
@@ -388,30 +208,22 @@ async function handleInput(text: string) {
 			break;
 
 		case 'location': {
-			const plzMatch = text.match(/\d{5}/);
-			if (plzMatch) {
-				const plz = plzMatch[0];
-				const city = plzLookup[plz] || 'Unbekannt';
+			const plz = extractPlz(text);
+			if (plz) {
+				const city = getCityFromPlz(plz) || 'Unbekannt';
 				campaignDraft.update((d) => ({ ...d, plz, city }));
 				await transitionTo('insurance_type');
 			} else {
-				const cityMatch = Object.entries(plzLookup).find(([_, c]) =>
-					c.toLowerCase().includes(text.toLowerCase())
-				);
+				const cityMatch = findPlzByCity(text);
 				if (cityMatch) {
-					campaignDraft.update((d) => ({ ...d, plz: cityMatch[0], city: cityMatch[1] }));
+					campaignDraft.update((d) => ({ ...d, plz: cityMatch.plz, city: cityMatch.city }));
 					await transitionTo('insurance_type');
 				} else {
-					await addKarlMessage(
-						'Das hab ich nicht ganz verstanden. Kannst du mir eine Postleitzahl geben?',
-						undefined,
-						'plz'
-					);
+					await addKarlMessage(karlMessages.location_error, undefined, 'plz');
 				}
 			}
 			break;
 		}
-
 	}
 }
 

@@ -3,6 +3,7 @@
 	import TherapistCard from './TherapistCard.svelte';
 	import type { Therapist } from '$lib/types';
 	import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		therapists: Therapist[];
@@ -22,13 +23,13 @@
 		therapists.filter((t) => contactedIds.has(t.id))
 	);
 
-	let showContacted = $state(false);
+	let showContacted = $state(true);
 </script>
 
 <div class="therapist-list">
 	{#if availableTherapists.length > 0}
 		<div class="list-header">
-			<span class="font-heading font-bold">Noch nicht kontaktiert</span>
+			<span class="font-heading font-bold">{m.chat_not_contacted()}</span>
 			<span class="badge">{availableTherapists.length}</span>
 		</div>
 		<div class="space-y-3">
@@ -42,7 +43,7 @@
 	{:else}
 		<div class="empty-state">
 			<CheckCircle size={24} class="text-blue-pen" />
-			<p>Alle Therapeut:innen wurden kontaktiert!</p>
+			<p>{m.chat_all_contacted()}</p>
 		</div>
 	{/if}
 
@@ -57,7 +58,7 @@
 				{:else}
 					<ChevronRight size={16} />
 				{/if}
-				<span>Bereits kontaktiert</span>
+				<span>{m.chat_already_contacted()}</span>
 			</span>
 			<span class="badge muted">{contactedTherapists.length}</span>
 		</button>

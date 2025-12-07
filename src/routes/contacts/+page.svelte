@@ -6,13 +6,19 @@
 	import ChipButton from '$lib/components/ui/ChipButton.svelte';
 	import { ArrowLeft, FileDown, Trash2 } from 'lucide-svelte';
 	import type { ContactAttempt } from '$lib/types';
+	import { m } from '$lib/paraglide/messages';
 
-	const waitingTimeOptions = ['< 1 Monat', '1-3 Monate', '3-6 Monate', '> 6 Monate'];
-	const statusLabels: Record<ContactAttempt['status'], string> = {
-		pending: 'Ausstehend',
-		sent: 'Gesendet',
-		replied: 'Antwort erhalten',
-		no_reply: 'Keine Antwort'
+	const waitingTimeOptions = [
+		{ key: 'waiting_1_month', value: '< 1 Monat' },
+		{ key: 'waiting_1_3_months', value: '1-3 Monate' },
+		{ key: 'waiting_3_6_months', value: '3-6 Monate' },
+		{ key: 'waiting_6_plus_months', value: '> 6 Monate' }
+	];
+	const statusKeys: Record<ContactAttempt['status'], string> = {
+		pending: 'status_pending',
+		sent: 'status_sent',
+		replied: 'status_replied',
+		no_reply: 'status_no_reply'
 	};
 
 	function updateStatus(id: string, status: ContactAttempt['status']) {
@@ -24,9 +30,29 @@
 	}
 
 	function removeContact(id: string) {
-		if (confirm('Kontaktversuch wirklich löschen?')) {
+		if (confirm(m.contacts_delete_confirm())) {
 			contacts.remove(id);
 		}
+	}
+
+	function getStatusLabel(status: ContactAttempt['status']): string {
+		const labels: Record<ContactAttempt['status'], () => string> = {
+			pending: m.status_pending,
+			sent: m.status_sent,
+			replied: m.status_replied,
+			no_reply: m.status_no_reply
+		};
+		return labels[status]();
+	}
+
+	function getWaitingTimeLabel(key: string): string {
+		const labels: Record<string, () => string> = {
+			waiting_1_month: m.waiting_1_month,
+			waiting_1_3_months: m.waiting_1_3_months,
+			waiting_3_6_months: m.waiting_3_6_months,
+			waiting_6_plus_months: m.waiting_6_plus_months
+		};
+		return labels[key]?.() ?? key;
 	}
 
 	function downloadPdf() {
@@ -40,9 +66,9 @@
 		<div class="mb-6 flex items-center justify-between">
 			<a href="/chat" class="flex items-center gap-2 text-pencil hover:text-blue-pen">
 				<ArrowLeft size={20} strokeWidth={2.5} />
-				Zurück
+				{m.contacts_back()}
 			</a>
-			<h1 class="font-heading text-2xl font-bold">Kontakte</h1>
+			<h1 class="font-heading text-2xl font-bold">{m.contacts_title()}</h1>
 		</div>
 
 		<!-- stats -->
@@ -51,22 +77,22 @@
 				<div class="flex flex-wrap gap-4 text-center">
 					<div class="flex-1">
 						<div class="font-heading text-2xl font-bold">{$contacts.length}</div>
-						<div class="text-sm text-pencil/60">Kontaktversuche</div>
+						<div class="text-sm text-pencil/60">{m.contacts_attempts()}</div>
 					</div>
 					<div class="flex-1">
 						<div class="font-heading text-2xl font-bold">{$qualifyingContacts.length}</div>
-						<div class="text-sm text-pencil/60">Qualifizierend</div>
+						<div class="text-sm text-pencil/60">{m.contacts_qualifying()}</div>
 					</div>
 				</div>
 
 				{#if $qualifyingContacts.length >= 5}
 					<div class="mt-4 border-t border-pencil/20 pt-4">
 						<p class="mb-3 text-sm">
-							Du hast genug Kontaktversuche für das Kostenerstattungsverfahren dokumentiert!
+							{m.contacts_qualifying_hint()}
 						</p>
 						<WobblyButton onclick={downloadPdf} size="sm">
 							<FileDown size={18} strokeWidth={2.5} class="mr-2 inline" />
-							PDF herunterladen
+							{m.contacts_download_pdf()}
 						</WobblyButton>
 					</div>
 				{/if}
@@ -76,9 +102,9 @@
 		<!-- contact list -->
 		{#if $contacts.length === 0}
 			<WobblyCard decoration="postit" class="text-center">
-				<p class="mb-2 font-heading text-lg">Noch keine Kontakte</p>
+				<p class="mb-2 font-heading text-lg">{m.contacts_empty()}</p>
 				<p class="text-sm text-pencil/70">
-					Schreib Therapeut:innen über den Chat an - die Kontakte erscheinen dann hier.
+					{m.contacts_empty_hint()}
 				</p>
 			</WobblyCard>
 		{:else}
@@ -109,22 +135,22 @@
 									selected={contact.status === status}
 									onclick={() => updateStatus(contact.id, status as ContactAttempt['status'])}
 								>
-									{statusLabels[status as ContactAttempt['status']]}
+									{getStatusLabel(status as ContactAttempt['status'])}
 								</ChipButton>
 							{/each}
 						</div>
 
 						{#if contact.status === 'replied'}
 							<div class="mt-3">
-								<label class="mb-1 block text-xs text-pencil/60">Wartezeit:</label>
+								<label class="mb-1 block text-xs text-pencil/60">{m.waiting_time()}:</label>
 								<div class="flex flex-wrap gap-2">
-									{#each waitingTimeOptions as time}
+									{#each waitingTimeOptions as option}
 										<ChipButton
-											selected={contact.waitingTime === time}
+											selected={contact.waitingTime === option.value}
 											variant="blue"
-											onclick={() => updateWaitingTime(contact.id, time)}
+											onclick={() => updateWaitingTime(contact.id, option.value)}
 										>
-											{time}
+											{getWaitingTimeLabel(option.key)}
 										</ChipButton>
 									{/each}
 								</div>

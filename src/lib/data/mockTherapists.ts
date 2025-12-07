@@ -44,7 +44,7 @@ export const mockTherapists: Therapist[] = [
 		title: 'Psychologischer Psychotherapeut',
 		address: 'Fürther Str. 212, 90429 Nürnberg',
 		phone: '0911 456789',
-		email: null,
+		email: undefined,
 		therapyTypes: ['Tiefenpsychologie'],
 		insurances: ['GKV'],
 		languages: ['de', 'tr'],

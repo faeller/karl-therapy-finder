@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
 	import type { ChatOption } from '$lib/types';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		options: ChatOption[];
@@ -60,7 +61,7 @@
 			class="option-btn single"
 			style:border-radius={wobbly.button}
 		>
-			Weiter →
+			{m.chat_continue()} →
 		</button>
 	{/if}
 </div>

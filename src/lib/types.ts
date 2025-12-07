@@ -28,7 +28,6 @@ export type EditableField =
 	| 'clientName'
 	| 'location'
 	| 'insuranceType'
-	| 'insuranceName'
 	| 'therapyTypes'
 	| 'preferences';
 

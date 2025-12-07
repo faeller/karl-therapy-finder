@@ -10,8 +10,10 @@
 	import ChatSection from '$lib/components/chat/ChatSection.svelte';
 	import EditDialog from '$lib/components/chat/EditDialog.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
+	import LangToggle from '$lib/components/ui/LangToggle.svelte';
 	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
+	import { m } from '$lib/paraglide/messages';
 	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
 
 	const { messages, isTyping, state: chatState } = chat;
@@ -83,6 +85,12 @@
 		editingMessageIndex = messageIndex;
 	}
 
+	function handleReset() {
+		if (confirm(m.chat_reset_confirm())) {
+			chat.reset();
+		}
+	}
+
 	function handleEditSubmit(newValue: string, option?: ChatOption) {
 		if (editingMessageIndex === null) return;
 		chat.updateMessage(editingMessageIndex, newValue, option);
@@ -122,15 +130,16 @@
 			<div class="flex items-center gap-3">
 				<KarlAvatar size="md" href="/" />
 				<div>
-					<h1 class="font-heading text-xl font-bold">KARL</h1>
-					<p class="text-sm text-pencil/60">Therapieplatz-Finder</p>
+					<h1 class="font-heading text-xl font-bold">{m.app_name()}</h1>
+					<p class="text-sm text-pencil/60">{m.chat_header()}</p>
 				</div>
 			</div>
 			<div class="flex items-center gap-3">
+				<LangToggle />
 				<button
 					onclick={() => theme.toggle()}
 					class="text-pencil/50 hover:text-blue-pen"
-					title="Design wechseln"
+					title={m.chat_toggle_theme()}
 				>
 					{#if $theme === 'dark'}
 						<Sun size={18} strokeWidth={2.5} />
@@ -139,15 +148,15 @@
 					{/if}
 				</button>
 				<button
-					onclick={() => chat.reset()}
+					onclick={handleReset}
 					class="text-pencil/50 hover:text-red-marker"
-					title="Neu starten"
+					title={m.chat_new_start()}
 				>
 					<RotateCcw size={18} strokeWidth={2.5} />
 				</button>
-				<a href="/contacts" class="flex items-center gap-1 text-sm text-pencil/70 hover:text-blue-pen" title="Kontakte">
+				<a href="/contacts" class="flex items-center gap-1 text-sm text-pencil/70 hover:text-blue-pen" title={m.contacts_title()}>
 					<ClipboardList size={20} strokeWidth={2.5} />
-					<span class="hidden md:inline">Kontakte</span>
+					<span class="hidden md:inline">{m.contacts_title()}</span>
 					{#if $contacts.length > 0}
 						<span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-marker text-xs text-white">{$contacts.length}</span>
 					{/if}
@@ -165,7 +174,7 @@
 			<!-- Onboarding section (collapsible when in results) -->
 			{#if onboardingMessages.length > 0}
 				<ChatSection
-					title="Deine Angaben"
+					title={m.chat_section_your_info()}
 					collapsible={isInResults}
 					defaultOpen={!isInResults}
 				>
@@ -174,7 +183,7 @@
 							<MessageBubble
 								role={message.role}
 								content={message.content}
-								onEdit={message.role === 'user' && isInResults ? () => handleEdit(i) : undefined}
+								onEdit={message.role === 'user' ? () => handleEdit(i) : undefined}
 							/>
 
 							{#if message.options?.length && message === lastMessage && !isInResults}
@@ -195,7 +204,7 @@
 			<!-- Results section -->
 			{#if allTherapists.length > 0}
 				<ChatSection
-					title="Gefundene Therapeut:innen"
+					title={m.chat_section_results()}
 					collapsible={false}
 				>
 					<TherapistList
@@ -236,7 +245,7 @@
 		<div class="border-t-2 border-pencil bg-paper px-4 py-4">
 			<div class="mx-auto max-w-2xl">
 				<ChatInput
-					placeholder={lastMessage?.inputType === 'plz' ? 'PLZ oder Ort eingeben...' : 'Schreib mir...'}
+					placeholder={lastMessage?.inputType === 'plz' ? m.chat_plz_placeholder() : m.chat_placeholder()}
 					onSubmit={handleTextSubmit}
 				/>
 			</div>

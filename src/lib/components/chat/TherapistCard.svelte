@@ -5,6 +5,7 @@
 	import { generateMailto } from '$lib/utils/mailto';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { get } from 'svelte/store';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		therapist: Therapist;
@@ -61,7 +62,7 @@
 			style:border-radius={wobbly.button}
 		>
 			<Mail size={18} strokeWidth={2.5} />
-			E-Mail schreiben
+			{m.email_write()}
 		</a>
 	{/if}
 </div>
