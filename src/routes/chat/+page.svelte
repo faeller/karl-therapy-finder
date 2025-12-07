@@ -14,12 +14,12 @@
 	import { theme } from '$lib/stores/theme';
 	import type { ChatOption, Therapist, ChatMessage, EditableField } from '$lib/types';
 
-	const { messages, isTyping, state } = chat;
+	const { messages, isTyping, state: chatState } = chat;
 
 	let messagesContainer: HTMLDivElement;
 
 	// Edit dialog state
-	let editingMessage: { index: number; field: EditableField; content: string } | null = $state(null);
+	let editingMessage = $state<{ index: number; field: EditableField; content: string } | null>(null);
 
 	onMount(() => {
 		chat.start();
@@ -72,7 +72,7 @@
 	}
 
 	// Determine chat phases
-	const isInResults = $derived(['searching', 'results', 'email_sent_confirm'].includes($state));
+	const isInResults = $derived(['searching', 'results', 'email_sent_confirm'].includes($chatState));
 
 	// Find index where results phase starts (first message with therapists)
 	const resultsStartIndex = $derived(
