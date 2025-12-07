@@ -150,7 +150,24 @@ async function transitionTo(newState: ChatState) {
 			break;
 
 		case 'insurance_details':
-			await addKarlMessage('Bei welcher Krankenkasse bist du? (z.B. TK, AOK, Barmer...)', undefined, 'text');
+			await addKarlMessage('Bist du über oder unter 21?', [
+				{
+					id: 'adult',
+					label: 'Over 21',
+					labelDe: 'Über 21 (Erwachsene)',
+					emoji: '🧑',
+					value: 'adult',
+					nextState: 'therapy_type'
+				},
+				{
+					id: 'youth',
+					label: 'Under 21',
+					labelDe: 'Unter 21 (KJP möglich)',
+					emoji: '👶',
+					value: 'youth',
+					nextState: 'therapy_type'
+				}
+			]);
 			break;
 
 		case 'therapy_type':
@@ -334,6 +351,10 @@ async function handleOption(option: ChatOption) {
 		case 'insurance_type':
 			campaignDraft.update((d) => ({ ...d, insuranceType: option.value as 'GKV' | 'PKV' | 'Selbstzahler' }));
 			break;
+		case 'insurance_details':
+			// Age group (adult/youth for KJP)
+			campaignDraft.update((d) => ({ ...d, ageGroup: option.value as string }));
+			break;
 		case 'therapy_type':
 			campaignDraft.update((d) => ({ ...d, therapyTypes: option.value as string[] }));
 			break;
@@ -391,10 +412,6 @@ async function handleInput(text: string) {
 			break;
 		}
 
-		case 'insurance_details':
-			campaignDraft.update((d) => ({ ...d, insuranceName: text }));
-			await transitionTo('therapy_type');
-			break;
 	}
 }
 
@@ -439,112 +456,61 @@ function reset() {
 	transitionTo('greeting');
 }
 
-// Field labels for UI
-export const fieldLabels: Record<EditableField, string> = {
-	forSelf: 'Für wen suchst du?',
-	clientName: 'Name',
-	location: 'Ort / PLZ',
-	insuranceType: 'Versicherungsart',
-	insuranceName: 'Krankenkasse',
-	therapyTypes: 'Therapieart',
-	preferences: 'Besondere Wünsche'
-};
+// Rewind conversation to a specific message index
+function rewindTo(messageIndex: number) {
+	const currentMessages = get(messages);
+	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
 
-// Fields that require full conversation reset
-const resetRequiredFields: EditableField[] = ['forSelf'];
+	// Slice messages to just before the user message (keep the Karl question)
+	const previousMessages = currentMessages.slice(0, messageIndex);
+	messages.set(previousMessages);
 
-// Check if a field change requires full reset or just re-search
-function needsFullReset(field: EditableField): boolean {
-	return resetRequiredFields.includes(field);
+	// Reset campaign draft
+	campaignDraft.reset();
+
+	// Find the last karl message to determine what state to show
+	const lastKarlMessage = previousMessages[previousMessages.length - 1];
+
+	if (previousMessages.length === 0) {
+		transitionTo('greeting');
+	} else if (lastKarlMessage?.options) {
+		// Show the options again by re-rendering
+		state.set('greeting');
+	} else if (lastKarlMessage?.inputType) {
+		state.set('greeting');
+	}
 }
 
-// Smart edit: update a specific field and re-search
-async function editField(field: EditableField, newValue: string, messageIndex: number) {
-	const currentMessages = get(messages);
-
-	if (needsFullReset(field)) {
-		// For fundamental changes, rewind the conversation
-		const previousMessages = currentMessages.slice(0, messageIndex);
-		messages.set(previousMessages);
-		campaignDraft.reset();
-
-		if (previousMessages.length === 0) {
-			await transitionTo('greeting');
-		}
-		return;
-	}
-
-	// For other fields, just update the value and re-search
-	const targetMessage = currentMessages[messageIndex];
-	if (!targetMessage || targetMessage.role !== 'user') return;
-
-	// Update the message content
+// Update a message's content in place (for editing without rewinding)
+function updateMessage(messageIndex: number, newContent: string, option?: ChatOption) {
 	messages.update((msgs) =>
-		msgs.map((m, i) => (i === messageIndex ? { ...m, content: newValue } : m))
+		msgs.map((m, i) => (i === messageIndex ? { ...m, content: newContent } : m))
 	);
 
-	// Update the campaign draft based on field type
-	switch (field) {
-		case 'location': {
-			const plzMatch = newValue.match(/\d{5}/);
-			if (plzMatch) {
-				const plz = plzMatch[0];
-				const city = plzLookup[plz] || 'Unbekannt';
-				campaignDraft.update((d) => ({ ...d, plz, city }));
-			} else {
-				const cityMatch = Object.entries(plzLookup).find(([_, c]) =>
-					c.toLowerCase().includes(newValue.toLowerCase())
-				);
-				if (cityMatch) {
-					campaignDraft.update((d) => ({ ...d, plz: cityMatch[0], city: cityMatch[1] }));
+	// Optionally update campaign draft based on the option's value
+	if (option?.value !== undefined) {
+		const val = option.value;
+		campaignDraft.update((d) => {
+			// Handle different value types
+			if (typeof val === 'boolean') {
+				return { ...d, forSelf: val };
+			}
+			if (typeof val === 'string') {
+				// Could be insurance type
+				if (['GKV', 'PKV', 'Selbstzahler'].includes(val)) {
+					return { ...d, insuranceType: val as 'GKV' | 'PKV' | 'Selbstzahler' };
 				}
 			}
-			break;
-		}
-		case 'insuranceName':
-			campaignDraft.update((d) => ({ ...d, insuranceName: newValue }));
-			break;
-		case 'clientName':
-			campaignDraft.update((d) => ({ ...d, clientName: newValue }));
-			break;
-	}
-
-	// If we're in results, re-search with new criteria
-	const currentState = get(state);
-	if (['results', 'email_sent_confirm'].includes(currentState)) {
-		await refreshResults();
-	}
-}
-
-// Re-run the search with current campaign draft
-async function refreshResults() {
-	// Remove old therapist results
-	messages.update((msgs) => msgs.filter((m) => !m.therapists?.length));
-
-	state.set('searching');
-	await addKarlMessage('Suche mit neuen Kriterien...');
-	await delay(1000);
-
-	const d = get(campaignDraft);
-	const filtered = filterTherapists(mockTherapists, {
-		therapyTypes: d.therapyTypes,
-		insuranceType: d.insuranceType,
-		languages: d.languages
-	});
-
-	state.set('results');
-	if (filtered.length === 0) {
-		await addKarlMessage(
-			'Hmm, ich habe leider keine passenden Therapeut:innen gefunden. Möchtest du die Kriterien anpassen?',
-			[{ id: 'retry', label: 'Change criteria', labelDe: 'Kriterien ändern', value: true, nextState: 'greeting' }]
-		);
-	} else {
-		await addKarlMessage(
-			`Ich habe ${filtered.length} Therapeut:innen gefunden!`,
-			undefined,
-			undefined,
-			filtered
-		);
+			if (Array.isArray(val)) {
+				// Therapy types
+				return { ...d, therapyTypes: val };
+			}
+			if (typeof val === 'object' && val !== null) {
+				// Preferences object
+				return { ...d, ...(val as object) };
+			}
+			return d;
+		});
 	}
 }
 
@@ -563,6 +529,6 @@ export const chat = {
 	promptEmailConfirm,
 	start,
 	reset,
-	editField,
-	needsFullReset
+	rewindTo,
+	updateMessage
 };

@@ -12,14 +12,31 @@
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
 	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
-	import type { ChatOption, Therapist, ChatMessage, EditableField } from '$lib/types';
+	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
 
 	const { messages, isTyping, state: chatState } = chat;
 
 	let messagesContainer: HTMLDivElement;
 
 	// Edit dialog state
-	let editingMessage = $state<{ index: number; field: EditableField; content: string } | null>(null);
+	let editingMessageIndex = $state<number | null>(null);
+
+	// Find the Karl message that prompted this user answer
+	const editingKarlMessage = $derived.by(() => {
+		if (editingMessageIndex === null) return null;
+		// Look backwards from the user message to find the Karl message
+		for (let i = editingMessageIndex - 1; i >= 0; i--) {
+			const msg = $messages[i];
+			if (msg.role === 'karl' && (msg.options?.length || msg.inputType)) {
+				return msg;
+			}
+		}
+		return null;
+	});
+
+	const editingCurrentValue = $derived(
+		editingMessageIndex !== null ? $messages[editingMessageIndex]?.content : ''
+	);
 
 	onMount(() => {
 		chat.start();
@@ -62,13 +79,14 @@
 		}, 500);
 	}
 
-	function handleEdit(messageIndex: number, message: ChatMessage) {
-		if (!message.field) return;
-		editingMessage = {
-			index: messageIndex,
-			field: message.field,
-			content: message.content
-		};
+	function handleEdit(messageIndex: number) {
+		editingMessageIndex = messageIndex;
+	}
+
+	function handleEditSubmit(newValue: string, option?: ChatOption) {
+		if (editingMessageIndex === null) return;
+		chat.updateMessage(editingMessageIndex, newValue, option);
+		editingMessageIndex = null;
 	}
 
 	// Determine chat phases
@@ -156,7 +174,7 @@
 							<MessageBubble
 								role={message.role}
 								content={message.content}
-								onEdit={message.role === 'user' && message.field && isInResults ? () => handleEdit(i, message) : undefined}
+								onEdit={message.role === 'user' && isInResults ? () => handleEdit(i) : undefined}
 							/>
 
 							{#if message.options?.length && message === lastMessage && !isInResults}
@@ -226,12 +244,12 @@
 	{/if}
 </div>
 
-{#if editingMessage}
+{#if editingMessageIndex !== null && editingKarlMessage}
 	<EditDialog
-		field={editingMessage.field}
-		currentValue={editingMessage.content}
-		messageIndex={editingMessage.index}
-		onClose={() => (editingMessage = null)}
+		karlMessage={editingKarlMessage}
+		currentValue={editingCurrentValue}
+		onSubmit={handleEditSubmit}
+		onClose={() => (editingMessageIndex = null)}
 	/>
 {/if}
 

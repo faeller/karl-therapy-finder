@@ -1,38 +1,44 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
-	import { X, AlertTriangle } from 'lucide-svelte';
-	import { chat, fieldLabels } from '$lib/stores/chat';
-	import type { EditableField } from '$lib/types';
+	import { X } from 'lucide-svelte';
+	import type { ChatMessage, ChatOption } from '$lib/types';
 
 	interface Props {
-		field: EditableField;
+		/** The Karl message that prompted this answer (has options or inputType) */
+		karlMessage: ChatMessage;
+		/** Current value of the user's answer */
 		currentValue: string;
-		messageIndex: number;
+		/** Called when user selects a new value */
+		onSubmit: (newValue: string, option?: ChatOption) => void;
 		onClose: () => void;
 	}
 
-	let { field, currentValue, messageIndex, onClose }: Props = $props();
+	let { karlMessage, currentValue, onSubmit, onClose }: Props = $props();
 
-	let newValue = $state(currentValue);
-	const needsReset = chat.needsFullReset(field);
-	const label = fieldLabels[field];
+	let textValue = $state(currentValue);
 
-	async function handleSubmit() {
-		if (newValue.trim()) {
-			await chat.editField(field, newValue.trim(), messageIndex);
+	function handleOptionClick(option: ChatOption) {
+		onSubmit(option.labelDe, option);
+		onClose();
+	}
+
+	function handleTextSubmit() {
+		if (textValue.trim() && textValue.trim() !== currentValue) {
+			onSubmit(textValue.trim());
 			onClose();
 		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			handleSubmit();
-		} else if (e.key === 'Escape') {
+		if (e.key === 'Escape') {
 			onClose();
+		} else if (e.key === 'Enter' && karlMessage.inputType) {
+			handleTextSubmit();
 		}
 	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div class="overlay" onclick={onClose}>
@@ -42,48 +48,54 @@
 		style:border-radius={wobbly.md}
 	>
 		<div class="header">
-			<h3 class="font-heading font-bold">{label} ändern</h3>
 			<button onclick={onClose} class="close-btn">
 				<X size={20} />
 			</button>
 		</div>
 
-		{#if needsReset}
-			<div class="warning">
-				<AlertTriangle size={18} />
-				<span>Diese Änderung setzt alle folgenden Angaben zurück.</span>
+		<!-- Show Karl's original question -->
+		<p class="question">{karlMessage.content}</p>
+
+		<!-- Show options if this was an option-based question -->
+		{#if karlMessage.options?.length}
+			<div class="options">
+				{#each karlMessage.options as option}
+					<button
+						onclick={() => handleOptionClick(option)}
+						class="option-btn"
+						class:selected={option.labelDe === currentValue}
+						style:border-radius={wobbly.button}
+					>
+						{#if option.emoji}
+							<span class="mr-1">{option.emoji}</span>
+						{/if}
+						{option.labelDe}
+					</button>
+				{/each}
 			</div>
-		{:else}
-			<p class="hint">Die Therapeut:innen-Suche wird mit dem neuen Wert wiederholt.</p>
 		{/if}
 
-		<div class="input-group">
-			<label for="edit-input">Neuer Wert:</label>
-			<input
-				id="edit-input"
-				type="text"
-				bind:value={newValue}
-				onkeydown={handleKeydown}
-				class="input"
-				style:border-radius={wobbly.sm}
-				autofocus
-			/>
-		</div>
-
-		<div class="actions">
-			<button onclick={onClose} class="btn secondary" style:border-radius={wobbly.button}>
-				Abbrechen
-			</button>
-			<button
-				onclick={handleSubmit}
-				class="btn primary"
-				class:warning={needsReset}
-				style:border-radius={wobbly.button}
-				disabled={!newValue.trim() || newValue === currentValue}
-			>
-				{needsReset ? 'Zurücksetzen' : 'Ändern & neu suchen'}
-			</button>
-		</div>
+		<!-- Show text input if this was a text-based question -->
+		{#if karlMessage.inputType}
+			<div class="input-group">
+				<input
+					type="text"
+					bind:value={textValue}
+					placeholder={karlMessage.inputType === 'plz' ? 'PLZ oder Ort eingeben...' : 'Eingabe...'}
+					class="input"
+					style:border-radius={wobbly.sm}
+					autofocus
+				/>
+				<button
+					onclick={handleTextSubmit}
+					class="submit-btn"
+					style:border-radius={wobbly.button}
+					disabled={!textValue.trim() || textValue.trim() === currentValue}
+				>
+					Ändern
+				</button>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -103,16 +115,15 @@
 		background-color: var(--color-paper);
 		border: 2px solid var(--color-pencil);
 		padding: 1.5rem;
-		max-width: 400px;
+		max-width: 500px;
 		width: 100%;
 		box-shadow: var(--shadow-hard);
 	}
 
 	.header {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 1rem;
+		justify-content: flex-end;
+		margin-bottom: 0.5rem;
 	}
 
 	.close-btn {
@@ -126,38 +137,50 @@
 		opacity: 1;
 	}
 
-	.warning {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		background-color: var(--color-red-marker);
-		color: white;
-		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		margin-bottom: 1rem;
+	.question {
+		font-family: var(--font-body);
+		font-size: 1.125rem;
+		color: var(--color-pencil);
+		margin-bottom: 1.5rem;
+		line-height: 1.4;
 	}
 
-	.hint {
-		font-size: 0.875rem;
+	.options {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.option-btn {
+		padding: 0.5rem 1rem;
+		font-family: var(--font-body);
+		font-size: 1rem;
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
 		color: var(--color-pencil);
-		opacity: 0.7;
-		margin-bottom: 1rem;
+		transition: all 150ms;
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	.option-btn:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+		color: white;
+	}
+
+	.option-btn.selected {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
 	}
 
 	.input-group {
-		margin-bottom: 1.5rem;
-	}
-
-	.input-group label {
-		display: block;
-		font-size: 0.875rem;
-		margin-bottom: 0.5rem;
-		color: var(--color-pencil);
+		display: flex;
+		gap: 0.75rem;
 	}
 
 	.input {
-		width: 100%;
+		flex: 1;
 		padding: 0.75rem 1rem;
 		border: 2px solid var(--color-pencil);
 		background-color: var(--color-paper);
@@ -171,46 +194,24 @@
 		outline: none;
 	}
 
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-		justify-content: flex-end;
-	}
-
-	.btn {
-		padding: 0.5rem 1rem;
+	.submit-btn {
+		padding: 0.75rem 1.5rem;
 		font-family: var(--font-body);
 		font-size: 1rem;
 		border: 2px solid var(--color-pencil);
-		transition: all 150ms;
-	}
-
-	.btn.secondary {
-		background-color: transparent;
+		background-color: var(--color-paper);
 		color: var(--color-pencil);
+		transition: all 150ms;
+		box-shadow: var(--shadow-hard-sm);
 	}
 
-	.btn.secondary:hover {
-		background-color: var(--color-erased);
-	}
-
-	.btn.primary {
+	.submit-btn:hover:not(:disabled) {
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
 	}
 
-	.btn.primary:hover:not(:disabled) {
-		background-color: var(--color-pencil);
-		border-color: var(--color-pencil);
-	}
-
-	.btn.primary.warning {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
-	}
-
-	.btn:disabled {
+	.submit-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}

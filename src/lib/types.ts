@@ -52,7 +52,7 @@ export interface CampaignDraft {
 	city?: string;
 	radiusKm: number;
 	insuranceType?: 'GKV' | 'PKV' | 'Selbstzahler';
-	insuranceName?: string;
+	ageGroup?: 'adult' | 'youth';
 	kostenerstattung?: boolean;
 	therapyTypes: string[];
 	genderPref?: 'w' | 'm' | 'd' | null;
