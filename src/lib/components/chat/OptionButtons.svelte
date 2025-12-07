@@ -2,6 +2,7 @@
 	import { wobbly } from '$lib/utils/wobbly';
 	import type { ChatOption } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		options: ChatOption[];
@@ -11,12 +12,6 @@
 	}
 
 	let { options, multiSelect = false, onSelect, onMultiSubmit }: Props = $props();
-
-	// try option_${id} key, fall back to labelDe
-	const label = (opt: ChatOption) => {
-		const fn = (m as Record<string, () => string>)[`option_${opt.id}`];
-		return fn ? fn() : opt.labelDe;
-	};
 
 	let selected = $state<Set<string>>(new Set());
 
@@ -57,7 +52,7 @@
 			{#if option.emoji}
 				<span class="mr-1">{option.emoji}</span>
 			{/if}
-			{label(option)}
+			{t(`option_${option.id}`, option.labelDe)}
 		</button>
 	{/each}
 

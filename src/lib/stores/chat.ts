@@ -62,11 +62,12 @@ const ask = (key: string, options: ChatOption[], multi = false) => say(key, { op
 const prompt = (key: string, type: 'text' | 'plz' = 'text', params?: Record<string, unknown>) =>
 	say(key, { input: type, params });
 
-function addUserMessage(content: string, field?: EditableField) {
+function addUserMessage(content: string, field?: EditableField, contentKey?: string) {
 	messages.update((msgs) => [...msgs, {
 		id: nanoid(),
 		role: 'user',
 		content,
+		contentKey,
 		field,
 		timestamp: Date.now()
 	}]);
@@ -115,7 +116,7 @@ async function handleOption(option: ChatOption) {
 		preferences: 'preferences'
 	};
 
-	addUserMessage(option.labelDe, fieldMap[currentState]);
+	addUserMessage(option.labelDe, fieldMap[currentState], `option_${option.id}`);
 
 	const updates: Record<string, () => void> = {
 		greeting: () => campaignDraft.update((d) => ({ ...d, forSelf: option.value as boolean })),
