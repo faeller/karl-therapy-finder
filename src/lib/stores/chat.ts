@@ -13,8 +13,7 @@ import {
 	preferenceOptions,
 	summaryOptions,
 	emailConfirmOptions,
-	noResultsOptions,
-	karlMessages
+	noResultsOptions
 } from '$lib/data/chatOptions';
 
 const state = writable<ChatState>('greeting');
@@ -29,279 +28,148 @@ if (browser) {
 	if (savedMessages) messages.set(JSON.parse(savedMessages));
 }
 
-state.subscribe((s) => {
-	if (browser) localStorage.setItem('karl-chat-state', s);
-});
-messages.subscribe((m) => {
-	if (browser) localStorage.setItem('karl-chat-messages', JSON.stringify(m));
-});
+state.subscribe((s) => browser && localStorage.setItem('karl-chat-state', s));
+messages.subscribe((m) => browser && localStorage.setItem('karl-chat-messages', JSON.stringify(m)));
 
-interface KarlMessageOpts {
-	key: string;
-	fallback: string;
-	params?: Record<string, unknown>;
+// helpers for clean karl message creation
+async function say(key: string, opts: {
 	options?: ChatOption[];
-	inputType?: 'text' | 'plz';
+	input?: 'text' | 'plz';
+	params?: Record<string, unknown>;
 	therapists?: Therapist[];
-	multiSelect?: boolean;
-}
-
-async function addKarlMessage(opts: KarlMessageOpts) {
+	multi?: boolean;
+} = {}) {
 	isTyping.set(true);
 	await delay(800 + Math.random() * 400);
 	isTyping.set(false);
 
-	messages.update((msgs) => [
-		...msgs,
-		{
-			id: nanoid(),
-			role: 'karl',
-			content: opts.fallback,
-			contentKey: opts.key,
-			contentParams: opts.params,
-			options: opts.options,
-			multiSelect: opts.multiSelect,
-			inputType: opts.inputType,
-			therapists: opts.therapists,
-			timestamp: Date.now()
-		}
-	]);
+	messages.update((msgs) => [...msgs, {
+		id: nanoid(),
+		role: 'karl',
+		content: '',
+		contentKey: key,
+		contentParams: opts.params,
+		options: opts.options,
+		multiSelect: opts.multi,
+		inputType: opts.input,
+		therapists: opts.therapists,
+		timestamp: Date.now()
+	}]);
 }
 
+// shorthand helpers
+const ask = (key: string, options: ChatOption[], multi = false) => say(key, { options, multi });
+const prompt = (key: string, type: 'text' | 'plz' = 'text', params?: Record<string, unknown>) =>
+	say(key, { input: type, params });
+
 function addUserMessage(content: string, field?: EditableField) {
-	messages.update((msgs) => [
-		...msgs,
-		{
-			id: nanoid(),
-			role: 'user',
-			content,
-			field,
-			timestamp: Date.now()
-		}
-	]);
+	messages.update((msgs) => [...msgs, {
+		id: nanoid(),
+		role: 'user',
+		content,
+		field,
+		timestamp: Date.now()
+	}]);
 }
 
 async function transitionTo(newState: ChatState) {
 	state.set(newState);
+	const draft = get(campaignDraft);
 
 	switch (newState) {
-		case 'greeting':
-			await addKarlMessage({
-				...karlMessages.greeting,
-				options: forWhomOptions
-			});
-			break;
-
-		case 'for_other_name':
-			await addKarlMessage({
-				...karlMessages.for_other_name,
-				inputType: 'text'
-			});
-			break;
-
-		case 'location': {
-			const draft = get(campaignDraft);
-			if (draft.clientName) {
-				await addKarlMessage({
-					...karlMessages.location_with_name,
-					params: { name: draft.clientName },
-					inputType: 'plz'
-				});
-			} else {
-				await addKarlMessage({
-					...karlMessages.location_default,
-					inputType: 'plz'
-				});
-			}
-			break;
-		}
-
-		case 'insurance_type':
-			await addKarlMessage({
-				...karlMessages.insurance_type,
-				options: insuranceTypeOptions
-			});
-			break;
-
-		case 'insurance_details':
-			await addKarlMessage({
-				...karlMessages.insurance_details,
-				options: ageGroupOptions
-			});
-			break;
-
-		case 'therapy_type':
-			await addKarlMessage({
-				...karlMessages.therapy_type,
-				options: therapyTypeOptions
-			});
-			break;
-
-		case 'preferences':
-			await addKarlMessage({
-				...karlMessages.preferences,
-				options: preferenceOptions,
-				multiSelect: true
-			});
-			break;
-
-		case 'summary': {
-			const d = get(campaignDraft);
-			const details = buildSummaryDetails(d);
-			await addKarlMessage({
-				...karlMessages.summary,
-				params: { details },
-				options: summaryOptions
-			});
-			break;
-		}
-
+		case 'greeting': return ask('karl_greeting', forWhomOptions);
+		case 'for_other_name': return prompt('karl_for_other_name', 'text');
+		case 'location':
+			return draft.clientName
+				? prompt('karl_location_with_name', 'plz', { name: draft.clientName })
+				: prompt('karl_location', 'plz');
+		case 'insurance_type': return ask('karl_insurance_type', insuranceTypeOptions);
+		case 'insurance_details': return ask('karl_age_group', ageGroupOptions);
+		case 'therapy_type': return ask('karl_therapy_type', therapyTypeOptions);
+		case 'preferences': return ask('karl_preferences', preferenceOptions, true);
+		case 'summary': return ask('karl_summary_intro', summaryOptions, false);
 		case 'searching':
-			await addKarlMessage(karlMessages.searching);
+			await say('karl_searching');
 			await delay(1500);
-			await transitionTo('results');
-			break;
-
+			return transitionTo('results');
 		case 'results': {
-			const d = get(campaignDraft);
 			const filtered = filterTherapists(mockTherapists, {
-				therapyTypes: d.therapyTypes,
-				insuranceType: d.insuranceType,
-				languages: d.languages
+				therapyTypes: draft.therapyTypes,
+				insuranceType: draft.insuranceType,
+				languages: draft.languages
 			});
-
-			if (filtered.length === 0) {
-				await addKarlMessage({
-					...karlMessages.results_empty,
-					options: noResultsOptions
-				});
-			} else {
-				await addKarlMessage({
-					...karlMessages.results_found,
-					params: { count: filtered.length },
-					therapists: filtered
-				});
-			}
-			break;
+			return filtered.length === 0
+				? ask('karl_no_results', noResultsOptions)
+				: say('karl_results_found', { params: { count: filtered.length }, therapists: filtered });
 		}
-
-		case 'email_sent_confirm':
-			await addKarlMessage({
-				...karlMessages.email_confirm,
-				options: emailConfirmOptions
-			});
-			break;
+		case 'email_sent_confirm': return ask('email_sent_question', emailConfirmOptions);
 	}
-}
-
-function buildSummaryDetails(d: {
-	city?: string;
-	plz?: string;
-	radiusKm: number;
-	insuranceType?: string;
-	therapyTypes: string[];
-	genderPref?: string | null;
-	languages: string[];
-	specialties: string[];
-}): string {
-	let text = `\n\n${d.city || d.plz} (${d.radiusKm}km)\n${d.insuranceType}\n${d.therapyTypes.length ? d.therapyTypes.join(', ') : 'Alle Therapieformen'}`;
-	if (d.genderPref) text += `\n${d.genderPref === 'w' ? 'Weiblich' : 'Männlich'}`;
-	if (d.languages.includes('en')) text += '\nEnglisch';
-	if (d.specialties.length) text += `\n${d.specialties.join(', ')}`;
-	return text;
 }
 
 async function handleOption(option: ChatOption) {
 	const currentState = get(state);
-
 	const fieldMap: Record<string, EditableField> = {
 		greeting: 'forSelf',
 		insurance_type: 'insuranceType',
 		therapy_type: 'therapyTypes',
 		preferences: 'preferences'
 	};
-	const field = fieldMap[currentState];
 
-	addUserMessage(option.labelDe, field);
+	addUserMessage(option.labelDe, fieldMap[currentState]);
 
-	switch (currentState) {
-		case 'greeting':
-			campaignDraft.update((d) => ({ ...d, forSelf: option.value as boolean }));
-			break;
-		case 'insurance_type':
-			campaignDraft.update((d) => ({ ...d, insuranceType: option.value as 'GKV' | 'PKV' | 'Selbstzahler' }));
-			break;
-		case 'insurance_details':
-			campaignDraft.update((d) => ({ ...d, ageGroup: option.value as 'adult' | 'youth' }));
-			break;
-		case 'therapy_type':
-			campaignDraft.update((d) => ({ ...d, therapyTypes: option.value as string[] }));
-			break;
-		case 'preferences':
-			campaignDraft.update((d) => ({ ...d, ...(option.value as object) }));
-			break;
-	}
+	const updates: Record<string, () => void> = {
+		greeting: () => campaignDraft.update((d) => ({ ...d, forSelf: option.value as boolean })),
+		insurance_type: () => campaignDraft.update((d) => ({ ...d, insuranceType: option.value as 'GKV' | 'PKV' | 'Selbstzahler' })),
+		insurance_details: () => campaignDraft.update((d) => ({ ...d, ageGroup: option.value as 'adult' | 'youth' })),
+		therapy_type: () => campaignDraft.update((d) => ({ ...d, therapyTypes: option.value as string[] })),
+		preferences: () => campaignDraft.update((d) => ({ ...d, ...(option.value as object) }))
+	};
+	updates[currentState]?.();
 
-	if (option.nextState) {
-		await transitionTo(option.nextState);
-	}
+	if (option.nextState) await transitionTo(option.nextState);
 }
 
 async function handleInput(text: string) {
 	const currentState = get(state);
-
 	const fieldMap: Record<string, EditableField> = {
 		for_other_name: 'clientName',
 		location: 'location'
 	};
-	const field = fieldMap[currentState];
 
-	addUserMessage(text, field);
+	addUserMessage(text, fieldMap[currentState]);
 
-	switch (currentState) {
-		case 'for_other_name':
-			campaignDraft.update((d) => ({ ...d, forSelf: false, clientName: text }));
-			await transitionTo('location');
-			break;
+	if (currentState === 'for_other_name') {
+		campaignDraft.update((d) => ({ ...d, forSelf: false, clientName: text }));
+		return transitionTo('location');
+	}
 
-		case 'location': {
-			const plz = extractPlz(text);
-			if (plz) {
-				const city = getCityFromPlz(plz) || 'Unbekannt';
-				campaignDraft.update((d) => ({ ...d, plz, city }));
-				await transitionTo('insurance_type');
-			} else {
-				const cityMatch = findPlzByCity(text);
-				if (cityMatch) {
-					campaignDraft.update((d) => ({ ...d, plz: cityMatch.plz, city: cityMatch.city }));
-					await transitionTo('insurance_type');
-				} else {
-					await addKarlMessage({
-						...karlMessages.location_error,
-						inputType: 'plz'
-					});
-				}
-			}
-			break;
+	if (currentState === 'location') {
+		const plz = extractPlz(text);
+		if (plz) {
+			campaignDraft.update((d) => ({ ...d, plz, city: getCityFromPlz(plz) || 'Unbekannt' }));
+			return transitionTo('insurance_type');
 		}
+		const cityMatch = findPlzByCity(text);
+		if (cityMatch) {
+			campaignDraft.update((d) => ({ ...d, plz: cityMatch.plz, city: cityMatch.city }));
+			return transitionTo('insurance_type');
+		}
+		return prompt('karl_location_error', 'plz');
 	}
 }
 
 async function handleMultiSelect(options: ChatOption[]) {
-	const labels = options.map((o) => o.labelDe).join(', ') || 'Keine besonderen Wünsche';
-	addUserMessage(labels, 'preferences');
+	addUserMessage(options.map((o) => o.labelDe).join(', ') || 'Keine besonderen Wünsche', 'preferences');
 
-	for (const option of options) {
-		const val = option.value as Record<string, unknown>;
-		campaignDraft.update((d) => {
-			const updated = { ...d };
-			if (val.genderPref) updated.genderPref = val.genderPref as 'w' | 'm' | 'd';
-			if (val.languages) updated.languages = val.languages as string[];
-			if (val.specialties) updated.specialties = [...d.specialties, ...(val.specialties as string[])];
-			return updated;
-		});
+	for (const { value } of options) {
+		const val = value as Record<string, unknown>;
+		campaignDraft.update((d) => ({
+			...d,
+			...(val.genderPref && { genderPref: val.genderPref as 'w' | 'm' | 'd' }),
+			...(val.languages && { languages: val.languages as string[] }),
+			...(val.specialties && { specialties: [...d.specialties, ...(val.specialties as string[])] })
+		}));
 	}
-
 	await transitionTo('summary');
 }
 
@@ -311,8 +179,7 @@ function promptEmailConfirm(therapist: Therapist) {
 }
 
 function start() {
-	const currentMessages = get(messages);
-	if (currentMessages.length > 0) return;
+	if (get(messages).length > 0) return;
 	messages.set([]);
 	campaignDraft.reset();
 	transitionTo('greeting');
@@ -332,63 +199,34 @@ function rewindTo(messageIndex: number) {
 	const currentMessages = get(messages);
 	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
 
-	const previousMessages = currentMessages.slice(0, messageIndex);
-	messages.set(previousMessages);
+	messages.set(currentMessages.slice(0, messageIndex));
 	campaignDraft.reset();
 
-	const lastKarlMessage = previousMessages[previousMessages.length - 1];
-
-	if (previousMessages.length === 0) {
-		transitionTo('greeting');
-	} else if (lastKarlMessage?.options) {
-		state.set('greeting');
-	} else if (lastKarlMessage?.inputType) {
-		state.set('greeting');
-	}
+	const lastKarl = currentMessages.slice(0, messageIndex).at(-1);
+	if (!lastKarl) return transitionTo('greeting');
+	if (lastKarl.options || lastKarl.inputType) state.set('greeting');
 }
 
 function updateMessage(messageIndex: number, newContent: string, option?: ChatOption) {
-	messages.update((msgs) =>
-		msgs.map((m, i) => (i === messageIndex ? { ...m, content: newContent } : m))
-	);
+	messages.update((msgs) => msgs.map((m, i) => i === messageIndex ? { ...m, content: newContent } : m));
 
-	if (option?.value !== undefined) {
-		const val = option.value;
-		campaignDraft.update((d) => {
-			if (typeof val === 'boolean') {
-				return { ...d, forSelf: val };
-			}
-			if (typeof val === 'string') {
-				if (['GKV', 'PKV', 'Selbstzahler'].includes(val)) {
-					return { ...d, insuranceType: val as 'GKV' | 'PKV' | 'Selbstzahler' };
-				}
-			}
-			if (Array.isArray(val)) {
-				return { ...d, therapyTypes: val };
-			}
-			if (typeof val === 'object' && val !== null) {
-				return { ...d, ...(val as object) };
-			}
-			return d;
-		});
-	}
+	if (option?.value === undefined) return;
+	const val = option.value;
+
+	campaignDraft.update((d) => {
+		if (typeof val === 'boolean') return { ...d, forSelf: val };
+		if (typeof val === 'string' && ['GKV', 'PKV', 'Selbstzahler'].includes(val))
+			return { ...d, insuranceType: val as 'GKV' | 'PKV' | 'Selbstzahler' };
+		if (Array.isArray(val)) return { ...d, therapyTypes: val };
+		if (typeof val === 'object' && val) return { ...d, ...(val as object) };
+		return d;
+	});
 }
 
-function delay(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export const chat = {
-	state,
-	messages,
-	isTyping,
-	currentTherapist,
-	handleOption,
-	handleInput,
-	handleMultiSelect,
-	promptEmailConfirm,
-	start,
-	reset,
-	rewindTo,
-	updateMessage
+	state, messages, isTyping, currentTherapist,
+	handleOption, handleInput, handleMultiSelect,
+	promptEmailConfirm, start, reset, rewindTo, updateMessage
 };

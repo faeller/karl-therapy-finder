@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
-	import { t } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import KarlAvatar from './KarlAvatar.svelte';
 	import { Pencil } from 'lucide-svelte';
 
@@ -14,9 +14,11 @@
 
 	let { role, content, contentKey, contentParams, onEdit }: Props = $props();
 
-	const displayText = $derived(
-		contentKey ? t(contentKey, content, contentParams) : content
-	);
+	const displayText = $derived.by(() => {
+		if (!contentKey) return content;
+		const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[contentKey];
+		return fn ? fn(contentParams) : content;
+	});
 </script>
 
 <div class="flex items-end gap-2" class:flex-row-reverse={role === 'user'}>
