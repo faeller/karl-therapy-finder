@@ -12,6 +12,12 @@
 
 	let { options, multiSelect = false, onSelect, onMultiSubmit }: Props = $props();
 
+	// try option_${id} key, fall back to labelDe
+	const label = (opt: ChatOption) => {
+		const fn = (m as Record<string, () => string>)[`option_${opt.id}`];
+		return fn ? fn() : opt.labelDe;
+	};
+
 	let selected = $state<Set<string>>(new Set());
 
 	function toggleOption(option: ChatOption) {
@@ -51,7 +57,7 @@
 			{#if option.emoji}
 				<span class="mr-1">{option.emoji}</span>
 			{/if}
-			{option.labelDe}
+			{label(option)}
 		</button>
 	{/each}
 

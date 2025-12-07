@@ -16,7 +16,6 @@ export type ChatState =
 
 export interface ChatOption {
 	id: string;
-	label: string;
 	labelDe: string;
 	emoji?: string;
 	value: unknown;
