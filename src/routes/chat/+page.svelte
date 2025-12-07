@@ -8,14 +8,18 @@
 	import TypingIndicator from '$lib/components/chat/TypingIndicator.svelte';
 	import TherapistList from '$lib/components/chat/TherapistList.svelte';
 	import ChatSection from '$lib/components/chat/ChatSection.svelte';
+	import EditDialog from '$lib/components/chat/EditDialog.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
 	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
-	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
+	import type { ChatOption, Therapist, ChatMessage, EditableField } from '$lib/types';
 
 	const { messages, isTyping, state } = chat;
 
 	let messagesContainer: HTMLDivElement;
+
+	// Edit dialog state
+	let editingMessage: { index: number; field: EditableField; content: string } | null = $state(null);
 
 	onMount(() => {
 		chat.start();
@@ -58,9 +62,13 @@
 		}, 500);
 	}
 
-	function handleEdit(messageIndex: number) {
-		// Reset to the state before this message
-		chat.rewindTo(messageIndex);
+	function handleEdit(messageIndex: number, message: ChatMessage) {
+		if (!message.field) return;
+		editingMessage = {
+			index: messageIndex,
+			field: message.field,
+			content: message.content
+		};
 	}
 
 	// Determine chat phases
@@ -148,7 +156,7 @@
 							<MessageBubble
 								role={message.role}
 								content={message.content}
-								onEdit={message.role === 'user' && isInResults ? () => handleEdit(i) : undefined}
+								onEdit={message.role === 'user' && message.field && isInResults ? () => handleEdit(i, message) : undefined}
 							/>
 
 							{#if message.options?.length && message === lastMessage && !isInResults}
@@ -217,4 +225,13 @@
 		</div>
 	{/if}
 </div>
+
+{#if editingMessage}
+	<EditDialog
+		field={editingMessage.field}
+		currentValue={editingMessage.content}
+		messageIndex={editingMessage.index}
+		onClose={() => (editingMessage = null)}
+	/>
+{/if}
 

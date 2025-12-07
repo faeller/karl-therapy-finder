@@ -23,6 +23,15 @@ export interface ChatOption {
 	nextState?: ChatState;
 }
 
+export type EditableField =
+	| 'forSelf'
+	| 'clientName'
+	| 'location'
+	| 'insuranceType'
+	| 'insuranceName'
+	| 'therapyTypes'
+	| 'preferences';
+
 export interface ChatMessage {
 	id: string;
 	role: 'karl' | 'user';
@@ -32,6 +41,8 @@ export interface ChatMessage {
 	inputType?: 'text' | 'plz';
 	therapists?: Therapist[];
 	timestamp: number;
+	/** Which campaign field this user message answers */
+	field?: EditableField;
 }
 
 export interface CampaignDraft {

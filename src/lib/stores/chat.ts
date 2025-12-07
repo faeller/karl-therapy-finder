@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
-import type { ChatState, ChatMessage, ChatOption, Therapist } from '$lib/types';
+import type { ChatState, ChatMessage, ChatOption, Therapist, EditableField } from '$lib/types';
 import { campaignDraft } from './campaign';
 import { mockTherapists, filterTherapists } from '$lib/data/mockTherapists';
 
@@ -65,13 +65,14 @@ async function addKarlMessage(
 	]);
 }
 
-function addUserMessage(content: string) {
+function addUserMessage(content: string, field?: EditableField) {
 	messages.update((msgs) => [
 		...msgs,
 		{
 			id: nanoid(),
 			role: 'user',
 			content,
+			field,
 			timestamp: Date.now()
 		}
 	]);
@@ -313,8 +314,18 @@ async function transitionTo(newState: ChatState) {
 }
 
 async function handleOption(option: ChatOption) {
-	addUserMessage(option.labelDe);
 	const currentState = get(state);
+
+	// Determine which field this answers
+	const fieldMap: Record<string, EditableField> = {
+		greeting: 'forSelf',
+		insurance_type: 'insuranceType',
+		therapy_type: 'therapyTypes',
+		preferences: 'preferences'
+	};
+	const field = fieldMap[currentState];
+
+	addUserMessage(option.labelDe, field);
 
 	switch (currentState) {
 		case 'greeting':
@@ -337,8 +348,17 @@ async function handleOption(option: ChatOption) {
 }
 
 async function handleInput(text: string) {
-	addUserMessage(text);
 	const currentState = get(state);
+
+	// Determine which field this answers
+	const fieldMap: Record<string, EditableField> = {
+		for_other_name: 'clientName',
+		location: 'location',
+		insurance_details: 'insuranceName'
+	};
+	const field = fieldMap[currentState];
+
+	addUserMessage(text, field);
 
 	switch (currentState) {
 		case 'for_other_name':
@@ -380,7 +400,7 @@ async function handleInput(text: string) {
 
 async function handleMultiSelect(options: ChatOption[]) {
 	const labels = options.map((o) => o.labelDe).join(', ') || 'Keine besonderen Wünsche';
-	addUserMessage(labels);
+	addUserMessage(labels, 'preferences');
 
 	for (const option of options) {
 		const val = option.value as Record<string, unknown>;
@@ -419,34 +439,112 @@ function reset() {
 	transitionTo('greeting');
 }
 
-function rewindTo(messageIndex: number) {
-	// Get the message at the index (should be a user message)
+// Field labels for UI
+export const fieldLabels: Record<EditableField, string> = {
+	forSelf: 'Für wen suchst du?',
+	clientName: 'Name',
+	location: 'Ort / PLZ',
+	insuranceType: 'Versicherungsart',
+	insuranceName: 'Krankenkasse',
+	therapyTypes: 'Therapieart',
+	preferences: 'Besondere Wünsche'
+};
+
+// Fields that require full conversation reset
+const resetRequiredFields: EditableField[] = ['forSelf'];
+
+// Check if a field change requires full reset or just re-search
+function needsFullReset(field: EditableField): boolean {
+	return resetRequiredFields.includes(field);
+}
+
+// Smart edit: update a specific field and re-search
+async function editField(field: EditableField, newValue: string, messageIndex: number) {
 	const currentMessages = get(messages);
-	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
 
-	// Find the karl message before this user message to get its state
+	if (needsFullReset(field)) {
+		// For fundamental changes, rewind the conversation
+		const previousMessages = currentMessages.slice(0, messageIndex);
+		messages.set(previousMessages);
+		campaignDraft.reset();
+
+		if (previousMessages.length === 0) {
+			await transitionTo('greeting');
+		}
+		return;
+	}
+
+	// For other fields, just update the value and re-search
 	const targetMessage = currentMessages[messageIndex];
-	if (targetMessage.role !== 'user') return;
+	if (!targetMessage || targetMessage.role !== 'user') return;
 
-	// Slice messages to just before the user message
-	const previousMessages = currentMessages.slice(0, messageIndex);
-	messages.set(previousMessages);
+	// Update the message content
+	messages.update((msgs) =>
+		msgs.map((m, i) => (i === messageIndex ? { ...m, content: newValue } : m))
+	);
 
-	// Find the last karl message with options to determine the state
-	const lastKarlMessage = [...previousMessages].reverse().find((m) => m.role === 'karl');
+	// Update the campaign draft based on field type
+	switch (field) {
+		case 'location': {
+			const plzMatch = newValue.match(/\d{5}/);
+			if (plzMatch) {
+				const plz = plzMatch[0];
+				const city = plzLookup[plz] || 'Unbekannt';
+				campaignDraft.update((d) => ({ ...d, plz, city }));
+			} else {
+				const cityMatch = Object.entries(plzLookup).find(([_, c]) =>
+					c.toLowerCase().includes(newValue.toLowerCase())
+				);
+				if (cityMatch) {
+					campaignDraft.update((d) => ({ ...d, plz: cityMatch[0], city: cityMatch[1] }));
+				}
+			}
+			break;
+		}
+		case 'insuranceName':
+			campaignDraft.update((d) => ({ ...d, insuranceName: newValue }));
+			break;
+		case 'clientName':
+			campaignDraft.update((d) => ({ ...d, clientName: newValue }));
+			break;
+	}
 
-	// Reset campaign draft partially based on what we're undoing
-	campaignDraft.reset();
+	// If we're in results, re-search with new criteria
+	const currentState = get(state);
+	if (['results', 'email_sent_confirm'].includes(currentState)) {
+		await refreshResults();
+	}
+}
 
-	// Re-transition to prompt for new input
-	if (previousMessages.length === 0) {
-		transitionTo('greeting');
-	} else if (lastKarlMessage?.options) {
-		// The last message has options, show them again
-		state.set('greeting'); // Reset state, the options will be shown
-	} else if (lastKarlMessage?.inputType) {
-		// Need text input again
-		state.set('greeting');
+// Re-run the search with current campaign draft
+async function refreshResults() {
+	// Remove old therapist results
+	messages.update((msgs) => msgs.filter((m) => !m.therapists?.length));
+
+	state.set('searching');
+	await addKarlMessage('Suche mit neuen Kriterien...');
+	await delay(1000);
+
+	const d = get(campaignDraft);
+	const filtered = filterTherapists(mockTherapists, {
+		therapyTypes: d.therapyTypes,
+		insuranceType: d.insuranceType,
+		languages: d.languages
+	});
+
+	state.set('results');
+	if (filtered.length === 0) {
+		await addKarlMessage(
+			'Hmm, ich habe leider keine passenden Therapeut:innen gefunden. Möchtest du die Kriterien anpassen?',
+			[{ id: 'retry', label: 'Change criteria', labelDe: 'Kriterien ändern', value: true, nextState: 'greeting' }]
+		);
+	} else {
+		await addKarlMessage(
+			`Ich habe ${filtered.length} Therapeut:innen gefunden!`,
+			undefined,
+			undefined,
+			filtered
+		);
 	}
 }
 
@@ -465,5 +563,6 @@ export const chat = {
 	promptEmailConfirm,
 	start,
 	reset,
-	rewindTo
+	editField,
+	needsFullReset
 };
