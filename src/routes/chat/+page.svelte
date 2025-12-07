@@ -6,11 +6,12 @@
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
 	import TypingIndicator from '$lib/components/chat/TypingIndicator.svelte';
-	import TherapistCard from '$lib/components/chat/TherapistCard.svelte';
+	import TherapistList from '$lib/components/chat/TherapistList.svelte';
+	import ChatSection from '$lib/components/chat/ChatSection.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon, Pencil } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
-	import type { ChatOption, Therapist } from '$lib/types';
+	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
 
 	const { messages, isTyping, state } = chat;
 
@@ -42,7 +43,6 @@
 	}
 
 	function handleEmailClick(therapist: Therapist) {
-		// log contact attempt
 		contacts.add({
 			therapistId: therapist.id,
 			therapistName: therapist.name,
@@ -53,16 +53,40 @@
 			status: 'pending'
 		});
 
-		// prompt confirmation after a delay
 		setTimeout(() => {
 			chat.promptEmailConfirm(therapist);
 		}, 500);
 	}
 
-	// get last message for input type
+	function handleEdit(messageIndex: number) {
+		// Reset to the state before this message
+		chat.rewindTo(messageIndex);
+	}
+
+	// Determine chat phases
+	const isInResults = $derived(['searching', 'results', 'email_sent_confirm'].includes($state));
+
+	// Find index where results phase starts (first message with therapists)
+	const resultsStartIndex = $derived(
+		$messages.findIndex((m) => m.therapists?.length)
+	);
+
+	// Split messages into onboarding and results
+	const onboardingMessages = $derived(
+		resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages)
+	);
+
+	const resultsMessages = $derived(
+		resultsStartIndex > 0 ? $messages.slice(resultsStartIndex) : []
+	);
+
+	// Get all therapists from the latest results message
+	const allTherapists = $derived(
+		$messages.filter((m) => m.therapists?.length).at(-1)?.therapists ?? []
+	);
+
 	const lastMessage = $derived($messages[$messages.length - 1]);
 	const showTextInput = $derived(lastMessage?.inputType === 'text' || lastMessage?.inputType === 'plz');
-	const showOptions = $derived(lastMessage?.options && lastMessage.options.length > 0);
 </script>
 
 <div class="flex h-[100dvh] flex-col">
@@ -111,32 +135,79 @@
 		bind:this={messagesContainer}
 		class="flex-1 overflow-y-auto px-4 py-6"
 	>
-		<div class="mx-auto max-w-2xl space-y-4">
-			{#each $messages as message (message.id)}
-				<MessageBubble role={message.role} content={message.content} />
+		<div class="mx-auto max-w-2xl">
+			<!-- Onboarding section (collapsible when in results) -->
+			{#if onboardingMessages.length > 0}
+				<ChatSection
+					title="Deine Angaben"
+					icon="📋"
+					collapsible={isInResults}
+					defaultOpen={!isInResults}
+				>
+					<div class="space-y-4">
+						{#each onboardingMessages as message, i (message.id)}
+							<div class="message-row" class:user-message={message.role === 'user'}>
+								<MessageBubble role={message.role} content={message.content} />
 
-				{#if message.therapists?.length}
-					<div class="ml-12 space-y-3">
-						{#each message.therapists as therapist (therapist.id)}
-							<TherapistCard
-								{therapist}
-								onEmailClick={() => handleEmailClick(therapist)}
-							/>
+								{#if message.role === 'user' && isInResults}
+									<button
+										onclick={() => handleEdit(i)}
+										class="edit-btn"
+										title="Ändern"
+									>
+										<Pencil size={14} />
+									</button>
+								{/if}
+							</div>
+
+							{#if message.options?.length && message === lastMessage && !isInResults}
+								<div class="mt-4">
+									<OptionButtons
+										options={message.options}
+										multiSelect={message.multiSelect}
+										onSelect={handleOptionSelect}
+										onMultiSubmit={handleMultiSelect}
+									/>
+								</div>
+							{/if}
 						{/each}
 					</div>
-				{/if}
+				</ChatSection>
+			{/if}
 
-				{#if message.options?.length && message === lastMessage}
-					<div class="mt-4">
-						<OptionButtons
-							options={message.options}
-							multiSelect={message.multiSelect}
-							onSelect={handleOptionSelect}
-							onMultiSubmit={handleMultiSelect}
-						/>
-					</div>
-				{/if}
-			{/each}
+			<!-- Results section -->
+			{#if allTherapists.length > 0}
+				<ChatSection
+					title="Gefundene Therapeut:innen"
+					icon="🔍"
+					collapsible={false}
+				>
+					<TherapistList
+						therapists={allTherapists}
+						onEmailClick={handleEmailClick}
+					/>
+				</ChatSection>
+			{/if}
+
+			<!-- Current interaction (non-therapist results messages) -->
+			{#if resultsMessages.length > 0}
+				<div class="space-y-4 mt-4">
+					{#each resultsMessages.filter((m) => !m.therapists?.length) as message (message.id)}
+						<MessageBubble role={message.role} content={message.content} />
+
+						{#if message.options?.length && message === lastMessage}
+							<div class="mt-4">
+								<OptionButtons
+									options={message.options}
+									multiSelect={message.multiSelect}
+									onSelect={handleOptionSelect}
+									onMultiSubmit={handleMultiSelect}
+								/>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{/if}
 
 			{#if $isTyping}
 				<TypingIndicator />
@@ -157,3 +228,31 @@
 	{/if}
 </div>
 
+<style>
+	.message-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.message-row.user-message {
+		flex-direction: row-reverse;
+	}
+
+	.edit-btn {
+		padding: 0.25rem;
+		border-radius: 0.25rem;
+		color: var(--color-pencil);
+		opacity: 0;
+		transition: opacity 150ms;
+	}
+
+	.message-row:hover .edit-btn {
+		opacity: 0.4;
+	}
+
+	.edit-btn:hover {
+		opacity: 1 !important;
+		color: var(--color-blue-pen);
+	}
+</style>

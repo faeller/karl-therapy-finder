@@ -419,6 +419,37 @@ function reset() {
 	transitionTo('greeting');
 }
 
+function rewindTo(messageIndex: number) {
+	// Get the message at the index (should be a user message)
+	const currentMessages = get(messages);
+	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
+
+	// Find the karl message before this user message to get its state
+	const targetMessage = currentMessages[messageIndex];
+	if (targetMessage.role !== 'user') return;
+
+	// Slice messages to just before the user message
+	const previousMessages = currentMessages.slice(0, messageIndex);
+	messages.set(previousMessages);
+
+	// Find the last karl message with options to determine the state
+	const lastKarlMessage = [...previousMessages].reverse().find((m) => m.role === 'karl');
+
+	// Reset campaign draft partially based on what we're undoing
+	campaignDraft.reset();
+
+	// Re-transition to prompt for new input
+	if (previousMessages.length === 0) {
+		transitionTo('greeting');
+	} else if (lastKarlMessage?.options) {
+		// The last message has options, show them again
+		state.set('greeting'); // Reset state, the options will be shown
+	} else if (lastKarlMessage?.inputType) {
+		// Need text input again
+		state.set('greeting');
+	}
+}
+
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -433,5 +464,6 @@ export const chat = {
 	handleMultiSelect,
 	promptEmailConfirm,
 	start,
-	reset
+	reset,
+	rewindTo
 };
