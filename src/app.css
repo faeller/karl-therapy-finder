@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
+@import 'tailwindcss';
+
+/* hand-drawn design tokens */
+@theme {
+	/* light mode colors */
+	--color-paper: #fdfbf7;
+	--color-pencil: #2d2d2d;
+	--color-erased: #e5e0d8;
+	--color-red-marker: #ff4d4d;
+	--color-blue-pen: #2d5da1;
+	--color-postit: #fff9c4;
+
+	/* fonts */
+	--font-heading: 'Kalam', cursive;
+	--font-body: 'Patrick Hand', cursive;
+
+	/* hard shadows */
+	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
+	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
+	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
+	--shadow-hard-subtle: 3px 3px 0px 0px rgba(45, 45, 45, 0.1);
+}
+
+/* dark mode overrides */
+.dark {
+	--color-paper: #1a1a1a;
+	--color-pencil: #e5e0d8;
+	--color-erased: #2d2d2d;
+	--color-postit: #3d3520;
+	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
+	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
+	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
+	--shadow-hard-subtle: 3px 3px 0px 0px rgba(229, 224, 216, 0.1);
+}
+
+/* base styles */
+html {
+	font-family: var(--font-body);
+	background-color: var(--color-paper);
+	color: var(--color-pencil);
+	scroll-behavior: smooth;
+}
+
+/* paper texture background */
+body {
+	background-image: radial-gradient(var(--color-erased) 1px, transparent 1px);
+	background-size: 24px 24px;
+	min-height: 100vh;
+}
+
+/* heading font */
+h1, h2, h3, h4, h5, h6 {
+	font-family: var(--font-heading);
+	font-weight: 700;
+}
+
+/* remove default focus ring */
+*:focus {
+	outline: none;
+}
+
+/* selection color */
+::selection {
+	background-color: var(--color-red-marker);
+	color: white;
+}
+
+/* dark mode card backgrounds */
+.dark .bg-white {
+	background-color: #252525;
+}
