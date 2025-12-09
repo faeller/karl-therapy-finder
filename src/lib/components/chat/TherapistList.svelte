@@ -6,6 +6,7 @@
 	import { t } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import { wobbly } from '$lib/utils/wobbly';
+	import { THERAPIST_LIST } from '$lib/constants';
 
 	interface Props {
 		therapists: Therapist[];
@@ -13,8 +14,8 @@
 
 	let { therapists }: Props = $props();
 
-	const INITIAL_SHOW = 5;
-	const LOAD_MORE_COUNT = 5;
+	const INITIAL_SHOW = THERAPIST_LIST.initialShow;
+	const LOAD_MORE_COUNT = THERAPIST_LIST.loadMoreCount;
 
 	// Get IDs of therapists already contacted (not pending)
 	const contactedIds = $derived(
@@ -23,10 +24,10 @@
 
 	// Split therapists into contacted and not contacted
 	const availableTherapists = $derived(
-		therapists.filter((t) => !contactedIds.has(t.id))
+		therapists.filter((th) => !contactedIds.has(th.id))
 	);
 	const contactedTherapists = $derived(
-		therapists.filter((t) => contactedIds.has(t.id))
+		therapists.filter((th) => contactedIds.has(th.id))
 	);
 
 	let showCount = $state(INITIAL_SHOW);

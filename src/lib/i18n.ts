@@ -22,7 +22,7 @@ type Messages = Record<string, MessageFn>;
  */
 export function t(key: string, fallback: string, params?: Record<string, unknown>): string {
 	// Try to get the Paraglide message function
-	const m = messages.m as Messages;
+	const m = messages.m as unknown as Messages;
 	const fn = m[key];
 
 	if (typeof fn === 'function') {

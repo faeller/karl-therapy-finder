@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		decoration?: 'none' | 'tape' | 'tack' | 'postit';
 		rotation?: number;
 		class?: string;
+		children: Snippet;
 	}
 
 	let {
@@ -12,7 +14,7 @@
 		rotation = 0,
 		class: className = '',
 		children
-	}: Props & { children: any } = $props();
+	}: Props = $props();
 </script>
 
 <div

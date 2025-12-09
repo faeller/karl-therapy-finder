@@ -1,82 +1,49 @@
-import { writable, derived } from 'svelte/store';
-import { browser } from '$app/environment';
+import { derived } from 'svelte/store';
+import { createPersistedArrayStore } from './createPersistedStore';
+import { STORAGE_KEYS } from '$lib/constants';
 import { nanoid } from 'nanoid';
 import type { ContactAttempt } from '$lib/types';
 
-function createContactsStore() {
-	const stored = browser ? localStorage.getItem('karl-contacts') : null;
-	const initial: ContactAttempt[] = stored ? JSON.parse(stored) : [];
-	const { subscribe, set, update } = writable<ContactAttempt[]>(initial);
+// waiting times that qualify for kostenerstattung
+const QUALIFYING_WAIT_TIMES = ['3-6 Monate', '> 6 Monate'] as const;
 
-	function persist(contacts: ContactAttempt[]) {
-		if (browser) {
-			localStorage.setItem('karl-contacts', JSON.stringify(contacts));
-		}
-	}
+function createContactsStore() {
+	const base = createPersistedArrayStore<ContactAttempt>(STORAGE_KEYS.contacts);
 
 	return {
-		subscribe,
+		subscribe: base.subscribe,
 		add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => {
-			update((contacts) => {
-				const newContact: ContactAttempt = {
-					...contact,
-					id: nanoid(),
-					contactDate: new Date().toISOString()
-				};
-				const updated = [...contacts, newContact];
-				persist(updated);
-				return updated;
-			});
+			base.add({
+				...contact,
+				id: nanoid(),
+				contactDate: new Date().toISOString()
+			} as ContactAttempt);
 		},
 		updateStatus: (id: string, status: ContactAttempt['status'], waitingTime?: string) => {
-			update((contacts) => {
-				const updated = contacts.map((c) =>
-					c.id === id ? { ...c, status, waitingTime: waitingTime ?? c.waitingTime } : c
-				);
-				persist(updated);
-				return updated;
-			});
+			base.updateItem(
+				(c) => c.id === id,
+				(c) => ({ ...c, status, waitingTime: waitingTime ?? c.waitingTime })
+			);
 		},
-		remove: (id: string) => {
-			update((contacts) => {
-				const updated = contacts.filter((c) => c.id !== id);
-				persist(updated);
-				return updated;
-			});
-		},
-		removeByTherapistId: (therapistId: string) => {
-			update((contacts) => {
-				const updated = contacts.filter((c) => c.therapistId !== therapistId);
-				persist(updated);
-				return updated;
-			});
-		},
+		remove: (id: string) => base.remove((c) => c.id === id),
+		removeByTherapistId: (therapistId: string) => base.remove((c) => c.therapistId === therapistId),
 		updateStatusByTherapistId: (therapistId: string, status: ContactAttempt['status']) => {
-			update((contacts) => {
-				const updated = contacts.map((c) =>
-					c.therapistId === therapistId ? { ...c, status } : c
-				);
-				persist(updated);
-				return updated;
-			});
+			base.updateItem(
+				(c) => c.therapistId === therapistId,
+				(c) => ({ ...c, status })
+			);
 		},
-		clear: () => {
-			if (browser) {
-				localStorage.removeItem('karl-contacts');
-			}
-			set([]);
-		}
+		clear: base.clear
 	};
 }
 
 export const contacts = createContactsStore();
 
-// contacts qualifying for kostenerstattung (no reply or >3 month wait)
+// contacts qualifying for kostenerstattung (no reply or long wait)
 export const qualifyingContacts = derived(contacts, ($contacts) =>
 	$contacts.filter(
 		(c) =>
 			c.status === 'no_reply' ||
-			c.waitingTime === '3-6 Monate' ||
-			c.waitingTime === '> 6 Monate'
+			(QUALIFYING_WAIT_TIMES as readonly string[]).includes(c.waitingTime ?? '')
 	)
 );

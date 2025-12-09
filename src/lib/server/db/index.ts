@@ -1,3 +1,5 @@
+// database connection for upcoming Patreon OAuth / user accounts feature
+// uses libSQL (Turso) for serverless SQLite
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from './schema';

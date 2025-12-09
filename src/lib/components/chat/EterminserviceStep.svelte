@@ -219,6 +219,8 @@
 </div>
 
 <style>
+	/* option-btn styles in app.css */
+
 	.flow-content {
 		display: flex;
 		flex-direction: column;
@@ -243,49 +245,6 @@
 	.availability-badge.unavailable {
 		background-color: rgba(255, 77, 77, 0.15);
 		color: var(--color-red-marker);
-	}
-
-	/* match OptionButtons styling */
-	.option-btn {
-		display: inline-flex;
-		align-items: center;
-		border-width: 2px;
-		border-style: solid;
-		padding: 0.5rem 1rem;
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 100ms;
-		background-color: var(--color-paper);
-		border-color: var(--color-pencil);
-		color: var(--color-pencil);
-		box-shadow: var(--shadow-hard-sm);
-	}
-
-	.option-btn:hover:not(:disabled) {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
-		color: white;
-	}
-
-	.option-btn.recommended {
-		border-color: var(--color-blue-pen);
-		background-color: rgba(45, 93, 161, 0.1);
-	}
-
-	.option-btn.secondary {
-		opacity: 0.6;
-		border-style: dashed;
-	}
-
-	.option-btn.secondary:hover {
-		opacity: 1;
-		border-style: solid;
-	}
-
-	.option-btn.disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
-		background-color: var(--color-erased);
 	}
 
 	.skip-link {

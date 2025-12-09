@@ -1,36 +1,26 @@
+// chat orchestrator - coordinates state machine, messages, and campaign
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { ChatState, ChatMessage, ChatOption, Therapist, EditableField } from '$lib/types';
+import { STORAGE_KEYS } from '$lib/constants';
 import { campaignDraft } from './campaign';
-import { getCityFromPlz, extractPlz } from '$lib/data/plzLookup';
+import { extractPlz } from '$lib/data/plzLookup';
 import { OptionId } from '$lib/data/optionIds';
 import { applyOption, applyOptions, resetPreferences } from '$lib/data/optionMapping';
-import { createKarlMessage, createUserMessage, simulateTyping, delay } from './messageFactory';
-import { searchTherapists, mergeTherapists } from '$lib/services/therapistService';
-import {
-	forWhomOptions,
-	locationOptions,
-	insuranceTypeOptions,
-	ageGroupOptions,
-	therapyTypeOptions,
-	preferenceOptions,
-	summaryOptions,
-	editHintOptions,
-	terminserviceOptions,
-	noResultsOptions,
-	reSearchOptions
-} from '$lib/data/chatOptions';
+import { createKarlMessage, createUserMessage, simulateTyping } from './messageFactory';
+import { searchTherapists, mergeTherapists, SearchError } from '$lib/services/therapistService';
+import { stateConfigs, noResultsConfig, getFieldForState } from './chatStates';
 
-// persistence
-function getStoredState(): ChatState {
+// persistence helpers
+function loadState(): ChatState {
 	if (!browser) return 'greeting';
-	return (localStorage.getItem('karl-chat-state') as ChatState) || 'greeting';
+	return (localStorage.getItem(STORAGE_KEYS.chatState) as ChatState) || 'greeting';
 }
 
-function getStoredMessages(): ChatMessage[] {
+function loadMessages(): ChatMessage[] {
 	if (!browser) return [];
 	try {
-		const saved = localStorage.getItem('karl-chat-messages');
+		const saved = localStorage.getItem(STORAGE_KEYS.chatMessages);
 		return saved ? JSON.parse(saved) : [];
 	} catch {
 		return [];
@@ -38,46 +28,43 @@ function getStoredMessages(): ChatMessage[] {
 }
 
 // stores
-const state = writable<ChatState>(getStoredState());
-const messages = writable<ChatMessage[]>(getStoredMessages());
+const state = writable<ChatState>(loadState());
+const messages = writable<ChatMessage[]>(loadMessages());
 const isTyping = writable(false);
 
-// persist on change
-state.subscribe((s) => browser && localStorage.setItem('karl-chat-state', s));
-messages.subscribe((m) => browser && localStorage.setItem('karl-chat-messages', JSON.stringify(m)));
+// auto-persist
+state.subscribe((s) => browser && localStorage.setItem(STORAGE_KEYS.chatState, s));
+messages.subscribe((m) => browser && localStorage.setItem(STORAGE_KEYS.chatMessages, JSON.stringify(m)));
 
-// merge flag for re-search
+// merge flag for re-search (intentionally module-level, reset after use)
 let mergeResults = false;
 
-function hydrateChat() {
-	state.set(getStoredState());
-	messages.set(getStoredMessages());
-}
-
 // message helpers
-async function say(key: string, opts: {
-	options?: ChatOption[];
-	input?: 'text' | 'plz';
-	params?: Record<string, unknown>;
-	therapists?: Therapist[];
-	multi?: boolean;
-	content?: string;
-} = {}) {
+async function say(
+	key: string,
+	opts: {
+		options?: ChatOption[];
+		input?: 'text' | 'plz';
+		params?: Record<string, unknown>;
+		therapists?: Therapist[];
+		multi?: boolean;
+		content?: string;
+	} = {}
+) {
 	await simulateTyping((t) => isTyping.set(t));
-	messages.update((msgs) => [...msgs, createKarlMessage({
-		content: opts.content,
-		contentKey: opts.content ? undefined : key,
-		contentParams: opts.params,
-		options: opts.options,
-		multiSelect: opts.multi,
-		inputType: opts.input,
-		therapists: opts.therapists
-	})]);
+	messages.update((msgs) => [
+		...msgs,
+		createKarlMessage({
+			content: opts.content,
+			contentKey: opts.content ? undefined : key,
+			contentParams: opts.params,
+			options: opts.options,
+			multiSelect: opts.multi,
+			inputType: opts.input,
+			therapists: opts.therapists
+		})
+	]);
 }
-
-const ask = (key: string, options: ChatOption[], multi = false) => say(key, { options, multi });
-const prompt = (key: string, type: 'text' | 'plz' = 'text', params?: Record<string, unknown>) =>
-	say(key, { input: type, params });
 
 function addUserMessage(content: string, field?: EditableField, contentKey?: string) {
 	messages.update((msgs) => [...msgs, createUserMessage(content, field, contentKey)]);
@@ -86,50 +73,45 @@ function addUserMessage(content: string, field?: EditableField, contentKey?: str
 // state machine
 async function transitionTo(newState: ChatState) {
 	state.set(newState);
+	const config = stateConfigs[newState];
 	const draft = get(campaignDraft);
 
-	switch (newState) {
-		case 'greeting':
-			return ask('karl_greeting', forWhomOptions);
-		case 'for_other_name':
-			return prompt('karl_for_other_name', 'text');
-		case 'location': {
-			const msgs = get(messages);
-			const locationMsg = msgs.find((m) => m.field === 'location' && m.role === 'user');
-			const plzFromHistory = locationMsg ? extractPlz(locationMsg.content) : undefined;
+	// special cases requiring dynamic logic
+	if (newState === 'location') {
+		// check if we already have PLZ from history or draft
+		const msgs = get(messages);
+		const locationMsg = msgs.find((m) => m.field === 'location' && m.role === 'user');
+		const plzFromHistory = locationMsg ? extractPlz(locationMsg.content) : undefined;
 
-			if (plzFromHistory) {
-				campaignDraft.update((d) => ({ ...d, plz: plzFromHistory }));
-				return transitionTo('insurance_type');
-			}
-			if (draft.plz) return transitionTo('insurance_type');
-
-			return draft.clientName
-				? say('karl_location_with_name', { input: 'plz', options: locationOptions, params: { name: draft.clientName } })
-				: say('karl_location', { input: 'plz', options: locationOptions });
+		if (plzFromHistory) {
+			campaignDraft.update((d) => ({ ...d, plz: plzFromHistory }));
+			return transitionTo('insurance_type');
 		}
-		case 'insurance_type':
-			return ask('karl_insurance_type', insuranceTypeOptions);
-		case 'insurance_details':
-			return ask('karl_age_group', ageGroupOptions);
-		case 'therapy_type':
-			return ask('karl_therapy_type', therapyTypeOptions);
-		case 'preferences':
-			return ask('karl_preferences', preferenceOptions, true);
-		case 'summary':
-			return say('karl_summary', { options: summaryOptions });
-		case 'edit_hint':
-			return ask('karl_edit_hint', editHintOptions);
-		case 'terminservice':
-			return say('terminservice_intro', { options: terminserviceOptions });
-		case 'searching':
-			// skip typing simulation for searching - overlay handles the animation
-			messages.update((msgs) => [...msgs, createKarlMessage({ contentKey: 'karl_searching' })]);
-			await handleResultsState();
-			state.set('results');
-			return;
-		case 'results':
-			return;
+		if (draft.plz) return transitionTo('insurance_type');
+
+		// dynamic message based on client name
+		const messageKey = draft.clientName ? 'karl_location_with_name' : 'karl_location';
+		const params = draft.clientName ? { name: draft.clientName } : undefined;
+		return say(messageKey, { input: 'plz', options: config?.options, params });
+	}
+
+	if (newState === 'searching') {
+		// no typing simulation - overlay handles animation
+		messages.update((msgs) => [...msgs, createKarlMessage({ contentKey: 'karl_searching' })]);
+		await handleResultsState();
+		state.set('results');
+		return;
+	}
+
+	if (newState === 'results') return;
+
+	// standard state handling via config
+	if (config) {
+		return say(config.messageKey, {
+			options: config.options,
+			input: config.inputType,
+			multi: config.multiSelect
+		});
 	}
 }
 
@@ -144,8 +126,8 @@ async function handleResultsState() {
 	}
 
 	if (!plz) {
-		console.error('PLZ not found in messages or campaign!');
-		return ask('karl_no_results', noResultsOptions);
+		console.error('PLZ not found in messages or campaign');
+		return say(noResultsConfig.messageKey, { options: noResultsConfig.options });
 	}
 
 	campaignDraft.update((d) => ({ ...d, plz }));
@@ -164,50 +146,47 @@ async function handleResultsState() {
 		}
 
 		return therapists.length === 0
-			? ask('karl_no_results', noResultsOptions)
+			? say(noResultsConfig.messageKey, { options: noResultsConfig.options })
 			: say('karl_results_found', { params: { count: therapists.length }, therapists });
 	} catch (e) {
 		console.error('Failed to fetch therapists:', e);
-		return ask('karl_no_results', noResultsOptions);
+
+		// show specific error messages
+		if (e instanceof SearchError) {
+			const errorMessages: Record<string, string> = {
+				network: 'karl_error_network',
+				timeout: 'karl_error_timeout',
+				server: 'karl_error_server',
+				invalid_plz: 'karl_location_error'
+			};
+			const messageKey = errorMessages[e.type] || 'karl_error_server';
+			return say(messageKey, { options: noResultsConfig.options });
+		}
+
+		return say('karl_error_server', { options: noResultsConfig.options });
 	}
 }
 
-// field mapping for user messages
-const stateFieldMap: Partial<Record<ChatState, EditableField>> = {
-	greeting: 'forSelf',
-	for_other_name: 'clientName',
-	location: 'location',
-	insurance_type: 'insuranceType',
-	therapy_type: 'therapyTypes',
-	preferences: 'preferences'
-};
-
+// handlers
 async function handleOption(option: ChatOption) {
 	const currentState = get(state);
-	const field = stateFieldMap[currentState];
+	const field = getFieldForState(currentState);
 
-	// only add user message for non-action options (actual answers)
 	if (!option.isAction) {
 		addUserMessage(option.labelDe, field, `option_${option.id}`);
 	}
 
-	// apply option to campaign using centralized mapping
 	campaignDraft.update((d) => applyOption(d, option.id));
 
-	// handle special cases
-	if (option.id === OptionId.mergeResults) {
-		mergeResults = true;
-	} else if (option.id === OptionId.replaceResults) {
-		mergeResults = false;
-	}
+	if (option.id === OptionId.mergeResults) mergeResults = true;
+	else if (option.id === OptionId.replaceResults) mergeResults = false;
 
 	if (option.nextState) await transitionTo(option.nextState);
 }
 
 async function handleInput(text: string) {
 	const currentState = get(state);
-	const field = stateFieldMap[currentState];
-
+	const field = getFieldForState(currentState);
 	addUserMessage(text, field);
 
 	if (currentState === 'for_other_name') {
@@ -218,17 +197,18 @@ async function handleInput(text: string) {
 	if (currentState === 'location') {
 		const plz = extractPlz(text);
 		if (plz) {
-			campaignDraft.update((d) => ({ ...d, plz, city: getCityFromPlz(plz) || '' }));
+			campaignDraft.update((d) => ({ ...d, plz }));
 			return transitionTo('insurance_type');
 		}
-		return prompt('karl_location_error', 'plz');
+		return say('karl_location_error', { input: 'plz' });
 	}
 }
 
 async function handleMultiSelect(options: ChatOption[]) {
-	const contentKey = options.length > 0
-		? options.map((o) => `option_${o.id}`).join(',')
-		: `option_${OptionId.noPreferences}`;
+	const contentKey =
+		options.length > 0
+			? options.map((o) => `option_${o.id}`).join(',')
+			: `option_${OptionId.noPreferences}`;
 
 	addUserMessage(
 		options.map((o) => o.labelDe).join(', ') || 'Keine besonderen Wünsche',
@@ -236,7 +216,6 @@ async function handleMultiSelect(options: ChatOption[]) {
 		contentKey
 	);
 
-	// reset preferences then apply all selected
 	campaignDraft.update((d) => {
 		const reset = resetPreferences(d);
 		return applyOptions(reset, options.map((o) => o.id));
@@ -245,6 +224,7 @@ async function handleMultiSelect(options: ChatOption[]) {
 	await transitionTo('summary');
 }
 
+// lifecycle
 function start() {
 	const msgs = get(messages);
 	if (msgs.length === 0) {
@@ -259,42 +239,43 @@ function start() {
 
 function reset() {
 	if (browser) {
-		localStorage.removeItem('karl-chat-state');
-		localStorage.removeItem('karl-chat-messages');
+		localStorage.removeItem(STORAGE_KEYS.chatState);
+		localStorage.removeItem(STORAGE_KEYS.chatMessages);
 	}
 	messages.set([]);
 	campaignDraft.reset();
 	transitionTo('greeting');
 }
 
-// rebuild campaign from message history (for undo)
+function hydrateChat() {
+	state.set(loadState());
+	messages.set(loadMessages());
+}
+
+// edit/undo support
 function rebuildCampaignFromMessages(msgs: ChatMessage[]) {
 	campaignDraft.reset();
 
 	for (const msg of msgs) {
 		if (msg.role !== 'user') continue;
 
-		// text input fields
 		if (msg.field === 'clientName') {
 			campaignDraft.update((d) => ({ ...d, forSelf: false, clientName: msg.content }));
 			continue;
 		}
 		if (msg.field === 'location') {
 			const plz = extractPlz(msg.content);
-			if (plz) campaignDraft.update((d) => ({ ...d, plz, city: getCityFromPlz(plz) || '' }));
+			if (plz) campaignDraft.update((d) => ({ ...d, plz }));
 			continue;
 		}
 
-		// option-based fields
 		if (!msg.contentKey) continue;
 		const ids = msg.contentKey.split(',').map((k) => k.trim().replace('option_', ''));
 
-		// reset preferences for multi-select
 		if (msg.field === 'preferences') {
 			campaignDraft.update((d) => resetPreferences(d));
 		}
 
-		// apply all options using centralized mapping
 		campaignDraft.update((d) => applyOptions(d, ids));
 	}
 }
@@ -323,17 +304,12 @@ async function updateMessage(
 	const finalContentKey = contentKey ?? (option ? `option_${option.id}` : msg?.contentKey);
 
 	messages.update((m) =>
-		m.map((msg, i) => {
-			if (i !== messageIndex) return msg;
-			return { ...msg, content: newContent, contentKey: finalContentKey };
-		})
+		m.map((msg, i) => (i !== messageIndex ? msg : { ...msg, content: newContent, contentKey: finalContentKey }))
 	);
 
-	// apply option update using centralized mapping
 	if (option) {
 		campaignDraft.update((d) => applyOption(d, option.id));
 	} else if (finalContentKey && msg?.field === 'preferences') {
-		// multi-select edit: reset prefs and apply all from contentKey
 		const ids = finalContentKey.split(',').map((k) => k.trim().replace('option_', ''));
 		campaignDraft.update((d) => {
 			const reset = resetPreferences(d);
@@ -341,9 +317,7 @@ async function updateMessage(
 		});
 	}
 
-	// return whether re-search should be prompted (caller handles UI)
-	const hasResults = get(messages).some((m) => m.therapists?.length);
-	return hasResults;
+	return get(messages).some((m) => m.therapists?.length);
 }
 
 async function triggerReSearch(merge: boolean) {

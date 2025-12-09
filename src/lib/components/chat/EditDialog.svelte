@@ -34,7 +34,9 @@
 
 	const questionText = $derived.by(() => {
 		if (!karlMessage.contentKey) return karlMessage.content;
-		const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[karlMessage.contentKey];
+		type MessageFn = (p?: Record<string, unknown>) => string;
+		const msgMap = m as unknown as Record<string, MessageFn>;
+		const fn = msgMap[karlMessage.contentKey];
 		return fn ? fn(karlMessage.contentParams) : karlMessage.content;
 	});
 
@@ -94,9 +96,9 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="overlay" onclick={onClose}>
+<div class="modal-overlay" onclick={onClose}>
 	<div
-		class="dialog"
+		class="modal-content"
 		onclick={(e) => e.stopPropagation()}
 		style:border-radius={wobbly.md}
 	>
@@ -162,25 +164,7 @@
 </div>
 
 <style>
-	.overlay {
-		position: fixed;
-		inset: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-		padding: 1rem;
-	}
-
-	.dialog {
-		background-color: var(--color-paper);
-		border: 2px solid var(--color-pencil);
-		padding: 1.5rem;
-		max-width: 500px;
-		width: 100%;
-		box-shadow: var(--shadow-hard);
-	}
+	/* modal-overlay, modal-content, option-btn styles in app.css */
 
 	.header {
 		display: flex;
@@ -211,29 +195,6 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.75rem;
-	}
-
-	.option-btn {
-		padding: 0.5rem 1rem;
-		font-family: var(--font-body);
-		font-size: 1rem;
-		border: 2px solid var(--color-pencil);
-		background-color: var(--color-paper);
-		color: var(--color-pencil);
-		transition: all 150ms;
-		box-shadow: var(--shadow-hard-sm);
-	}
-
-	.option-btn:hover {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
-		color: white;
-	}
-
-	.option-btn.selected {
-		background-color: var(--color-blue-pen);
-		border-color: var(--color-blue-pen);
-		color: white;
 	}
 
 	.input-group {

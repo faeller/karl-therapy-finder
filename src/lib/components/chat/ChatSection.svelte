@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		title: string;
 		icon?: string;
 		collapsible?: boolean;
 		defaultOpen?: boolean;
+		children: Snippet;
 	}
 
 	let {
@@ -14,7 +16,7 @@
 		collapsible = true,
 		defaultOpen = true,
 		children
-	}: Props & { children: any } = $props();
+	}: Props = $props();
 
 	let isOpen = $state(defaultOpen);
 	let prevDefaultOpen = defaultOpen;

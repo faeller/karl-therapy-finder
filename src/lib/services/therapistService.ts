@@ -1,6 +1,18 @@
 // therapist api service
 import type { Therapist, CampaignDraft } from '$lib/types';
 
+export type SearchErrorType = 'network' | 'server' | 'timeout' | 'invalid_plz';
+
+export class SearchError extends Error {
+	constructor(
+		public type: SearchErrorType,
+		message: string
+	) {
+		super(message);
+		this.name = 'SearchError';
+	}
+}
+
 export interface TherapistSearchResult {
 	therapists: Therapist[];
 	totalResults: number;
@@ -11,6 +23,10 @@ export async function searchTherapists(
 	plz: string,
 	draft: CampaignDraft
 ): Promise<TherapistSearchResult> {
+	if (!plz || !/^\d{5}$/.test(plz)) {
+		throw new SearchError('invalid_plz', 'Invalid PLZ format');
+	}
+
 	const params = new URLSearchParams({
 		plz,
 		billing: draft.insuranceType || 'GKV',
@@ -18,8 +34,29 @@ export async function searchTherapists(
 		...(draft.ageGroup && { ageGroup: draft.ageGroup })
 	});
 
-	const res = await fetch(`/api/therapists?${params}`);
-	if (!res.ok) throw new Error(`API error: ${res.status}`);
+	let res: Response;
+	try {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+		res = await fetch(`/api/therapists?${params}`, {
+			signal: controller.signal
+		});
+
+		clearTimeout(timeoutId);
+	} catch (e) {
+		if (e instanceof Error && e.name === 'AbortError') {
+			throw new SearchError('timeout', 'Request timed out');
+		}
+		throw new SearchError('network', 'Network error - check your connection');
+	}
+
+	if (!res.ok) {
+		if (res.status >= 500) {
+			throw new SearchError('server', 'Server error - try again later');
+		}
+		throw new SearchError('server', `API error: ${res.status}`);
+	}
 
 	const data = await res.json();
 	return {

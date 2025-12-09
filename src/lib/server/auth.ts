@@ -1,3 +1,5 @@
+// authentication utilities for upcoming Patreon OAuth integration
+// currently unused - will enable user accounts, saved campaigns, and premium features
 import type { RequestEvent } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { sha256 } from '@oslojs/crypto/sha2';

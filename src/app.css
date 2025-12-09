@@ -70,3 +70,136 @@ h1, h2, h3, h4, h5, h6 {
 .dark .bg-white {
 	background-color: #252525;
 }
+
+/* ========================================
+   shared components - extracted from duplicated component styles
+   ======================================== */
+
+/* option buttons - used in OptionButtons, EditDialog, EterminserviceStep */
+.option-btn {
+	display: inline-flex;
+	align-items: center;
+	border-width: 2px;
+	border-style: solid;
+	padding: 0.5rem 1rem;
+	font-family: var(--font-body);
+	font-size: 1rem;
+	transition: all 100ms;
+	background-color: var(--color-paper);
+	border-color: var(--color-pencil);
+	color: var(--color-pencil);
+	box-shadow: var(--shadow-hard-sm);
+}
+
+@media (min-width: 768px) {
+	.option-btn {
+		font-size: 1.125rem;
+	}
+}
+
+/* single select - hover turns red */
+.option-btn.single:hover,
+.option-btn:not(.multi):not(.selected):hover {
+	background-color: var(--color-red-marker);
+	border-color: var(--color-red-marker);
+	color: white;
+}
+
+/* multi select - selected turns blue */
+.option-btn.selected {
+	background-color: var(--color-blue-pen);
+	border-color: var(--color-blue-pen);
+	color: white;
+}
+
+/* secondary style */
+.option-btn.secondary {
+	opacity: 0.6;
+	border-style: dashed;
+}
+
+.option-btn.secondary:hover {
+	opacity: 1;
+	border-style: solid;
+}
+
+/* recommended highlight */
+.option-btn.recommended {
+	border-color: var(--color-blue-pen);
+	background-color: rgba(45, 93, 161, 0.1);
+}
+
+/* disabled state */
+.option-btn:disabled,
+.option-btn.disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+	background-color: var(--color-erased);
+}
+
+/* modal/dialog overlay */
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100;
+	padding: 1rem;
+}
+
+.modal-content {
+	background-color: var(--color-paper);
+	border: 2px solid var(--color-pencil);
+	padding: 1.5rem;
+	max-width: 500px;
+	width: 100%;
+	box-shadow: var(--shadow-hard);
+}
+
+.modal-content.small {
+	max-width: 400px;
+}
+
+/* modal text */
+.modal-text {
+	font-family: var(--font-body);
+	font-size: 1.125rem;
+	color: var(--color-pencil);
+	margin-bottom: 1.5rem;
+	line-height: 1.4;
+}
+
+/* modal button row */
+.modal-buttons {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.modal-btn {
+	flex: 1;
+	padding: 0.75rem 1rem;
+	font-family: var(--font-body);
+	font-size: 1rem;
+	border: 2px solid var(--color-pencil);
+	background-color: var(--color-paper);
+	color: var(--color-pencil);
+	transition: all 100ms;
+	box-shadow: var(--shadow-hard-sm);
+}
+
+.modal-btn:hover {
+	background-color: var(--color-erased);
+}
+
+.modal-btn.primary {
+	background-color: var(--color-blue-pen);
+	border-color: var(--color-blue-pen);
+	color: white;
+}
+
+.modal-btn.primary:hover {
+	background-color: var(--color-red-marker);
+	border-color: var(--color-red-marker);
+}

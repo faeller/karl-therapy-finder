@@ -19,7 +19,6 @@ export interface ChatOption {
 	id: string;
 	labelDe: string;
 	emoji?: string;
-	value: unknown;
 	nextState?: ChatState;
 	style?: 'primary' | 'secondary';
 	/** action options don't add user message to history */
@@ -52,7 +51,6 @@ export interface CampaignDraft {
 	forSelf: boolean;
 	clientName?: string;
 	plz?: string;
-	city?: string;
 	radiusKm: number;
 	insuranceType?: 'GKV' | 'PKV' | 'Selbstzahler';
 	ageGroup?: 'adult' | 'youth';

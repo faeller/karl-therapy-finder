@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		selected?: boolean;
 		variant?: 'default' | 'blue';
 		onclick?: () => void;
+		children: Snippet;
 	}
 
 	let {
@@ -12,7 +14,7 @@
 		variant = 'default',
 		onclick,
 		children
-	}: Props & { children: any } = $props();
+	}: Props = $props();
 </script>
 
 <button

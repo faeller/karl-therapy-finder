@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		variant?: 'primary' | 'secondary';
@@ -8,6 +9,7 @@
 		type?: 'button' | 'submit';
 		onclick?: () => void;
 		class?: string;
+		children: Snippet;
 	}
 
 	let {
@@ -18,7 +20,7 @@
 		onclick,
 		class: className = '',
 		children
-	}: Props & { children: any } = $props();
+	}: Props = $props();
 
 	const sizeClasses = {
 		sm: 'px-3 py-1.5 text-base',

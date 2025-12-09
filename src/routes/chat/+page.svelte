@@ -3,7 +3,6 @@
 	import { chat } from '$lib/stores/chat';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
-	import { getCityFromPlz } from '$lib/data/plzLookup';
 	import { OptionId } from '$lib/data/optionIds';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
@@ -21,6 +20,7 @@
 	import { theme } from '$lib/stores/theme';
 	import { m } from '$lib/paraglide/messages';
 	import type { ChatOption, Therapist, ChatMessage, ChatState } from '$lib/types';
+	import { SEPARATELY_RENDERED_KEYS } from '$lib/constants';
 
 	const { messages, isTyping, state: chatState } = chat;
 
@@ -164,8 +164,7 @@
 			const plz = await handleGetLocation();
 			if (plz) {
 				const needsReSearch = await chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
-				const city = getCityFromPlz(plz) || '';
-				campaignDraft.update((d) => ({ ...d, plz, city }));
+				campaignDraft.update((d) => ({ ...d, plz }));
 				if (needsReSearch) showReSearchModal = true;
 			}
 			editingMessageIndex = null;
@@ -177,8 +176,7 @@
 		if (editedMessage?.field === 'location' && !option) {
 			const plz = newValue.match(/\d{5}/)?.[0];
 			if (plz) {
-				const city = getCityFromPlz(plz) || '';
-				campaignDraft.update((d) => ({ ...d, plz, city }));
+				campaignDraft.update((d) => ({ ...d, plz }));
 			}
 		}
 
@@ -249,16 +247,15 @@
 
 	// Split messages into onboarding and results
 	// These karl messages are rendered in dedicated sections, not in the main flow
-	const separatelyRendered = ['terminservice_intro', 'karl_searching'];
 	const onboardingMessages = $derived(
 		(resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages))
-			.filter((msg) => !separatelyRendered.includes(msg.contentKey ?? ''))
+			.filter((msg) => !(SEPARATELY_RENDERED_KEYS as readonly string[]).includes(msg.contentKey ?? ''))
 	);
 
 	const resultsMessages = $derived(
 		resultsStartIndex > 0
 			? $messages.slice(resultsStartIndex).filter(
-					(msg) => !separatelyRendered.includes(msg.contentKey ?? '')
+					(msg) => !(SEPARATELY_RENDERED_KEYS as readonly string[]).includes(msg.contentKey ?? '')
 				)
 			: []
 	);
@@ -549,9 +546,10 @@
 {/if}
 
 {#if showReSearchModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div class="modal-overlay" onclick={() => (showReSearchModal = false)}>
 		<div
-			class="modal-content"
+			class="modal-content small"
 			onclick={(e) => e.stopPropagation()}
 			style:border-radius={wobbly.md}
 		>
@@ -638,65 +636,7 @@
 		color: white;
 	}
 
-	.modal-overlay {
-		position: fixed;
-		inset: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-		padding: 1rem;
-	}
-
-	.modal-content {
-		background-color: var(--color-paper);
-		border: 2px solid var(--color-pencil);
-		padding: 1.5rem;
-		max-width: 400px;
-		width: 100%;
-		box-shadow: var(--shadow-hard);
-	}
-
-	.modal-text {
-		font-family: var(--font-body);
-		font-size: 1.125rem;
-		color: var(--color-pencil);
-		margin-bottom: 1.5rem;
-		line-height: 1.4;
-	}
-
-	.modal-buttons {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.modal-btn {
-		flex: 1;
-		padding: 0.75rem 1rem;
-		font-family: var(--font-body);
-		font-size: 1rem;
-		border: 2px solid var(--color-pencil);
-		background-color: var(--color-paper);
-		color: var(--color-pencil);
-		transition: all 100ms;
-		box-shadow: var(--shadow-hard-sm);
-	}
-
-	.modal-btn:hover {
-		background-color: var(--color-erased);
-	}
-
-	.modal-btn.primary {
-		background-color: var(--color-blue-pen);
-		border-color: var(--color-blue-pen);
-		color: white;
-	}
-
-	.modal-btn.primary:hover {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
-	}
+	/* modal styles in app.css */
 
 	.results-container {
 		position: relative;

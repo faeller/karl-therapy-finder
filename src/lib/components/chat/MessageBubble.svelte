@@ -7,21 +7,21 @@
 
 	interface Props {
 		role: 'karl' | 'user';
-		content: string;
+		content?: string;
 		contentKey?: string;
 		contentParams?: Record<string, unknown>;
 		onEdit?: () => void;
 	}
 
-	let { role, content, contentKey, contentParams, onEdit }: Props = $props();
+	let { role, content = '', contentKey, contentParams, onEdit }: Props = $props();
 
 	// build summary dynamically from campaign draft
 	function buildSummary(): string {
 		const draft = $campaignDraft;
 		const lines: string[] = [m.karl_summary_intro()];
 
-		if (draft.city || draft.plz) {
-			lines.push(m.karl_summary_location({ city: draft.city || draft.plz, radius: draft.radiusKm }));
+		if (draft.plz) {
+			lines.push(m.karl_summary_location({ city: draft.plz, radius: draft.radiusKm }));
 		}
 		if (draft.insuranceType) {
 			lines.push(m.karl_summary_insurance({ type: draft.insuranceType }));
@@ -53,15 +53,18 @@
 		}
 		if (!contentKey) return content;
 		// handle comma-separated keys (multi-select)
+		type MessageFn = (p?: Record<string, unknown>) => string;
+		type MessageMap = Record<string, MessageFn>;
+		const msgMap = m as unknown as MessageMap;
 		if (contentKey.includes(',')) {
 			const keys = contentKey.split(',');
 			const translated = keys.map((k) => {
-				const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[k.trim()];
+				const fn = msgMap[k.trim()];
 				return fn ? fn() : k;
 			});
 			return translated.join(', ');
 		}
-		const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[contentKey];
+		const fn = msgMap[contentKey];
 		return fn ? fn(contentParams) : content;
 	});
 </script>

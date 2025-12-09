@@ -113,38 +113,7 @@
 </div>
 
 <style>
-	.option-btn {
-		border-width: 2px;
-		border-style: solid;
-		padding: 0.5rem 1rem;
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 100ms;
-		background-color: var(--color-paper);
-		border-color: var(--color-pencil);
-		color: var(--color-pencil);
-		box-shadow: var(--shadow-hard-sm);
-	}
-
-	@media (min-width: 768px) {
-		.option-btn {
-			font-size: 1.125rem;
-		}
-	}
-
-	/* single select - hover turns red */
-	.option-btn.single:hover {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
-		color: white;
-	}
-
-	/* multi select - selected turns blue */
-	.option-btn.selected {
-		background-color: var(--color-blue-pen);
-		border-color: var(--color-blue-pen);
-		color: white;
-	}
+	/* option-btn base styles in app.css */
 
 	/* inline input */
 	.inline-input-wrapper {
