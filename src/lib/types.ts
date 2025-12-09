@@ -10,9 +10,10 @@ export type ChatState =
 	| 'preferences'
 	| 'urgency'
 	| 'summary'
+	| 'edit_hint'
+	| 'terminservice'
 	| 'searching'
-	| 'results'
-	| 'email_sent_confirm';
+	| 'results';
 
 export interface ChatOption {
 	id: string;
@@ -20,6 +21,7 @@ export interface ChatOption {
 	emoji?: string;
 	value: unknown;
 	nextState?: ChatState;
+	style?: 'primary' | 'secondary'; // secondary = dashed border help style
 }
 
 export type EditableField =
@@ -58,12 +60,15 @@ export interface CampaignDraft {
 	languages: string[];
 	specialties: string[];
 	urgency: 'low' | 'medium' | 'high';
+	terminserviceStatus?: 'done' | 'skipped';
 }
 
 export interface Therapist {
 	id: string;
 	name: string;
 	title?: string;
+	qualification?: string;
+	gender?: 'w' | 'm' | 'd';
 	address: string;
 	phone?: string;
 	email?: string;
@@ -71,6 +76,7 @@ export interface Therapist {
 	insurances: string[];
 	languages: string[];
 	distance?: number;
+	profileUrl?: string;
 }
 
 export interface ContactAttempt {

@@ -6,6 +6,7 @@ export const mockTherapists: Therapist[] = [
 		id: '1',
 		name: 'Dr. Sabine Müller',
 		title: 'Psychologische Psychotherapeutin',
+		gender: 'w',
 		address: 'Königstraße 42, 90402 Nürnberg',
 		phone: '0911 123456',
 		email: 'praxis@mueller-therapie.de',
@@ -18,6 +19,7 @@ export const mockTherapists: Therapist[] = [
 		id: '2',
 		name: 'Michael Weber',
 		title: 'Psychologischer Psychotherapeut',
+		gender: 'm',
 		address: 'Breite Gasse 15, 90402 Nürnberg',
 		phone: '0911 234567',
 		email: 'kontakt@weber-psychotherapie.de',
@@ -30,6 +32,7 @@ export const mockTherapists: Therapist[] = [
 		id: '3',
 		name: 'Dr. Anna Schmidt',
 		title: 'Fachärztin für Psychiatrie und Psychotherapie',
+		gender: 'w',
 		address: 'Äußere Sulzbacher Str. 118, 90491 Nürnberg',
 		phone: '0911 345678',
 		email: 'info@praxis-schmidt.de',
@@ -42,6 +45,7 @@ export const mockTherapists: Therapist[] = [
 		id: '4',
 		name: 'Thomas Becker',
 		title: 'Psychologischer Psychotherapeut',
+		gender: 'm',
 		address: 'Fürther Str. 212, 90429 Nürnberg',
 		phone: '0911 456789',
 		email: undefined,
@@ -54,6 +58,7 @@ export const mockTherapists: Therapist[] = [
 		id: '5',
 		name: 'Dr. Elena Petrova',
 		title: 'Psychologische Psychotherapeutin',
+		gender: 'w',
 		address: 'Hallplatz 2, 90402 Nürnberg',
 		phone: '0911 567890',
 		email: 'praxis@petrova-therapie.de',
@@ -71,6 +76,7 @@ export function filterTherapists(
 		therapyTypes?: string[];
 		insuranceType?: string;
 		languages?: string[];
+		genderPref?: 'w' | 'm' | 'd' | null;
 	}
 ): Therapist[] {
 	return therapists.filter((t) => {
@@ -85,9 +91,14 @@ export function filterTherapists(
 			if (!t.insurances.includes(criteria.insuranceType)) return false;
 		}
 
-		if (criteria.languages?.length && criteria.languages.length > 1) {
+		// only filter by language if user selected non-german languages
+		if (criteria.languages?.length && criteria.languages.some((l) => l !== 'de')) {
 			const hasMatch = criteria.languages.some((lang) => t.languages.includes(lang));
 			if (!hasMatch) return false;
+		}
+
+		if (criteria.genderPref && t.gender) {
+			if (t.gender !== criteria.genderPref) return false;
 		}
 
 		return true;

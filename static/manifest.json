@@ -1,0 +1,27 @@
+{
+	"name": "KARL - Therapieplatz finden",
+	"short_name": "KARL",
+	"description": "Therapieplatz finden, ohne verrückt zu werden",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#fdfbf7",
+	"theme_color": "#2d2d2d",
+	"icons": [
+		{
+			"src": "/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
+}

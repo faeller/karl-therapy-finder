@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background with paper texture pattern -->
+  <rect width="1200" height="630" fill="#fdfbf7"/>
+  <defs>
+    <pattern id="dots" patternUnits="userSpaceOnUse" width="24" height="24">
+      <circle cx="12" cy="12" r="1" fill="#e5e0d8"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+
+  <!-- K Logo Circle -->
+  <circle cx="600" cy="240" r="100" fill="#fdfbf7" stroke="#2d2d2d" stroke-width="8"/>
+  <text x="600" y="273" font-family="Georgia, serif" font-size="120" font-weight="700" fill="#2d2d2d" text-anchor="middle">K</text>
+
+  <!-- Title -->
+  <text x="600" y="420" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#2d2d2d" text-anchor="middle">KARL</text>
+
+  <!-- Tagline -->
+  <text x="600" y="500" font-family="Georgia, serif" font-size="32" fill="#2d2d2d" text-anchor="middle" opacity="0.7">Therapieplatz finden, ohne verrückt zu werden</text>
+</svg>

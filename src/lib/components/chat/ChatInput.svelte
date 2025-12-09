@@ -47,37 +47,40 @@
 <style>
 	.chat-input {
 		flex: 1;
-		border: 2px solid var(--color-pencil);
+		border: 3px solid var(--color-blue-pen);
 		background-color: var(--color-paper);
-		padding: 0.75rem 1rem;
+		padding: 0.875rem 1rem;
 		font-family: var(--font-body);
 		font-size: 1.125rem;
 		color: var(--color-pencil);
+		box-shadow: var(--shadow-hard-sm);
 	}
 	.chat-input::placeholder {
 		color: var(--color-pencil);
-		opacity: 0.4;
+		opacity: 0.5;
 	}
 	.chat-input:focus {
-		border-color: var(--color-blue-pen);
-		box-shadow: 0 0 0 2px rgba(45, 93, 161, 0.2);
+		border-color: var(--color-red-marker);
+		outline: none;
+		box-shadow: var(--shadow-hard);
 	}
 
 	.chat-submit {
-		border: 2px solid var(--color-pencil);
-		background-color: var(--color-paper);
-		padding: 0.75rem;
+		border: 3px solid var(--color-blue-pen);
+		background-color: var(--color-blue-pen);
+		padding: 0.875rem;
 		transition: all 100ms;
 		box-shadow: var(--shadow-hard-sm);
-		color: var(--color-pencil);
+		color: white;
 	}
 	.chat-submit:hover:not(:disabled) {
 		background-color: var(--color-red-marker);
 		border-color: var(--color-red-marker);
-		color: white;
 	}
 	.chat-submit:disabled {
 		cursor: not-allowed;
-		opacity: 0.5;
+		opacity: 0.4;
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
 	}
 </style>

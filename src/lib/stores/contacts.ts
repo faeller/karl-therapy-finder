@@ -44,6 +44,22 @@ function createContactsStore() {
 				return updated;
 			});
 		},
+		removeByTherapistId: (therapistId: string) => {
+			update((contacts) => {
+				const updated = contacts.filter((c) => c.therapistId !== therapistId);
+				persist(updated);
+				return updated;
+			});
+		},
+		updateStatusByTherapistId: (therapistId: string, status: ContactAttempt['status']) => {
+			update((contacts) => {
+				const updated = contacts.map((c) =>
+					c.therapistId === therapistId ? { ...c, status } : c
+				);
+				persist(updated);
+				return updated;
+			});
+		},
 		clear: () => {
 			if (browser) {
 				localStorage.removeItem('karl-contacts');

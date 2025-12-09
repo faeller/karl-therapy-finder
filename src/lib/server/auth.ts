@@ -2,10 +2,20 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
+import bcrypt from 'bcryptjs';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+// password hashing (cf-compatible)
+export async function hashPassword(password: string): Promise<string> {
+	return bcrypt.hash(password, 10);
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+	return bcrypt.compare(password, hash);
+}
 
 export const sessionCookieName = 'auth-session';
 

@@ -17,9 +17,18 @@
 	}: Props & { children: any } = $props();
 
 	let isOpen = $state(defaultOpen);
+	let prevDefaultOpen = defaultOpen;
+
+	// react to defaultOpen changes (e.g. when state transitions)
+	$effect(() => {
+		if (defaultOpen !== prevDefaultOpen) {
+			isOpen = defaultOpen;
+			prevDefaultOpen = defaultOpen;
+		}
+	});
 </script>
 
-<div class="chat-section">
+<div class="chat-section" class:expanded={isOpen || !collapsible}>
 	{#if collapsible}
 		<button
 			onclick={() => (isOpen = !isOpen)}
@@ -51,7 +60,11 @@
 
 <style>
 	.chat-section {
-		margin-bottom: 1.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.chat-section.expanded {
+		margin-bottom: 4rem;
 	}
 
 	.section-header {

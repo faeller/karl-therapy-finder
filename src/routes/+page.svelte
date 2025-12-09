@@ -6,6 +6,7 @@
 	import LangToggle from '$lib/components/ui/LangToggle.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { Sun, Moon } from 'lucide-svelte';
+	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { m } from '$lib/paraglide/messages';
 </script>
 
@@ -13,6 +14,15 @@
 	<!-- controls -->
 	<div class="controls">
 		<LangToggle />
+		<a
+			href="https://www.patreon.com/karlhelps"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="icon-btn"
+			title={m.support_patreon()}
+		>
+			<PatreonIcon size={18} />
+		</a>
 		<button
 			onclick={() => theme.toggle()}
 			class="icon-btn"
@@ -74,6 +84,11 @@
 	}
 	.icon-btn:hover {
 		opacity: 1;
+	}
+	button.icon-btn:hover {
 		color: var(--color-blue-pen);
+	}
+	a.icon-btn:hover {
+		color: var(--color-red-marker);
 	}
 </style>

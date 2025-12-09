@@ -1,6 +1,11 @@
 name = "karl2"
 compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [vars]
 PUBLIC_APP_URL = "https://karl2.pages.dev"
+
+[[kv_namespaces]]
+binding = "THERAPIST_CACHE"
+id = "98fd0c48b4a44e1a97d54878d91dde4c"

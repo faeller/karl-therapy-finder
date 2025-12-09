@@ -3,23 +3,83 @@
 	import { X } from 'lucide-svelte';
 	import type { ChatMessage, ChatOption } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		/** The Karl message that prompted this answer (has options or inputType) */
 		karlMessage: ChatMessage;
 		/** Current value of the user's answer */
 		currentValue: string;
+		/** Current contentKey (for multi-select) */
+		currentContentKey?: string;
 		/** Called when user selects a new value */
-		onSubmit: (newValue: string, option?: ChatOption) => void;
+		onSubmit: (newValue: string, option?: ChatOption, contentKey?: string) => void;
+		/** Called for multi-select submit */
+		onMultiSubmit?: (options: ChatOption[]) => void;
 		onClose: () => void;
 	}
 
-	let { karlMessage, currentValue, onSubmit, onClose }: Props = $props();
+	let { karlMessage, currentValue, currentContentKey, onSubmit, onMultiSubmit, onClose }: Props = $props();
 
 	let textValue = $state(currentValue);
 
+	// for multi-select, parse current selections from contentKey
+	const initialSelected = $derived.by(() => {
+		if (!karlMessage.multiSelect || !currentContentKey) return new Set<string>();
+		const keys = currentContentKey.split(',').map((k) => k.trim().replace('option_', ''));
+		return new Set(keys);
+	});
+
+	let selected = $state<Set<string>>(new Set());
+
+	// initialize selected from current value on mount
+	$effect(() => {
+		selected = new Set(initialSelected);
+	});
+
+	// render karl's question with i18n
+	const questionText = $derived.by(() => {
+		if (!karlMessage.contentKey) return karlMessage.content;
+		const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[karlMessage.contentKey];
+		return fn ? fn(karlMessage.contentParams) : karlMessage.content;
+	});
+
+	// get translated label for an option
+	function getOptionLabel(option: ChatOption): string {
+		return t(`option_${option.id}`, option.labelDe);
+	}
+
 	function handleOptionClick(option: ChatOption) {
-		onSubmit(option.labelDe, option);
+		if (karlMessage.multiSelect) {
+			// toggle selection
+			const newSelected = new Set(selected);
+			if (newSelected.has(option.id)) {
+				newSelected.delete(option.id);
+			} else {
+				// gender is exclusive
+				if (option.id === 'female' || option.id === 'male') {
+					newSelected.delete('female');
+					newSelected.delete('male');
+				}
+				newSelected.add(option.id);
+			}
+			selected = newSelected;
+		} else {
+			onSubmit(option.labelDe, option);
+			// don't auto-close - let parent handle it (allows async operations like geolocation)
+		}
+	}
+
+	function handleMultiApply() {
+		const selectedOptions = karlMessage.options?.filter((o) => selected.has(o.id)) ?? [];
+		const contentKey = selectedOptions.length > 0
+			? selectedOptions.map((o) => `option_${o.id}`).join(',')
+			: 'option_no_preferences';
+		const displayValue = selectedOptions.map((o) => o.labelDe).join(', ') || 'Keine besonderen Wünsche';
+		onSubmit(displayValue, undefined, contentKey);
+		if (onMultiSubmit) {
+			onMultiSubmit(selectedOptions);
+		}
 		onClose();
 	}
 
@@ -55,7 +115,7 @@
 		</div>
 
 		<!-- Show Karl's original question -->
-		<p class="question">{karlMessage.content}</p>
+		<p class="question">{questionText}</p>
 
 		<!-- Show options if this was an option-based question -->
 		{#if karlMessage.options?.length}
@@ -64,16 +124,25 @@
 					<button
 						onclick={() => handleOptionClick(option)}
 						class="option-btn"
-						class:selected={option.labelDe === currentValue}
+						class:selected={karlMessage.multiSelect ? selected.has(option.id) : option.labelDe === currentValue}
 						style:border-radius={wobbly.button}
 					>
 						{#if option.emoji}
 							<span class="mr-1">{option.emoji}</span>
 						{/if}
-						{option.labelDe}
+						{getOptionLabel(option)}
 					</button>
 				{/each}
 			</div>
+			{#if karlMessage.multiSelect}
+				<button
+					onclick={handleMultiApply}
+					class="apply-btn"
+					style:border-radius={wobbly.button}
+				>
+					{m.chat_change()} →
+				</button>
+			{/if}
 		{/if}
 
 		<!-- Show text input if this was a text-based question -->
@@ -215,5 +284,22 @@
 	.submit-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.apply-btn {
+		margin-top: 1rem;
+		width: 100%;
+		padding: 0.75rem 1.5rem;
+		font-family: var(--font-body);
+		font-size: 1rem;
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-blue-pen);
+		color: white;
+		transition: all 150ms;
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	.apply-btn:hover {
+		background-color: var(--color-pencil);
 	}
 </style>

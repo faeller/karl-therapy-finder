@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { chat } from '$lib/stores/chat';
+	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
+	import { getCityFromPlz } from '$lib/data/plzLookup';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
@@ -9,19 +11,70 @@
 	import TherapistList from '$lib/components/chat/TherapistList.svelte';
 	import ChatSection from '$lib/components/chat/ChatSection.svelte';
 	import EditDialog from '$lib/components/chat/EditDialog.svelte';
+	import EterminserviceStep from '$lib/components/chat/EterminserviceStep.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
 	import LangToggle from '$lib/components/ui/LangToggle.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon } from 'lucide-svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle } from 'lucide-svelte';
+	import { wobbly } from '$lib/utils/wobbly';
+	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { m } from '$lib/paraglide/messages';
-	import type { ChatOption, Therapist, ChatMessage } from '$lib/types';
+	import type { ChatOption, Therapist, ChatMessage, ChatState } from '$lib/types';
 
 	const { messages, isTyping, state: chatState } = chat;
+
+	// progress calculation
+	// finding therapists is ~40%, contacting them and getting responses is the rest
+	const progress = $derived.by(() => {
+		// onboarding: 5-25%
+		const onboardingStates = ['greeting', 'for_whom', 'for_other_name', 'location', 'insurance_type', 'insurance_details', 'therapy_type', 'preferences'];
+		const onboardingIdx = onboardingStates.indexOf($chatState);
+		if (onboardingIdx >= 0) return 5 + Math.round((onboardingIdx / (onboardingStates.length - 1)) * 20);
+
+		// summary/edit = 28%
+		if (['summary', 'edit_hint'].includes($chatState)) return 28;
+		// terminservice = 32%
+		if ($chatState === 'terminservice') return 32;
+		// searching = 38%
+		if ($chatState === 'searching') return 38;
+
+		// results phase: 40% + progress based on contacts
+		if ($chatState === 'results') {
+			const totalTherapists = allTherapists.length || 1;
+			const contacted = $contacts.length;
+			const contactProgress = Math.min(contacted / Math.min(totalTherapists, 10), 1); // cap at 10 contacts for 100%
+			return 40 + Math.round(contactProgress * 60);
+		}
+
+		return 0;
+	});
+
+	// undo - find previous user message and go back
+	function handleUndo() {
+		const msgs = $messages;
+		if (msgs.length < 2) return;
+		// find last user message index
+		let lastUserIdx = -1;
+		for (let i = msgs.length - 1; i >= 0; i--) {
+			if (msgs[i].role === 'user') {
+				lastUserIdx = i;
+				break;
+			}
+		}
+		if (lastUserIdx > 0) {
+			chat.rewindTo(lastUserIdx);
+		}
+	}
+
+	const canUndo = $derived($messages.length > 1 && !$isTyping);
 
 	let messagesContainer: HTMLDivElement;
 
 	// Edit dialog state
 	let editingMessageIndex = $state<number | null>(null);
+
+	// Process explanation toggle (for "Wie funktioniert das?" in history)
+	let showProcessExplanation = $state(false);
 
 	// Find the Karl message that prompted this user answer
 	const editingKarlMessage = $derived.by(() => {
@@ -40,7 +93,14 @@
 		editingMessageIndex !== null ? $messages[editingMessageIndex]?.content : ''
 	);
 
+	const editingCurrentContentKey = $derived(
+		editingMessageIndex !== null ? $messages[editingMessageIndex]?.contentKey : undefined
+	);
+
 	onMount(() => {
+		// ensure all stores are hydrated from localStorage before starting
+		chat.hydrateChat();
+		campaignDraft.hydrate();
 		chat.start();
 	});
 
@@ -48,12 +108,29 @@
 	$effect(() => {
 		if ($messages.length && messagesContainer) {
 			setTimeout(() => {
-				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+				if (isInResults) {
+					// in results, scroll to show the results section (scroll up more)
+					const resultsSection = messagesContainer.querySelector('[data-section="results"]');
+					if (resultsSection) {
+						resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					} else {
+						// fallback: scroll up enough to show new content
+						const targetScroll = messagesContainer.scrollTop + 500;
+						messagesContainer.scrollTop = Math.min(targetScroll, messagesContainer.scrollHeight);
+					}
+				} else {
+					messagesContainer.scrollTop = messagesContainer.scrollHeight;
+				}
 			}, 100);
 		}
 	});
 
-	function handleOptionSelect(option: ChatOption) {
+	async function handleOptionSelect(option: ChatOption) {
+		if (option.id === 'use_location') {
+			const plz = await handleGetLocation();
+			if (plz) handleTextSubmit(plz);
+			return;
+		}
 		chat.handleOption(option);
 	}
 
@@ -63,22 +140,6 @@
 
 	function handleTextSubmit(text: string) {
 		chat.handleInput(text);
-	}
-
-	function handleEmailClick(therapist: Therapist) {
-		contacts.add({
-			therapistId: therapist.id,
-			therapistName: therapist.name,
-			therapistEmail: therapist.email,
-			therapistPhone: therapist.phone,
-			therapistAddress: therapist.address,
-			method: 'email',
-			status: 'pending'
-		});
-
-		setTimeout(() => {
-			chat.promptEmailConfirm(therapist);
-		}, 500);
 	}
 
 	function handleEdit(messageIndex: number) {
@@ -91,14 +152,99 @@
 		}
 	}
 
-	function handleEditSubmit(newValue: string, option?: ChatOption) {
+	async function handleEditSubmit(newValue: string, option?: ChatOption, contentKey?: string) {
 		if (editingMessageIndex === null) return;
-		chat.updateMessage(editingMessageIndex, newValue, option);
+
+		// handle geolocation option in edit mode
+		if (option?.id === 'use_location') {
+			const plz = await handleGetLocation();
+			if (plz) {
+				chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
+				const city = getCityFromPlz(plz) || '';
+				campaignDraft.update((d) => ({ ...d, plz, city }));
+			}
+			editingMessageIndex = null;
+			return;
+		}
+
+		// check if editing location field - update campaignDraft.plz
+		const editedMessage = $messages[editingMessageIndex];
+		if (editedMessage?.field === 'location' && !option) {
+			const plz = newValue.match(/\d{5}/)?.[0];
+			if (plz) {
+				const city = getCityFromPlz(plz) || '';
+				campaignDraft.update((d) => ({ ...d, plz, city }));
+			}
+		}
+
+		chat.updateMessage(editingMessageIndex, newValue, option, contentKey);
 		editingMessageIndex = null;
 	}
 
+	function handleEditMultiSubmit(options: ChatOption[]) {
+		// reset preferences first, then apply new selections
+		campaignDraft.update((d) => ({ ...d, genderPref: undefined, languages: ['de'], specialties: [] }));
+		for (const { value } of options) {
+			const val = value as Record<string, unknown>;
+			campaignDraft.update((d) => ({
+				...d,
+				...(val.genderPref && { genderPref: val.genderPref as 'w' | 'm' | 'd' }),
+				...(val.languages && { languages: val.languages as string[] }),
+				...(val.specialties && { specialties: [...d.specialties, ...(val.specialties as string[])] })
+			}));
+		}
+	}
+
+	// Geolocation
+	let isGettingLocation = $state(false);
+
+	async function handleGetLocation(): Promise<string | null> {
+		if (isGettingLocation) return null;
+
+		if (!navigator.geolocation) {
+			alert('Geolocation wird von diesem Browser nicht unterstützt');
+			return null;
+		}
+
+		isGettingLocation = true;
+		try {
+			const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+				navigator.geolocation.getCurrentPosition(resolve, reject, {
+					enableHighAccuracy: false, // wifi/cell is faster and plz-accurate enough
+					timeout: 20000,
+					maximumAge: 300000 // 5 min cache is fine for plz
+				});
+			});
+
+			const { latitude, longitude } = position.coords;
+			const response = await fetch(
+				`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=de`
+			);
+
+			if (!response.ok) throw new Error('Geocoding fehlgeschlagen');
+			const data = await response.json();
+
+			if (data.postcode && /^\d{5}$/.test(data.postcode)) {
+				return data.postcode;
+			} else {
+				alert('Keine PLZ gefunden. Bitte gib deine PLZ manuell ein.');
+				return null;
+			}
+		} catch (error: unknown) {
+			const geoError = error as GeolocationPositionError;
+			let msg = 'Standort konnte nicht ermittelt werden.';
+			if (geoError.code === 1) msg = 'Standort-Zugriff wurde verweigert.';
+			else if (geoError.code === 2) msg = 'Standort nicht verfügbar.';
+			else if (geoError.code === 3) msg = 'Zeitüberschreitung beim Ermitteln des Standorts.';
+			alert(msg + ' Bitte gib deine PLZ manuell ein.');
+			return null;
+		} finally {
+			isGettingLocation = false;
+		}
+	}
+
 	// Determine chat phases
-	const isInResults = $derived(['searching', 'results', 'email_sent_confirm'].includes($chatState));
+	const isInResults = $derived(['terminservice', 'searching', 'results'].includes($chatState));
 
 	// Find index where results phase starts (first message with therapists)
 	const resultsStartIndex = $derived(
@@ -106,61 +252,112 @@
 	);
 
 	// Split messages into onboarding and results
+	// Filter out terminservice and searching messages (rendered separately)
 	const onboardingMessages = $derived(
-		resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages)
+		(resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages))
+			.filter((msg) => msg.contentKey !== 'terminservice_intro' && msg.contentKey !== 'karl_searching')
 	);
 
 	const resultsMessages = $derived(
-		resultsStartIndex > 0 ? $messages.slice(resultsStartIndex) : []
+		resultsStartIndex > 0
+			? $messages.slice(resultsStartIndex).filter(
+					(msg) => msg.contentKey !== 'terminservice_intro' && msg.contentKey !== 'karl_searching'
+				)
+			: []
 	);
 
-	// Get all therapists from the latest results message
+	// searching message shown separately
+	const searchingMessage = $derived(
+		$messages.find((msg) => msg.contentKey === 'karl_searching')
+	);
+
+	// get therapists from the latest results message
+	// filtering will happen server-side when real api is implemented
 	const allTherapists = $derived(
 		$messages.filter((m) => m.therapists?.length).at(-1)?.therapists ?? []
 	);
 
 	const lastMessage = $derived($messages[$messages.length - 1]);
-	const showTextInput = $derived(lastMessage?.inputType === 'text' || lastMessage?.inputType === 'plz');
+	// show bottom input only if there's inputType but NO options (inline input handles the case with options)
+	const showTextInput = $derived(
+		(lastMessage?.inputType === 'text' || lastMessage?.inputType === 'plz') &&
+		!lastMessage?.options?.length
+	);
+
+	// Get terminservice message (for showing in collapsed section after completion)
+	const terminserviceMessage = $derived(
+		$messages.find((msg) => msg.contentKey === 'terminservice_intro')
+	);
+	const showTerminserviceSection = $derived(
+		$chatState === 'terminservice' || (isInResults && terminserviceMessage)
+	);
 </script>
 
 <div class="flex h-[100dvh] flex-col">
 	<!-- header -->
-	<header class="border-b-2 border-pencil bg-paper px-4 py-3">
-		<div class="mx-auto flex max-w-2xl items-center justify-between">
-			<div class="flex items-center gap-3">
-				<KarlAvatar size="md" href="/" />
-				<div>
-					<h1 class="font-heading text-xl font-bold">{m.app_name()}</h1>
-					<p class="text-sm text-pencil/60">{m.chat_header()}</p>
+	<header class="border-b-2 border-pencil bg-paper">
+		<div class="mx-auto max-w-2xl px-4 py-3">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<KarlAvatar size="md" href="/" />
+					<div>
+						<h1 class="font-heading text-xl font-bold">{m.app_name()}</h1>
+						<p class="text-sm text-pencil/60">{m.chat_header()}</p>
+					</div>
+				</div>
+				<div class="flex items-center gap-4">
+					<LangToggle />
+					<button
+						onclick={() => theme.toggle()}
+						class="text-pencil/50 hover:text-blue-pen"
+						title={m.chat_toggle_theme()}
+					>
+						{#if $theme === 'dark'}
+							<Sun size={18} strokeWidth={2.5} />
+						{:else}
+							<Moon size={18} strokeWidth={2.5} />
+						{/if}
+					</button>
+					{#if canUndo}
+						<button
+							onclick={handleUndo}
+							class="text-pencil/50 hover:text-blue-pen"
+							title={m.chat_undo()}
+						>
+							<Undo2 size={18} strokeWidth={2.5} />
+						</button>
+					{/if}
+					<button
+						onclick={handleReset}
+						class="text-pencil/50 hover:text-red-marker"
+						title={m.chat_new_start()}
+					>
+						<RotateCcw size={18} strokeWidth={2.5} />
+					</button>
+					<a
+						href="https://www.patreon.com/karlhelps"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-pencil/50 hover:text-red-marker"
+						title={m.support_patreon()}
+					>
+						<PatreonIcon size={16} />
+					</a>
+					<a href="/contacts" class="flex items-center gap-1 text-sm text-pencil/70 hover:text-blue-pen" title={m.contacts_title()}>
+						<ClipboardList size={20} strokeWidth={2.5} />
+						<span class="hidden md:inline">{m.contacts_title()}</span>
+						{#if $contacts.length > 0}
+							<span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-marker text-xs text-white">{$contacts.length}</span>
+						{/if}
+					</a>
 				</div>
 			</div>
-			<div class="flex items-center gap-3">
-				<LangToggle />
-				<button
-					onclick={() => theme.toggle()}
-					class="text-pencil/50 hover:text-blue-pen"
-					title={m.chat_toggle_theme()}
-				>
-					{#if $theme === 'dark'}
-						<Sun size={18} strokeWidth={2.5} />
-					{:else}
-						<Moon size={18} strokeWidth={2.5} />
-					{/if}
-				</button>
-				<button
-					onclick={handleReset}
-					class="text-pencil/50 hover:text-red-marker"
-					title={m.chat_new_start()}
-				>
-					<RotateCcw size={18} strokeWidth={2.5} />
-				</button>
-				<a href="/contacts" class="flex items-center gap-1 text-sm text-pencil/70 hover:text-blue-pen" title={m.contacts_title()}>
-					<ClipboardList size={20} strokeWidth={2.5} />
-					<span class="hidden md:inline">{m.contacts_title()}</span>
-					{#if $contacts.length > 0}
-						<span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-marker text-xs text-white">{$contacts.length}</span>
-					{/if}
-				</a>
+			<!-- progress bar -->
+			<div class="mt-2 flex items-center gap-2">
+				<div class="progress-bar">
+					<div class="progress-fill" style:width="{progress}%"></div>
+				</div>
+				<span class="text-xs text-pencil/50 tabular-nums">{progress}%</span>
 			</div>
 		</div>
 	</header>
@@ -175,27 +372,76 @@
 			{#if onboardingMessages.length > 0}
 				<ChatSection
 					title={m.chat_section_your_info()}
-					collapsible={isInResults}
-					defaultOpen={!isInResults}
+					collapsible={isInResults || $chatState === 'terminservice'}
+					defaultOpen={!isInResults && $chatState !== 'terminservice'}
 				>
 					<div class="space-y-4">
 						{#each onboardingMessages as message, i (message.id)}
-							<MessageBubble
-								role={message.role}
-								content={message.content}
-								contentKey={message.contentKey}
-								contentParams={message.contentParams}
-								onEdit={message.role === 'user' ? () => handleEdit(i) : undefined}
-							/>
-
-							{#if message.options?.length && message === lastMessage && !isInResults}
-								<div class="mt-4">
-									<OptionButtons
-										options={message.options}
-										multiSelect={message.multiSelect}
-										onSelect={handleOptionSelect}
-										onMultiSubmit={handleMultiSelect}
+							{#if message.role === 'user' && message.field === 'forSelf'}
+								<div class="flex items-center justify-end gap-1">
+									<button
+										onclick={() => (showProcessExplanation = !showProcessExplanation)}
+										class="info-btn-inline"
+										style:border-radius={wobbly.bubbleAlt}
+									>
+										<HelpCircle size={16} class="shrink-0" />
+										<span>{m.karl_how_it_works()}</span>
+									</button>
+									<MessageBubble
+										role={message.role}
+										content={message.content}
+										contentKey={message.contentKey}
+										contentParams={message.contentParams}
+										onEdit={() => handleEdit(i)}
 									/>
+								</div>
+								{#if showProcessExplanation}
+									<MessageBubble role="karl" content={m.karl_process_explanation()} />
+								{/if}
+							{:else}
+								<MessageBubble
+									role={message.role}
+									content={message.content}
+									contentKey={message.contentKey}
+									contentParams={message.contentParams}
+									onEdit={message.role === 'user' ? () => handleEdit(i) : undefined}
+								/>
+							{/if}
+
+							{#if message.options?.length && message === lastMessage && !isInResults && $chatState !== 'terminservice'}
+								<div class="mt-4">
+									{#if isGettingLocation}
+										<div class="flex items-center gap-2 text-sm text-pencil/70">
+											<span class="animate-pulse">📍</span>
+											{m.chat_detecting_location()}
+										</div>
+									{:else}
+										<OptionButtons
+											options={message.options}
+											multiSelect={message.multiSelect}
+											inputType={message.inputType}
+											inputPlaceholder={message.inputType === 'plz' ? m.chat_plz_placeholder() : m.chat_placeholder()}
+											onSelect={handleOptionSelect}
+											onMultiSubmit={handleMultiSelect}
+											onTextSubmit={message.inputType ? handleTextSubmit : undefined}
+										/>
+										{#if $chatState === 'greeting'}
+											<div class="flex justify-center mt-3">
+												<button
+													onclick={() => (showProcessExplanation = !showProcessExplanation)}
+													class="info-btn"
+												>
+													<HelpCircle size={16} />
+													{m.karl_how_it_works()}
+												</button>
+											</div>
+											{#if showProcessExplanation}
+												<div class="mt-4">
+													<MessageBubble role="karl" content={m.karl_process_explanation()} />
+												</div>
+											{/if}
+										{/if}
+									{/if}
 								</div>
 							{/if}
 						{/each}
@@ -203,17 +449,51 @@
 				</ChatSection>
 			{/if}
 
+			<!-- Terminservice step -->
+			{#if showTerminserviceSection && terminserviceMessage?.options?.length}
+				<ChatSection
+					title={$campaignDraft.terminserviceStatus
+						? `${m.chat_section_terminservice()} · ${$campaignDraft.terminserviceStatus === 'done' ? m.terminservice_status_done() : m.terminservice_status_skipped()}`
+						: m.chat_section_terminservice()}
+					collapsible={true}
+					defaultOpen={$chatState === 'terminservice'}
+				>
+					<EterminserviceStep
+						options={terminserviceMessage.options}
+						onSelect={handleOptionSelect}
+						lateCompletion={$chatState !== 'terminservice'}
+					/>
+				</ChatSection>
+			{/if}
+
 			<!-- Results section -->
-			{#if allTherapists.length > 0}
+			{#if $chatState === 'searching' || allTherapists.length > 0}
+				<div data-section="results">
 				<ChatSection
 					title={m.chat_section_results()}
 					collapsible={false}
 				>
-					<TherapistList
-						therapists={allTherapists}
-						onEmailClick={handleEmailClick}
-					/>
+					{#if searchingMessage}
+						<div class="mb-4">
+							<MessageBubble
+								role="karl"
+								contentKey={searchingMessage.contentKey}
+							/>
+						</div>
+					{/if}
+					{#if allTherapists.length > 0}
+						{#if allTherapists.length > 5}
+							<div class="mb-8">
+								<MessageBubble
+									role="karl"
+									contentKey="karl_results_encouragement"
+								/>
+							</div>
+						{/if}
+						<TherapistList therapists={allTherapists} />
+					{/if}
 				</ChatSection>
+				</div>
 			{/if}
 
 			<!-- Current interaction (non-therapist results messages) -->
@@ -264,8 +544,70 @@
 	<EditDialog
 		karlMessage={editingKarlMessage}
 		currentValue={editingCurrentValue}
+		currentContentKey={editingCurrentContentKey}
 		onSubmit={handleEditSubmit}
+		onMultiSubmit={handleEditMultiSubmit}
 		onClose={() => (editingMessageIndex = null)}
 	/>
 {/if}
 
+<style>
+	.progress-bar {
+		flex: 1;
+		height: 4px;
+		background-color: var(--color-erased);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.progress-fill {
+		height: 100%;
+		background-color: var(--color-blue-pen);
+		transition: width 300ms ease-out;
+	}
+
+	.info-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		border: 2px dashed var(--color-pencil);
+		padding: 0.5rem 1rem;
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
+		opacity: 0.6;
+		border-radius: 0.5rem;
+		transition: all 100ms;
+	}
+
+	.info-btn:hover {
+		opacity: 1;
+		border-style: solid;
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.info-btn-inline {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		border: 2px dashed var(--color-pencil);
+		padding: 0.5rem 0.75rem;
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
+		opacity: 0.5;
+		font-size: 0.875rem;
+		transition: all 100ms;
+		max-width: 9.5rem;
+	}
+
+	.info-btn-inline:hover {
+		opacity: 1;
+		border-style: solid;
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+</style>

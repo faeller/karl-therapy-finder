@@ -2,6 +2,8 @@ import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { CampaignDraft } from '$lib/types';
 
+const STORAGE_KEY = 'karl-campaign';
+
 const defaultDraft: CampaignDraft = {
 	forSelf: true,
 	radiusKm: 15,
@@ -14,41 +16,61 @@ const defaultDraft: CampaignDraft = {
 function getStored(): CampaignDraft {
 	if (!browser) return defaultDraft;
 	try {
-		const stored = localStorage.getItem('karl-campaign');
-		return stored ? JSON.parse(stored) : defaultDraft;
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (!stored) return defaultDraft;
+		const parsed = JSON.parse(stored);
+		// merge with defaults, keeping all stored values
+		return { ...defaultDraft, ...parsed };
 	} catch {
 		return defaultDraft;
 	}
 }
 
-const { subscribe, set, update } = writable<CampaignDraft>(defaultDraft);
-
-// hydrate from localStorage on client
-if (browser) {
-	set(getStored());
+function saveToStorage(draft: CampaignDraft) {
+	if (browser) {
+		// only save defined values to prevent overwriting with undefined
+		const toSave: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(draft)) {
+			if (value !== undefined) {
+				toSave[key] = value;
+			}
+		}
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+	}
 }
 
+const store = writable<CampaignDraft>(getStored());
+
 export const campaignDraft = {
-	subscribe,
+	subscribe: store.subscribe,
 	set: (value: CampaignDraft) => {
-		if (browser) {
-			localStorage.setItem('karl-campaign', JSON.stringify(value));
-		}
-		set(value);
+		saveToStorage(value);
+		store.set(value);
 	},
 	update: (fn: (draft: CampaignDraft) => CampaignDraft) => {
-		update((current) => {
-			const updated = fn(current);
-			if (browser) {
-				localStorage.setItem('karl-campaign', JSON.stringify(updated));
+		// ALWAYS start from stored data to prevent data loss
+		const stored = getStored();
+		const current = get(store);
+		// merge: stored first, then current (preserves stored if current is missing values)
+		const base = { ...stored };
+		for (const [key, value] of Object.entries(current)) {
+			if (value !== undefined && value !== null) {
+				(base as Record<string, unknown>)[key] = value;
 			}
-			return updated;
-		});
+		}
+		const updated = fn(base);
+		saveToStorage(updated);
+		store.set(updated);
 	},
 	reset: () => {
 		if (browser) {
-			localStorage.removeItem('karl-campaign');
+			localStorage.removeItem(STORAGE_KEY);
 		}
-		set(defaultDraft);
+		store.set(defaultDraft);
+	},
+	hydrate: () => {
+		const stored = getStored();
+		store.set(stored);
+		return stored;
 	}
 };

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
+	import { campaignDraft } from '$lib/stores/campaign';
 	import KarlAvatar from './KarlAvatar.svelte';
 	import { Pencil } from 'lucide-svelte';
 
@@ -14,8 +15,52 @@
 
 	let { role, content, contentKey, contentParams, onEdit }: Props = $props();
 
+	// build summary dynamically from campaign draft
+	function buildSummary(): string {
+		const draft = $campaignDraft;
+		const lines: string[] = [m.karl_summary_intro()];
+
+		if (draft.city || draft.plz) {
+			lines.push(m.karl_summary_location({ city: draft.city || draft.plz, radius: draft.radiusKm }));
+		}
+		if (draft.insuranceType) {
+			lines.push(m.karl_summary_insurance({ type: draft.insuranceType }));
+		}
+		const therapyText = draft.therapyTypes.length > 0
+			? draft.therapyTypes.join(' / ')
+			: m.karl_summary_all_therapies();
+		lines.push(m.karl_summary_therapy({ types: therapyText }));
+
+		if (draft.genderPref) {
+			const gender = draft.genderPref === 'w' ? m.karl_summary_gender_female()
+				: draft.genderPref === 'm' ? m.karl_summary_gender_male() : 'Divers';
+			lines.push(m.karl_summary_gender({ gender }));
+		}
+		if (draft.languages.includes('en')) {
+			lines.push(m.karl_summary_english());
+		}
+		if (draft.specialties.length > 0) {
+			lines.push(m.karl_summary_specialties({ specialties: draft.specialties.join(', ') }));
+		}
+
+		return lines.join('\n');
+	}
+
 	const displayText = $derived.by(() => {
+		// special case: build summary dynamically
+		if (contentKey === 'karl_summary') {
+			return buildSummary();
+		}
 		if (!contentKey) return content;
+		// handle comma-separated keys (multi-select)
+		if (contentKey.includes(',')) {
+			const keys = contentKey.split(',');
+			const translated = keys.map((k) => {
+				const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[k.trim()];
+				return fn ? fn() : k;
+			});
+			return translated.join(', ');
+		}
 		const fn = (m as Record<string, (p?: Record<string, unknown>) => string>)[contentKey];
 		return fn ? fn(contentParams) : content;
 	});

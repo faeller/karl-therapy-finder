@@ -5,6 +5,10 @@ export const forWhomOptions: ChatOption[] = [
 	{ id: 'for_other', labelDe: 'Für jemand anderen', emoji: '🤝', value: false, nextState: 'for_other_name' }
 ];
 
+export const locationOptions: ChatOption[] = [
+	{ id: 'use_location', labelDe: 'Standort automatisch ermitteln', emoji: '📍', value: 'geolocation' }
+];
+
 export const insuranceTypeOptions: ChatOption[] = [
 	{ id: 'gkv', labelDe: 'Gesetzlich (GKV)', emoji: '🏥', value: 'GKV', nextState: 'insurance_details' },
 	{ id: 'pkv', labelDe: 'Privat (PKV)', emoji: '💳', value: 'PKV', nextState: 'therapy_type' },
@@ -31,8 +35,17 @@ export const preferenceOptions: ChatOption[] = [
 ];
 
 export const summaryOptions: ChatOption[] = [
-	{ id: 'start_search', labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'searching' },
-	{ id: 'change_criteria', labelDe: 'Nochmal ändern', emoji: '✏️', value: false, nextState: 'greeting' }
+	{ id: 'start_search', labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'terminservice' },
+	{ id: 'change_criteria', labelDe: 'Nochmal ändern', emoji: '✏️', value: false, nextState: 'edit_hint' }
+];
+
+export const terminserviceOptions: ChatOption[] = [
+	{ id: 'terminservice_done', labelDe: 'Weiter zu Schritt 2', emoji: '→', value: true, nextState: 'searching' },
+	{ id: 'terminservice_skip', labelDe: 'Überspringen', value: false, nextState: 'searching' }
+];
+
+export const editHintOptions: ChatOption[] = [
+	{ id: 'start_search', labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'searching' }
 ];
 
 export const emailConfirmOptions: ChatOption[] = [
@@ -40,8 +53,18 @@ export const emailConfirmOptions: ChatOption[] = [
 	{ id: 'no_cancelled', labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results' }
 ];
 
+export const phoneConfirmOptions: ChatOption[] = [
+	{ id: 'yes_called', labelDe: 'Ja, angerufen', emoji: '✅', value: true, nextState: 'results' },
+	{ id: 'no_cancelled', labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results' }
+];
+
 export const noResultsOptions: ChatOption[] = [
 	{ id: 'change_criteria', labelDe: 'Kriterien ändern', value: true, nextState: 'greeting' }
+];
+
+export const reSearchOptions: ChatOption[] = [
+	{ id: 'replace_results', labelDe: 'Ersetzen', emoji: '🔄', value: 'replace', nextState: 'searching' },
+	{ id: 'merge_results', labelDe: 'Zusammenführen', emoji: '➕', value: 'merge', nextState: 'searching' }
 ];
 
 
