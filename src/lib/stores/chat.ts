@@ -124,10 +124,11 @@ async function transitionTo(newState: ChatState) {
 			return say('terminservice_intro', { options: terminserviceOptions });
 		case 'searching':
 			await say('karl_searching');
-			await delay(1500);
-			return transitionTo('results');
+			await handleResultsState();
+			state.set('results');
+			return;
 		case 'results':
-			return handleResultsState();
+			return;
 	}
 }
 
