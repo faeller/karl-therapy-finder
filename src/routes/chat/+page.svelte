@@ -262,10 +262,6 @@
 			: []
 	);
 
-	// searching message shown separately
-	const searchingMessage = $derived(
-		$messages.find((msg) => msg.contentKey === 'karl_searching')
-	);
 
 	// get therapists from the latest results message
 	// filtering will happen server-side when real api is implemented
@@ -469,11 +465,11 @@
 					title={m.chat_section_results()}
 					collapsible={false}
 				>
-					{#if searchingMessage}
+					{#if $chatState === 'searching'}
 						<div class="mb-4">
 							<MessageBubble
 								role="karl"
-								contentKey={searchingMessage.contentKey}
+								contentKey="karl_searching"
 							/>
 						</div>
 					{/if}
