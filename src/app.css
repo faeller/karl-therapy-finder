@@ -36,10 +36,12 @@
 
 /* base styles */
 html {
+	font-size: 16px;
 	font-family: var(--font-body);
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
 	scroll-behavior: smooth;
+	zoom: 1.25; /* scale entire app up, like browser zoom */
 }
 
 /* paper texture background */

@@ -63,6 +63,14 @@
 		<p class="mt-6 text-sm text-pencil/50">
 			{m.landing_privacy()}
 		</p>
+
+		<footer class="mt-12 text-center">
+			<p class="text-xs text-pencil/40">&copy; 2025 Merle Fäller</p>
+			<div class="mt-2 flex justify-center gap-4 text-xs">
+				<a href="/impressum" class="text-pencil/40 hover:text-pencil/70 transition-colors">Impressum</a>
+				<a href="/datenschutz" class="text-pencil/40 hover:text-pencil/70 transition-colors">Datenschutz</a>
+			</div>
+		</footer>
 	</div>
 </div>
 
