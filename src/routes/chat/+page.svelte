@@ -248,17 +248,17 @@
 	);
 
 	// Split messages into onboarding and results
-	// Filter out karl system messages that are rendered separately
-	const systemMessageKeys = ['terminservice_intro', 'karl_searching'];
+	// These karl messages are rendered in dedicated sections, not in the main flow
+	const separatelyRendered = ['terminservice_intro', 'karl_searching'];
 	const onboardingMessages = $derived(
 		(resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages))
-			.filter((msg) => !systemMessageKeys.includes(msg.contentKey ?? ''))
+			.filter((msg) => !separatelyRendered.includes(msg.contentKey ?? ''))
 	);
 
 	const resultsMessages = $derived(
 		resultsStartIndex > 0
 			? $messages.slice(resultsStartIndex).filter(
-					(msg) => !systemMessageKeys.includes(msg.contentKey ?? '')
+					(msg) => !separatelyRendered.includes(msg.contentKey ?? '')
 				)
 			: []
 	);
