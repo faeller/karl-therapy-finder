@@ -262,6 +262,10 @@
 			: []
 	);
 
+	// searching message shown separately
+	const searchingMessage = $derived(
+		$messages.find((msg) => msg.contentKey === 'karl_searching')
+	);
 
 	// get therapists from the latest results message
 	// filtering will happen server-side when real api is implemented
@@ -465,25 +469,25 @@
 					title={m.chat_section_results()}
 					collapsible={false}
 				>
-					{#if $chatState === 'searching'}
-						<div class="mb-4">
-							<MessageBubble
-								role="karl"
-								contentKey="karl_searching"
-							/>
-						</div>
-					{/if}
-					{#if allTherapists.length > 0}
-						{#if allTherapists.length > 5}
-							<div class="mb-8">
-								<MessageBubble
-									role="karl"
-									contentKey="karl_results_encouragement"
-								/>
+					<div class="results-container" class:loading={$chatState === 'searching'}>
+						{#if $chatState === 'searching'}
+							<div class="loading-overlay">
+								<div class="loading-spinner"></div>
+								<p>{m.karl_searching()}</p>
 							</div>
 						{/if}
-						<TherapistList therapists={allTherapists} />
-					{/if}
+						{#if allTherapists.length > 0}
+							{#if allTherapists.length > 5}
+								<div class="mb-8">
+									<MessageBubble
+										role="karl"
+										contentKey="karl_results_encouragement"
+									/>
+								</div>
+							{/if}
+							<TherapistList therapists={allTherapists} />
+						{/if}
+					</div>
 				</ChatSection>
 				</div>
 			{/if}
@@ -689,5 +693,46 @@
 	.modal-btn.primary:hover {
 		background-color: var(--color-red-marker);
 		border-color: var(--color-red-marker);
+	}
+
+	.results-container {
+		position: relative;
+		min-height: 100px;
+	}
+
+	.results-container.loading > *:not(.loading-overlay) {
+		opacity: 0.3;
+		pointer-events: none;
+	}
+
+	.loading-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		z-index: 10;
+		padding: 2rem;
+	}
+
+	.loading-overlay p {
+		font-family: var(--font-body);
+		color: var(--color-pencil);
+		font-size: 1rem;
+	}
+
+	.loading-spinner {
+		width: 40px;
+		height: 40px;
+		border: 3px solid var(--color-erased);
+		border-top-color: var(--color-blue-pen);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 </style>
