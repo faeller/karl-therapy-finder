@@ -375,13 +375,13 @@
 					<div class="space-y-4">
 						{#each onboardingMessages as message, i (message.id)}
 							{#if message.role === 'user' && message.field === 'forSelf'}
-								<div class="flex items-stretch justify-end gap-2">
+								<div class="flex items-stretch justify-end gap-0">
 									<button
 										onclick={() => (showProcessExplanation = !showProcessExplanation)}
 										class="info-btn-inline"
 										style:border-radius={wobbly.bubbleAlt}
 									>
-										<HelpCircle size={16} class="shrink-0" />
+										<HelpCircle size={20} class="shrink-0" />
 										<span>{m.karl_how_it_works()}</span>
 									</button>
 									<MessageBubble
@@ -429,7 +429,7 @@
 												class="info-btn"
 											>
 												<HelpCircle size={16} />
-												{m.karl_how_it_works()}
+												{m.karl_how_it_works_long()}
 											</button>
 										</div>
 										{#if showProcessExplanation}
@@ -617,14 +617,17 @@
 	.info-btn-inline {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
+		gap: 0.35rem;
 		border: 2px dashed var(--color-pencil);
-		padding: 0.5rem 0.75rem;
+		padding: 0.4rem 0.75rem 0.4rem 0.5rem;
 		background-color: var(--color-paper);
 		color: var(--color-pencil);
 		opacity: 0.5;
-		font-size: 0.875rem;
+		font-size: 0.8rem;
 		transition: all 100ms;
+		max-width: 6.5rem;
+		text-align: left;
+		line-height: 1.15;
 	}
 
 	.info-btn-inline:hover {

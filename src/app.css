@@ -36,7 +36,7 @@
 
 /* base styles */
 html {
-	font-size: 24px; /* 16 * 1.5 = 24px for 150% scale effect */
+	font-size: 20px; /* 16 * 1.25 = 20px for 125% scale effect */
 	font-family: var(--font-body);
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
