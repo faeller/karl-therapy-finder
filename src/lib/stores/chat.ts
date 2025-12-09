@@ -336,12 +336,14 @@ async function updateMessage(
 		});
 	}
 
-	// check if we have results and prompt for re-search (remove old prompt first)
+	// return whether re-search should be prompted (caller handles UI)
 	const hasResults = get(messages).some((m) => m.therapists?.length);
-	if (hasResults) {
-		messages.update((msgs) => msgs.filter((m) => m.contentKey !== 'karl_research_prompt'));
-		await ask('karl_research_prompt', reSearchOptions);
-	}
+	return hasResults;
+}
+
+async function triggerReSearch(merge: boolean) {
+	mergeResults = merge;
+	await transitionTo('searching');
 }
 
 export const chat = {
@@ -355,5 +357,6 @@ export const chat = {
 	start,
 	reset,
 	rewindTo,
-	updateMessage
+	updateMessage,
+	triggerReSearch
 };

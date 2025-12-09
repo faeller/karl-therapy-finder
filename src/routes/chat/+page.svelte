@@ -77,6 +77,9 @@
 	// Process explanation toggle (for "Wie funktioniert das?" in history)
 	let showProcessExplanation = $state(false);
 
+	// Re-search modal state
+	let showReSearchModal = $state(false);
+
 	// Find the Karl message that prompted this user answer
 	const editingKarlMessage = $derived.by(() => {
 		if (editingMessageIndex === null) return null;
@@ -160,9 +163,10 @@
 		if (option?.id === OptionId.useLocation) {
 			const plz = await handleGetLocation();
 			if (plz) {
-				chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
+				const needsReSearch = await chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
 				const city = getCityFromPlz(plz) || '';
 				campaignDraft.update((d) => ({ ...d, plz, city }));
+				if (needsReSearch) showReSearchModal = true;
 			}
 			editingMessageIndex = null;
 			return;
@@ -178,8 +182,9 @@
 			}
 		}
 
-		chat.updateMessage(editingMessageIndex, newValue, option, contentKey);
+		const needsReSearch = await chat.updateMessage(editingMessageIndex, newValue, option, contentKey);
 		editingMessageIndex = null;
+		if (needsReSearch) showReSearchModal = true;
 	}
 
 	function handleEditMultiSubmit(options: ChatOption[]) {
@@ -542,6 +547,34 @@
 	/>
 {/if}
 
+{#if showReSearchModal}
+	<div class="modal-overlay" onclick={() => (showReSearchModal = false)}>
+		<div
+			class="modal-content"
+			onclick={(e) => e.stopPropagation()}
+			style:border-radius={wobbly.md}
+		>
+			<p class="modal-text">{m.karl_research_prompt()}</p>
+			<div class="modal-buttons">
+				<button
+					onclick={() => { showReSearchModal = false; chat.triggerReSearch(false); }}
+					class="modal-btn primary"
+					style:border-radius={wobbly.button}
+				>
+					{m.option_replace_results()}
+				</button>
+				<button
+					onclick={() => { showReSearchModal = false; chat.triggerReSearch(true); }}
+					class="modal-btn"
+					style:border-radius={wobbly.button}
+				>
+					{m.option_merge_results()}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.progress-bar {
 		flex: 1;
@@ -600,5 +633,65 @@
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+		padding: 1rem;
+	}
+
+	.modal-content {
+		background-color: var(--color-paper);
+		border: 2px solid var(--color-pencil);
+		padding: 1.5rem;
+		max-width: 400px;
+		width: 100%;
+		box-shadow: var(--shadow-hard);
+	}
+
+	.modal-text {
+		font-family: var(--font-body);
+		font-size: 1.125rem;
+		color: var(--color-pencil);
+		margin-bottom: 1.5rem;
+		line-height: 1.4;
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.modal-btn {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		font-family: var(--font-body);
+		font-size: 1rem;
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
+		transition: all 100ms;
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	.modal-btn:hover {
+		background-color: var(--color-erased);
+	}
+
+	.modal-btn.primary {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.modal-btn.primary:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
 	}
 </style>
