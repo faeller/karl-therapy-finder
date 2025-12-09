@@ -123,7 +123,8 @@ async function transitionTo(newState: ChatState) {
 		case 'terminservice':
 			return say('terminservice_intro', { options: terminserviceOptions });
 		case 'searching':
-			await say('karl_searching');
+			// skip typing simulation for searching - overlay handles the animation
+			messages.update((msgs) => [...msgs, createKarlMessage({ contentKey: 'karl_searching' })]);
 			await handleResultsState();
 			state.set('results');
 			return;
