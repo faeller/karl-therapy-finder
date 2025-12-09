@@ -249,15 +249,16 @@
 
 	// Split messages into onboarding and results
 	// Filter out terminservice and searching messages (rendered separately)
+	const terminserviceKeys = ['terminservice_intro', 'karl_searching', 'option_terminservice_done', 'option_terminservice_skip'];
 	const onboardingMessages = $derived(
 		(resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages))
-			.filter((msg) => msg.contentKey !== 'terminservice_intro' && msg.contentKey !== 'karl_searching')
+			.filter((msg) => !terminserviceKeys.includes(msg.contentKey ?? ''))
 	);
 
 	const resultsMessages = $derived(
 		resultsStartIndex > 0
 			? $messages.slice(resultsStartIndex).filter(
-					(msg) => msg.contentKey !== 'terminservice_intro' && msg.contentKey !== 'karl_searching'
+					(msg) => !terminserviceKeys.includes(msg.contentKey ?? '')
 				)
 			: []
 	);
