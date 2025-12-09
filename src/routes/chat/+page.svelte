@@ -472,10 +472,8 @@
 					<div class="results-container" class:loading={$chatState === 'searching'}>
 						{#if $chatState === 'searching'}
 							<div class="loading-overlay">
-								<div class="loading-content">
-									<MessageBubble role="karl" contentKey="karl_searching" />
-									<TypingIndicator />
-								</div>
+								<MessageBubble role="karl" contentKey="karl_searching" />
+								<TypingIndicator />
 							</div>
 						{/if}
 						{#if allTherapists.length > 0}
@@ -708,19 +706,9 @@
 	}
 
 	.loading-overlay {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 10;
-		background-color: color-mix(in srgb, var(--color-paper) 80%, transparent);
-	}
-
-	.loading-content {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		align-items: flex-start;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
 	}
 </style>
