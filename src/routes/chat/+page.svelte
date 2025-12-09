@@ -4,6 +4,7 @@
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
 	import { getCityFromPlz } from '$lib/data/plzLookup';
+	import { OptionId } from '$lib/data/optionIds';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
@@ -126,7 +127,7 @@
 	});
 
 	async function handleOptionSelect(option: ChatOption) {
-		if (option.id === 'use_location') {
+		if (option.id === OptionId.useLocation) {
 			const plz = await handleGetLocation();
 			if (plz) handleTextSubmit(plz);
 			return;
@@ -156,7 +157,7 @@
 		if (editingMessageIndex === null) return;
 
 		// handle geolocation option in edit mode
-		if (option?.id === 'use_location') {
+		if (option?.id === OptionId.useLocation) {
 			const plz = await handleGetLocation();
 			if (plz) {
 				chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
@@ -182,17 +183,7 @@
 	}
 
 	function handleEditMultiSubmit(options: ChatOption[]) {
-		// reset preferences first, then apply new selections
-		campaignDraft.update((d) => ({ ...d, genderPref: undefined, languages: ['de'], specialties: [] }));
-		for (const { value } of options) {
-			const val = value as Record<string, unknown>;
-			campaignDraft.update((d) => ({
-				...d,
-				...(val.genderPref && { genderPref: val.genderPref as 'w' | 'm' | 'd' }),
-				...(val.languages && { languages: val.languages as string[] }),
-				...(val.specialties && { specialties: [...d.specialties, ...(val.specialties as string[])] })
-			}));
-		}
+		// use centralized mapping from optionMapping.ts - handled by chat.updateMessage already
 	}
 
 	// Geolocation

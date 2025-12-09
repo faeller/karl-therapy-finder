@@ -4,6 +4,7 @@
 	import type { ChatOption } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
 	import { t } from '$lib/i18n';
+	import { isGenderOption } from '$lib/data/optionMapping';
 
 	interface Props {
 		options: ChatOption[];
@@ -26,10 +27,11 @@
 			if (newSelected.has(option.id)) {
 				newSelected.delete(option.id);
 			} else {
-				// gender is exclusive
-				if (option.id === 'female' || option.id === 'male') {
-					newSelected.delete('female');
-					newSelected.delete('male');
+				// gender options are mutually exclusive
+				if (isGenderOption(option.id)) {
+					for (const id of newSelected) {
+						if (isGenderOption(id)) newSelected.delete(id);
+					}
 				}
 				newSelected.add(option.id);
 			}

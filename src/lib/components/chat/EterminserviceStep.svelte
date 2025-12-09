@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import type { ChatOption } from '$lib/types';
+	import { OptionId } from '$lib/data/optionIds';
 	import MessageBubble from './MessageBubble.svelte';
 
 	interface Props {
@@ -17,7 +18,6 @@
 
 	function handleDone() {
 		if (lateCompletion) {
-			// just update status, don't trigger state transition
 			campaignDraft.update((d) => ({ ...d, terminserviceStatus: 'done' }));
 		} else if (continueOption) {
 			onSelect(continueOption);
@@ -32,7 +32,6 @@
 		}
 	}
 
-	// check if online booking might be available based on PLZ prefix
 	const availableRegions = ['10', '12', '13', '14', '20', '21', '22', '80', '81', '85', '50', '51', '60', '65', '70'];
 	const plzPrefix = $derived($campaignDraft.plz?.substring(0, 2) ?? '');
 	const onlineAvailable = $derived(availableRegions.includes(plzPrefix));
@@ -40,8 +39,8 @@
 	type Step = 'intro' | 'explain' | 'phone' | 'online';
 	let currentStep = $state<Step>('intro');
 
-	const continueOption = $derived(options.find((o) => o.id === 'terminservice_done'));
-	const skipOption = $derived(options.find((o) => o.id === 'terminservice_skip'));
+	const continueOption = $derived(options.find((o) => o.id === OptionId.terminserviceDone));
+	const skipOption = $derived(options.find((o) => o.id === OptionId.terminserviceSkip));
 </script>
 
 <div class="space-y-4">
