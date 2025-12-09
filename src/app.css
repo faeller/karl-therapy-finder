@@ -36,15 +36,13 @@
 
 /* base styles */
 html {
-	font-size: 16px;
+	font-size: 24px; /* 16 * 1.5 = 24px for 150% scale effect */
 	font-family: var(--font-body);
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
 	scroll-behavior: smooth;
-	zoom: 1.25; /* scale entire app up, like browser zoom */
 }
 
-/* paper texture background */
 body {
 	background-image: radial-gradient(var(--color-erased) 1px, transparent 1px);
 	background-size: 24px 24px;

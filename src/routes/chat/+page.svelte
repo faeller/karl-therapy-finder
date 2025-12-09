@@ -375,7 +375,7 @@
 					<div class="space-y-4">
 						{#each onboardingMessages as message, i (message.id)}
 							{#if message.role === 'user' && message.field === 'forSelf'}
-								<div class="flex items-center justify-end gap-1">
+								<div class="flex items-stretch justify-end gap-2">
 									<button
 										onclick={() => (showProcessExplanation = !showProcessExplanation)}
 										class="info-btn-inline"
@@ -423,21 +423,21 @@
 											onTextSubmit={message.inputType ? handleTextSubmit : undefined}
 										/>
 										{#if $chatState === 'greeting'}
-											<div class="flex justify-center mt-3">
-												<button
-													onclick={() => (showProcessExplanation = !showProcessExplanation)}
-													class="info-btn"
-												>
-													<HelpCircle size={16} />
-													{m.karl_how_it_works()}
-												</button>
+										<div class="flex justify-center mt-3">
+											<button
+												onclick={() => (showProcessExplanation = !showProcessExplanation)}
+												class="info-btn"
+											>
+												<HelpCircle size={16} />
+												{m.karl_how_it_works()}
+											</button>
+										</div>
+										{#if showProcessExplanation}
+											<div class="mt-4">
+												<MessageBubble role="karl" content={m.karl_process_explanation()} />
 											</div>
-											{#if showProcessExplanation}
-												<div class="mt-4">
-													<MessageBubble role="karl" content={m.karl_process_explanation()} />
-												</div>
-											{/if}
 										{/if}
+									{/if}
 									{/if}
 								</div>
 							{/if}
@@ -615,7 +615,7 @@
 	}
 
 	.info-btn-inline {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		gap: 0.25rem;
 		border: 2px dashed var(--color-pencil);
@@ -625,7 +625,6 @@
 		opacity: 0.5;
 		font-size: 0.875rem;
 		transition: all 100ms;
-		max-width: 9.5rem;
 	}
 
 	.info-btn-inline:hover {
