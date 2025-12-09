@@ -399,7 +399,7 @@
 								/>
 							{/if}
 
-							{#if message.options?.length && message === lastMessage && !isInResults && $chatState !== 'terminservice'}
+							{#if message.options?.length && message === onboardingMessages.at(-1) && !isInResults}
 								<div class="mt-4">
 									{#if isGettingLocation}
 										<div class="flex items-center gap-2 text-sm text-pencil/70">

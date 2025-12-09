@@ -336,9 +336,10 @@ async function updateMessage(
 		});
 	}
 
-	// check if we have results and prompt for re-search
+	// check if we have results and prompt for re-search (remove old prompt first)
 	const hasResults = get(messages).some((m) => m.therapists?.length);
 	if (hasResults) {
+		messages.update((msgs) => msgs.filter((m) => m.contentKey !== 'karl_research_prompt'));
 		await ask('karl_research_prompt', reSearchOptions);
 	}
 }
