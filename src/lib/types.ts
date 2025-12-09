@@ -21,7 +21,9 @@ export interface ChatOption {
 	emoji?: string;
 	value: unknown;
 	nextState?: ChatState;
-	style?: 'primary' | 'secondary'; // secondary = dashed border help style
+	style?: 'primary' | 'secondary';
+	/** action options don't add user message to history */
+	isAction?: boolean;
 }
 
 export type EditableField =

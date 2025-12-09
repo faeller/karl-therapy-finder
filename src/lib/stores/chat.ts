@@ -186,7 +186,10 @@ async function handleOption(option: ChatOption) {
 	const currentState = get(state);
 	const field = stateFieldMap[currentState];
 
-	addUserMessage(option.labelDe, field, `option_${option.id}`);
+	// only add user message for non-action options (actual answers)
+	if (!option.isAction) {
+		addUserMessage(option.labelDe, field, `option_${option.id}`);
+	}
 
 	// apply option to campaign using centralized mapping
 	campaignDraft.update((d) => applyOption(d, option.id));

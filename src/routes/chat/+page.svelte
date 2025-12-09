@@ -248,17 +248,17 @@
 	);
 
 	// Split messages into onboarding and results
-	// Filter out terminservice and searching messages (rendered separately)
-	const terminserviceKeys = ['terminservice_intro', 'karl_searching', 'option_terminservice_done', 'option_terminservice_skip'];
+	// Filter out karl system messages that are rendered separately
+	const systemMessageKeys = ['terminservice_intro', 'karl_searching'];
 	const onboardingMessages = $derived(
 		(resultsStartIndex > 0 ? $messages.slice(0, resultsStartIndex) : (isInResults ? $messages : $messages))
-			.filter((msg) => !terminserviceKeys.includes(msg.contentKey ?? ''))
+			.filter((msg) => !systemMessageKeys.includes(msg.contentKey ?? ''))
 	);
 
 	const resultsMessages = $derived(
 		resultsStartIndex > 0
 			? $messages.slice(resultsStartIndex).filter(
-					(msg) => !terminserviceKeys.includes(msg.contentKey ?? '')
+					(msg) => !systemMessageKeys.includes(msg.contentKey ?? '')
 				)
 			: []
 	);

@@ -7,7 +7,7 @@ export const forWhomOptions: ChatOption[] = [
 ];
 
 export const locationOptions: ChatOption[] = [
-	{ id: OptionId.useLocation, labelDe: 'Standort automatisch ermitteln', emoji: '📍', value: 'geolocation' }
+	{ id: OptionId.useLocation, labelDe: 'Standort automatisch ermitteln', emoji: '📍', value: 'geolocation', isAction: true }
 ];
 
 export const insuranceTypeOptions: ChatOption[] = [
@@ -36,34 +36,34 @@ export const preferenceOptions: ChatOption[] = [
 ];
 
 export const summaryOptions: ChatOption[] = [
-	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'terminservice' },
-	{ id: OptionId.changeCriteria, labelDe: 'Nochmal ändern', emoji: '✏️', value: false, nextState: 'edit_hint' }
+	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'terminservice', isAction: true },
+	{ id: OptionId.changeCriteria, labelDe: 'Nochmal ändern', emoji: '✏️', value: false, nextState: 'edit_hint', isAction: true }
 ];
 
 export const terminserviceOptions: ChatOption[] = [
-	{ id: OptionId.terminserviceDone, labelDe: 'Weiter zu Schritt 2', emoji: '→', value: true, nextState: 'searching' },
-	{ id: OptionId.terminserviceSkip, labelDe: 'Überspringen', value: false, nextState: 'searching' }
+	{ id: OptionId.terminserviceDone, labelDe: 'Weiter zu Schritt 2', emoji: '→', value: true, nextState: 'searching', isAction: true },
+	{ id: OptionId.terminserviceSkip, labelDe: 'Überspringen', value: false, nextState: 'searching', isAction: true }
 ];
 
 export const editHintOptions: ChatOption[] = [
-	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'searching' }
+	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', value: true, nextState: 'searching', isAction: true }
 ];
 
 export const emailConfirmOptions: ChatOption[] = [
-	{ id: OptionId.yesSent, labelDe: 'Ja, abgeschickt', emoji: '✅', value: true, nextState: 'results' },
-	{ id: OptionId.noCancelled, labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results' }
+	{ id: OptionId.yesSent, labelDe: 'Ja, abgeschickt', emoji: '✅', value: true, nextState: 'results', isAction: true },
+	{ id: OptionId.noCancelled, labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results', isAction: true }
 ];
 
 export const phoneConfirmOptions: ChatOption[] = [
-	{ id: OptionId.yesCalled, labelDe: 'Ja, angerufen', emoji: '✅', value: true, nextState: 'results' },
-	{ id: OptionId.noCancelled, labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results' }
+	{ id: OptionId.yesCalled, labelDe: 'Ja, angerufen', emoji: '✅', value: true, nextState: 'results', isAction: true },
+	{ id: OptionId.noCancelled, labelDe: 'Nein, abgebrochen', emoji: '❌', value: false, nextState: 'results', isAction: true }
 ];
 
 export const noResultsOptions: ChatOption[] = [
-	{ id: OptionId.changeCriteria, labelDe: 'Kriterien ändern', value: true, nextState: 'greeting' }
+	{ id: OptionId.changeCriteria, labelDe: 'Kriterien ändern', value: true, nextState: 'greeting', isAction: true }
 ];
 
 export const reSearchOptions: ChatOption[] = [
-	{ id: OptionId.replaceResults, labelDe: 'Ersetzen', emoji: '🔄', value: 'replace', nextState: 'searching' },
-	{ id: OptionId.mergeResults, labelDe: 'Zusammenführen', emoji: '➕', value: 'merge', nextState: 'searching' }
+	{ id: OptionId.replaceResults, labelDe: 'Ersetzen', emoji: '🔄', value: 'replace', nextState: 'searching', isAction: true },
+	{ id: OptionId.mergeResults, labelDe: 'Zusammenführen', emoji: '➕', value: 'merge', nextState: 'searching', isAction: true }
 ];
