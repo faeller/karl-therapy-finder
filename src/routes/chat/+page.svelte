@@ -472,8 +472,7 @@
 					<div class="results-container" class:loading={$chatState === 'searching'}>
 						{#if $chatState === 'searching'}
 							<div class="loading-overlay">
-								<div class="loading-spinner"></div>
-								<p>{m.karl_searching()}</p>
+								<TypingIndicator />
 							</div>
 						{/if}
 						{#if allTherapists.length > 0}
@@ -709,30 +708,8 @@
 		position: absolute;
 		inset: 0;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 1rem;
 		z-index: 10;
-		padding: 2rem;
-	}
-
-	.loading-overlay p {
-		font-family: var(--font-body);
-		color: var(--color-pencil);
-		font-size: 1rem;
-	}
-
-	.loading-spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--color-erased);
-		border-top-color: var(--color-blue-pen);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to { transform: rotate(360deg); }
 	}
 </style>
