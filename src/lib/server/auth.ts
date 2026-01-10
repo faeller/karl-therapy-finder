@@ -1,33 +1,22 @@
-// authentication utilities for upcoming Patreon OAuth integration
-// currently unused - will enable user accounts, saved campaigns, and premium features
+// patreon oauth authentication
 import type { RequestEvent } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
-import bcrypt from 'bcryptjs';
-import { db } from '$lib/server/db';
+import { getDb, type Database } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
+import { nanoid } from 'nanoid';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-// password hashing (cf-compatible)
-export async function hashPassword(password: string): Promise<string> {
-	return bcrypt.hash(password, 10);
-}
-
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-	return bcrypt.compare(password, hash);
-}
-
-export const sessionCookieName = 'auth-session';
+export const sessionCookieName = 'karl-session';
 
 export function generateSessionToken() {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));
-	const token = encodeBase64url(bytes);
-	return token;
+	return encodeBase64url(bytes);
 }
 
-export async function createSession(token: string, userId: string) {
+export async function createSession(db: Database, token: string, userId: string) {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const session: table.Session = {
 		id: sessionId,
@@ -38,12 +27,19 @@ export async function createSession(token: string, userId: string) {
 	return session;
 }
 
-export async function validateSessionToken(token: string) {
+export async function validateSessionToken(db: Database, token: string) {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const [result] = await db
 		.select({
-			// Adjust user table here to tweak returned data
-			user: { id: table.user.id, username: table.user.username },
+			user: {
+				id: table.user.id,
+				username: table.user.username,
+				email: table.user.email,
+				avatarUrl: table.user.avatarUrl,
+				pledgeTier: table.user.pledgeTier,
+				pledgeAmountCents: table.user.pledgeAmountCents,
+				syncEnabled: table.user.syncEnabled
+			},
 			session: table.session
 		})
 		.from(table.session)
@@ -75,19 +71,77 @@ export async function validateSessionToken(token: string) {
 
 export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionToken>>;
 
-export async function invalidateSession(sessionId: string) {
+export async function invalidateSession(db: Database, sessionId: string) {
 	await db.delete(table.session).where(eq(table.session.id, sessionId));
 }
 
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
 	event.cookies.set(sessionCookieName, token, {
 		expires: expiresAt,
-		path: '/'
+		path: '/',
+		httpOnly: true,
+		secure: true,
+		sameSite: 'lax'
 	});
 }
 
 export function deleteSessionTokenCookie(event: RequestEvent) {
-	event.cookies.delete(sessionCookieName, {
-		path: '/'
+	event.cookies.delete(sessionCookieName, { path: '/' });
+}
+
+// patreon user upsert
+export interface PatreonUserData {
+	patreonId: string;
+	email: string | null;
+	username: string;
+	avatarUrl: string | null;
+	pledgeTier: string | null;
+	pledgeAmountCents: number | null;
+}
+
+export async function upsertPatreonUser(db: Database, data: PatreonUserData): Promise<string> {
+	const existing = await db
+		.select({ id: table.user.id })
+		.from(table.user)
+		.where(eq(table.user.patreonId, data.patreonId))
+		.limit(1);
+
+	const now = new Date();
+
+	if (existing.length > 0) {
+		await db
+			.update(table.user)
+			.set({
+				email: data.email,
+				username: data.username,
+				avatarUrl: data.avatarUrl,
+				pledgeTier: data.pledgeTier,
+				pledgeAmountCents: data.pledgeAmountCents,
+				updatedAt: now
+			})
+			.where(eq(table.user.patreonId, data.patreonId));
+		return existing[0].id;
+	}
+
+	const userId = nanoid();
+	await db.insert(table.user).values({
+		id: userId,
+		patreonId: data.patreonId,
+		email: data.email,
+		username: data.username,
+		avatarUrl: data.avatarUrl,
+		pledgeTier: data.pledgeTier,
+		pledgeAmountCents: data.pledgeAmountCents,
+		syncEnabled: false,
+		createdAt: now,
+		updatedAt: now
 	});
+	return userId;
+}
+
+export async function updateSyncEnabled(db: Database, userId: string, enabled: boolean) {
+	await db
+		.update(table.user)
+		.set({ syncEnabled: enabled, updatedAt: new Date() })
+		.where(eq(table.user.id, userId));
 }

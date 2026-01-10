@@ -1,15 +1,30 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
 declare global {
 	namespace App {
 		interface Locals {
-			user: import('$lib/server/auth').SessionValidationResult['user'];
-			session: import('$lib/server/auth').SessionValidationResult['session'];
+			user: {
+				id: string;
+				username: string;
+				email: string | null;
+				avatarUrl: string | null;
+				pledgeTier: string | null;
+				pledgeAmountCents: number | null;
+				syncEnabled: boolean | null;
+			} | null;
+			session: {
+				id: string;
+				userId: string;
+				expiresAt: Date;
+			} | null;
 		}
 		interface Platform {
 			env?: {
 				THERAPIST_CACHE?: KVNamespace;
+				DB?: D1Database;
 			};
+		}
+		interface PageData {
+			user: Locals['user'];
 		}
 	}
 }
