@@ -1,21 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
 @import 'tailwindcss';
 
-/* hand-drawn design tokens */
+/* hand-drawn design tokens for tailwind */
 @theme {
-	/* light mode colors */
 	--color-paper: #fdfbf7;
 	--color-pencil: #2d2d2d;
 	--color-erased: #e5e0d8;
 	--color-red-marker: #ff4d4d;
 	--color-blue-pen: #2d5da1;
 	--color-postit: #fff9c4;
-
-	/* fonts */
 	--font-heading: 'Kalam', cursive;
 	--font-body: 'Patrick Hand', cursive;
+	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
+	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
+	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
+	--shadow-hard-subtle: 3px 3px 0px 0px rgba(45, 45, 45, 0.1);
+}
 
-	/* hard shadows */
+/* light mode (root) - needed for .dark override to work */
+:root {
+	--color-paper: #fdfbf7;
+	--color-pencil: #2d2d2d;
+	--color-erased: #e5e0d8;
+	--color-red-marker: #ff4d4d;
+	--color-blue-pen: #2d5da1;
+	--color-postit: #fff9c4;
 	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
 	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
 	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
@@ -23,7 +32,7 @@
 }
 
 /* dark mode overrides */
-.dark {
+:root.dark {
 	--color-paper: #1a1a1a;
 	--color-pencil: #e5e0d8;
 	--color-erased: #2d2d2d;
@@ -36,11 +45,17 @@
 
 /* base styles */
 html {
-	font-size: 20px; /* 16 * 1.25 = 20px for 125% scale effect */
+	font-size: 17.6px; /* 16 * 1.1 = 17.6px for 110% scale on mobile */
 	font-family: var(--font-body);
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
 	scroll-behavior: smooth;
+}
+
+@media (min-width: 768px) {
+	html {
+		font-size: 20px; /* 125% on desktop */
+	}
 }
 
 body {
@@ -66,8 +81,28 @@ h1, h2, h3, h4, h5, h6 {
 	color: white;
 }
 
+/* scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: var(--color-pencil);
+	opacity: 0.3;
+	border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+	opacity: 0.5;
+}
+:root.dark ::-webkit-scrollbar-thumb {
+	background: var(--color-erased);
+}
+
 /* dark mode card backgrounds */
-.dark .bg-white {
+:root.dark .bg-white {
 	background-color: #252525;
 }
 
@@ -135,6 +170,18 @@ h1, h2, h3, h4, h5, h6 {
 	opacity: 0.35;
 	cursor: not-allowed;
 	background-color: var(--color-erased);
+}
+
+/* confetti animation */
+@keyframes konfetti-fall {
+	0% {
+		opacity: 1;
+		transform: translateY(0) translateX(0) rotate(0deg);
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(100vh) translateX(var(--drift)) rotate(var(--spin));
+	}
 }
 
 /* modal/dialog overlay */
