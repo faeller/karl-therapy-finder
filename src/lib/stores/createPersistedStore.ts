@@ -16,6 +16,8 @@ export function createPersistedStore<T>(
 		deserialize?: (stored: string) => T;
 		// merge function for partial updates (default: shallow merge for objects)
 		merge?: (stored: T, current: T) => T;
+		// callback on every change (for sync)
+		onUpdate?: (value: T) => void;
 	}
 ): PersistedStore<T> {
 	const serialize = options?.serialize ?? JSON.stringify;
@@ -49,7 +51,15 @@ export function createPersistedStore<T>(
 	const store = writable<T>(load());
 
 	// auto-persist on change
-	store.subscribe((value) => save(value));
+	let initialized = false;
+	store.subscribe((value) => {
+		save(value);
+		// call onUpdate after initial load
+		if (initialized && options?.onUpdate) {
+			options.onUpdate(value);
+		}
+		initialized = true;
+	});
 
 	return {
 		subscribe: store.subscribe,
