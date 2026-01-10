@@ -9,3 +9,8 @@ PUBLIC_APP_URL = "https://karl2.pages.dev"
 [[kv_namespaces]]
 binding = "THERAPIST_CACHE"
 id = "98fd0c48b4a44e1a97d54878d91dde4c"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "karl-auth"
+database_id = "a05c551b-b24a-40e5-bc72-618d91e4eed7"

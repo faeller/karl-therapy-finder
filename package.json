@@ -21,6 +21,7 @@
 		"i18n:extract": "node scripts/extract-i18n.js"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20251209.0",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@inlang/paraglide-js": "^2.5.0",
