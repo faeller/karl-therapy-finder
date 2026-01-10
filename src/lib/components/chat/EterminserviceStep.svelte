@@ -48,8 +48,30 @@
 	{#if currentStep === 'intro'}
 		<MessageBubble role="karl" content={m.terminservice_intro_message()} />
 
+		<div class="flex flex-wrap justify-center gap-3 px-2">
+			<!-- phone + explain first -->
+			<button
+				onclick={() => (currentStep = 'phone')}
+				class="option-btn"
+				class:recommended={!onlineAvailable}
+				style:border-radius={wobbly.button}
+			>
+				<Phone size={16} class="mr-1" />
+				{m.terminservice_choice_phone()}
+			</button>
+
+			<button
+				onclick={() => (currentStep = 'explain')}
+				class="option-btn secondary"
+				style:border-radius={wobbly.button}
+			>
+				<HelpCircle size={16} class="mr-1" />
+				{m.terminservice_explain_why()}
+			</button>
+		</div>
+
 		<!-- plz availability info -->
-		<div class="flex justify-center mb-2">
+		<div class="flex justify-center my-2">
 			{#if onlineAvailable}
 				<span class="availability-badge available">
 					<Check size={14} />
@@ -64,16 +86,7 @@
 		</div>
 
 		<div class="flex flex-wrap justify-center gap-3 px-2">
-			<button
-				onclick={() => (currentStep = 'phone')}
-				class="option-btn"
-				class:recommended={!onlineAvailable}
-				style:border-radius={wobbly.button}
-			>
-				<Phone size={16} class="mr-1" />
-				{m.terminservice_choice_phone()}
-			</button>
-
+			<!-- online booking below availability -->
 			<button
 				onclick={() => (currentStep = 'online')}
 				class="option-btn"
@@ -82,15 +95,6 @@
 			>
 				<ExternalLink size={16} class="mr-1" />
 				{m.terminservice_choice_online()}
-			</button>
-
-			<button
-				onclick={() => (currentStep = 'explain')}
-				class="option-btn secondary"
-				style:border-radius={wobbly.button}
-			>
-				<HelpCircle size={16} class="mr-1" />
-				{m.terminservice_explain_why()}
 			</button>
 
 			<button
@@ -243,8 +247,8 @@
 	}
 
 	.availability-badge.unavailable {
-		background-color: rgba(255, 77, 77, 0.15);
-		color: var(--color-red-marker);
+		background-color: rgba(217, 158, 61, 0.15);
+		color: #b47d1a;
 	}
 
 	.skip-link {

@@ -4,6 +4,7 @@
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
 	import LangToggle from '$lib/components/ui/LangToggle.svelte';
+	import UserMenu from '$lib/components/ui/UserMenu.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { Sun, Moon } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
@@ -14,6 +15,7 @@
 	<!-- controls -->
 	<div class="controls">
 		<LangToggle />
+		<UserMenu />
 		<a
 			href="https://www.patreon.com/karlhelps"
 			target="_blank"

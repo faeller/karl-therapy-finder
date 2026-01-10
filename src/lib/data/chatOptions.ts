@@ -67,3 +67,37 @@ export const reSearchOptions: ChatOption[] = [
 	{ id: OptionId.replaceResults, labelDe: 'Ersetzen', emoji: '🔄', nextState: 'searching', isAction: true },
 	{ id: OptionId.mergeResults, labelDe: 'Zusammenführen', emoji: '➕', nextState: 'searching', isAction: true }
 ];
+
+// results action buttons (shown in results section)
+export const resultsActionOptions: ChatOption[] = [
+	{ id: OptionId.hadErstgespraech, labelDe: 'Ich hatte mein Erstgespräch', nextState: 'erstgespraech_done', isAction: true },
+	{ id: OptionId.foundTherapist, labelDe: 'Ich hab einen Therapieplatz!', nextState: 'success', isAction: true }
+];
+
+// kostenerstattung flow
+export const erstgespraechOptions: ChatOption[] = [
+	{ id: OptionId.hasPtv11, labelDe: 'Ja, ich habe das PTV-11', nextState: 'probatorik' },
+	{ id: OptionId.noPtv11, labelDe: 'Nein / Weiß nicht', nextState: 'probatorik' }
+];
+
+export const probatorikOptions: ChatOption[] = [
+	{ id: OptionId.probatorikDone, labelDe: 'Ja, Probatorik gemacht', nextState: 'hausarzt' },
+	{ id: OptionId.probatorikSkip, labelDe: 'Nein, übersprungen', nextState: 'hausarzt' }
+];
+
+export const hausarztOptions: ChatOption[] = [
+	{ id: OptionId.hausarztDone, labelDe: 'Bescheinigung geholt', nextState: 'antrag_sent' }
+];
+
+export const antragOptions: ChatOption[] = [
+	{ id: OptionId.antragApproved, labelDe: 'Genehmigt!', nextState: 'kostenerstattung_granted' },
+	{ id: OptionId.antragDeclined, labelDe: 'Abgelehnt', nextState: 'widerspruch' }
+];
+
+export const widerspruchOptions: ChatOption[] = [
+	{ id: OptionId.widerspruchApproved, labelDe: 'Widerspruch erfolgreich!', nextState: 'kostenerstattung_granted' }
+];
+
+export const kostenerstattungGrantedOptions: ChatOption[] = [
+	{ id: OptionId.findPrivateTherapist, labelDe: 'therapie.de öffnen', isAction: true }
+];

@@ -13,7 +13,15 @@ export type ChatState =
 	| 'edit_hint'
 	| 'terminservice'
 	| 'searching'
-	| 'results';
+	| 'results'
+	// kostenerstattung flow
+	| 'erstgespraech_done'
+	| 'probatorik'
+	| 'hausarzt'
+	| 'antrag_sent'
+	| 'widerspruch'
+	| 'kostenerstattung_granted'
+	| 'success';
 
 export interface ChatOption {
 	id: string;
@@ -86,7 +94,7 @@ export interface ContactAttempt {
 	therapistEmail?: string;
 	therapistPhone?: string;
 	therapistAddress?: string;
-	method: 'email' | 'phone' | 'online';
+	method: 'email' | 'phone' | 'online' | 'auto-call';
 	contactDate: string;
 	status: 'pending' | 'sent' | 'replied' | 'no_reply';
 	waitingTime?: string;

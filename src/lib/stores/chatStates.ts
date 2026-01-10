@@ -10,7 +10,13 @@ import {
 	summaryOptions,
 	editHintOptions,
 	terminserviceOptions,
-	noResultsOptions
+	noResultsOptions,
+	erstgespraechOptions,
+	probatorikOptions,
+	hausarztOptions,
+	antragOptions,
+	widerspruchOptions,
+	kostenerstattungGrantedOptions
 } from '$lib/data/chatOptions';
 
 export interface StateConfig {
@@ -74,6 +80,34 @@ export const stateConfigs: Partial<Record<ChatState, StateConfig>> = {
 	terminservice: {
 		messageKey: 'terminservice_intro',
 		options: terminserviceOptions
+	},
+	// kostenerstattung flow
+	erstgespraech_done: {
+		messageKey: 'karl_erstgespraech_done',
+		options: erstgespraechOptions
+	},
+	probatorik: {
+		messageKey: 'karl_probatorik',
+		options: probatorikOptions
+	},
+	hausarzt: {
+		messageKey: 'karl_hausarzt',
+		options: hausarztOptions
+	},
+	antrag_sent: {
+		messageKey: 'karl_antrag_sent',
+		options: antragOptions
+	},
+	widerspruch: {
+		messageKey: 'karl_widerspruch',
+		options: widerspruchOptions
+	},
+	kostenerstattung_granted: {
+		messageKey: 'karl_kostenerstattung_granted',
+		options: kostenerstattungGrantedOptions
+	},
+	success: {
+		messageKey: 'karl_success'
 	}
 };
 

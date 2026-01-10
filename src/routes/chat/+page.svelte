@@ -4,6 +4,7 @@
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
 	import { OptionId } from '$lib/data/optionIds';
+	import { resultsActionOptions, kostenerstattungGrantedOptions } from '$lib/data/chatOptions';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
@@ -14,9 +15,11 @@
 	import EterminserviceStep from '$lib/components/chat/EterminserviceStep.svelte';
 	import KarlAvatar from '$lib/components/chat/KarlAvatar.svelte';
 	import LangToggle from '$lib/components/ui/LangToggle.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle } from 'lucide-svelte';
-	import { wobbly } from '$lib/utils/wobbly';
+	import UserMenu from '$lib/components/ui/UserMenu.svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper } from 'lucide-svelte';
+	import FoundTherapistButton from '$lib/components/ui/FoundTherapistButton.svelte';
+	import { wobbly } from '$lib/utils/wobbly';
 	import { theme } from '$lib/stores/theme';
 	import { m } from '$lib/paraglide/messages';
 	import type { ChatOption, Therapist, ChatMessage, ChatState } from '$lib/types';
@@ -27,6 +30,9 @@
 	// progress calculation
 	// finding therapists is ~40%, contacting them and getting responses is the rest
 	const progress = $derived.by(() => {
+		// success = 100%
+		if ($chatState === 'success') return 100;
+
 		// onboarding: 5-25%
 		const onboardingStates = ['greeting', 'for_whom', 'for_other_name', 'location', 'insurance_type', 'insurance_details', 'therapy_type', 'preferences'];
 		const onboardingIdx = onboardingStates.indexOf($chatState);
@@ -78,7 +84,18 @@
 	let showProcessExplanation = $state(false);
 
 	// Re-search modal state
+	const RESEARCH_PROMPT_KEY = 'karl_research_pending';
 	let showReSearchModal = $state(false);
+	let showMobileMenu = $state(false);
+
+	function setReSearchModal(show: boolean) {
+		showReSearchModal = show;
+		if (show) {
+			localStorage.setItem(RESEARCH_PROMPT_KEY, '1');
+		} else {
+			localStorage.removeItem(RESEARCH_PROMPT_KEY);
+		}
+	}
 
 	// Find the Karl message that prompted this user answer
 	const editingKarlMessage = $derived.by(() => {
@@ -102,23 +119,39 @@
 	);
 
 	onMount(() => {
-		// ensure all stores are hydrated from localStorage before starting
-		chat.hydrateChat();
-		campaignDraft.hydrate();
 		chat.start();
+		// restore pending re-search modal
+		if (localStorage.getItem(RESEARCH_PROMPT_KEY)) {
+			showReSearchModal = true;
+		}
 	});
 
 	// auto-scroll on new messages
 	$effect(() => {
 		if ($messages.length && messagesContainer) {
 			setTimeout(() => {
-				if (isInResults) {
-					// in results, scroll to show the results section (scroll up more)
+				if (isInSuccess) {
+					// scroll to success section
+					const successSection = messagesContainer.querySelector('[data-section="success"]');
+					if (successSection) {
+						successSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					} else {
+						messagesContainer.scrollTop = messagesContainer.scrollHeight;
+					}
+				} else if (isInKostenerstattung) {
+					// in kostenerstattung flow, scroll to that section
+					const kostenSection = messagesContainer.querySelector('[data-section="kostenerstattung"]');
+					if (kostenSection) {
+						kostenSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					} else {
+						messagesContainer.scrollTop = messagesContainer.scrollHeight;
+					}
+				} else if (isInResults) {
+					// in results, scroll to show the results section
 					const resultsSection = messagesContainer.querySelector('[data-section="results"]');
 					if (resultsSection) {
 						resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					} else {
-						// fallback: scroll up enough to show new content
 						const targetScroll = messagesContainer.scrollTop + 500;
 						messagesContainer.scrollTop = Math.min(targetScroll, messagesContainer.scrollHeight);
 					}
@@ -133,6 +166,12 @@
 		if (option.id === OptionId.useLocation) {
 			const plz = await handleGetLocation();
 			if (plz) handleTextSubmit(plz);
+			return;
+		}
+		if (option.id === OptionId.findPrivateTherapist) {
+			const plz = $campaignDraft.plz || '';
+			const url = `https://www.therapie.de/therapeutensuche/ergebnisse/?abrechnungsverfahren=6&ort=${plz}`;
+			window.open(url, '_blank');
 			return;
 		}
 		chat.handleOption(option);
@@ -156,6 +195,35 @@
 		}
 	}
 
+	function triggerConfetti() {
+		const container = document.createElement('div');
+		container.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999;';
+		document.body.appendChild(container);
+
+		const colors = ['#2d5da1', '#d14b4b', '#d99e3d', '#4a9d4a', '#9b59b6', '#e91e63', '#00bcd4', '#ff9800'];
+		const fragment = document.createDocumentFragment();
+
+		for (let i = 0; i < 150; i++) {
+			const p = document.createElement('div');
+			const duration = 4 + Math.random() * 4;
+			p.style.cssText = `
+				position:absolute;top:-20px;
+				left:${Math.random() * 100}%;
+				width:${6 + Math.random() * 8}px;
+				height:${6 + Math.random() * 12}px;
+				border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+				background:${colors[Math.floor(Math.random() * colors.length)]};
+				animation:konfetti-fall ${duration}s ease-out forwards;
+				animation-delay:${Math.random() * 1}s;
+				--drift:${(Math.random() - 0.5) * 300}px;
+				--spin:${Math.random() * 1080 - 540}deg;
+			`;
+			fragment.appendChild(p);
+		}
+		container.appendChild(fragment);
+		setTimeout(() => container.remove(), 9000);
+	}
+
 	async function handleEditSubmit(newValue: string, option?: ChatOption, contentKey?: string) {
 		if (editingMessageIndex === null) return;
 
@@ -165,7 +233,7 @@
 			if (plz) {
 				const needsReSearch = await chat.updateMessage(editingMessageIndex, plz, undefined, undefined);
 				campaignDraft.update((d) => ({ ...d, plz }));
-				if (needsReSearch) showReSearchModal = true;
+				if (needsReSearch) setReSearchModal(true);
 			}
 			editingMessageIndex = null;
 			return;
@@ -182,7 +250,7 @@
 
 		const needsReSearch = await chat.updateMessage(editingMessageIndex, newValue, option, contentKey);
 		editingMessageIndex = null;
-		if (needsReSearch) showReSearchModal = true;
+		if (needsReSearch) setReSearchModal(true);
 	}
 
 	function handleEditMultiSubmit(options: ChatOption[]) {
@@ -216,7 +284,7 @@
 			);
 
 			if (!response.ok) throw new Error('Geocoding fehlgeschlagen');
-			const data = await response.json();
+			const data: { postcode?: string } = await response.json();
 
 			if (data.postcode && /^\d{5}$/.test(data.postcode)) {
 				return data.postcode;
@@ -238,7 +306,20 @@
 	}
 
 	// Determine chat phases
-	const isInResults = $derived(['terminservice', 'searching', 'results'].includes($chatState));
+	const kostenerstattungStates = ['erstgespraech_done', 'probatorik', 'hausarzt', 'antrag_sent', 'widerspruch', 'kostenerstattung_granted'] as const;
+	const kostenerstattungMessageKeys = ['karl_erstgespraech_done', 'karl_probatorik', 'karl_hausarzt', 'karl_antrag_sent', 'karl_widerspruch', 'karl_kostenerstattung_granted'] as const;
+	const isInSuccess = $derived($chatState === 'success');
+	const isInKostenerstattung = $derived(kostenerstattungStates.includes($chatState as typeof kostenerstattungStates[number]));
+	const isInResults = $derived(['terminservice', 'searching', 'results'].includes($chatState) || isInKostenerstattung || isInSuccess);
+
+	// find where kostenerstattung flow starts
+	const kostenerstattungStartIndex = $derived(
+		$messages.findIndex((msg) => kostenerstattungMessageKeys.includes(msg.contentKey as typeof kostenerstattungMessageKeys[number]))
+	);
+	// all messages from that point belong to kostenerstattung section
+	const kostenerstattungMessages = $derived(
+		kostenerstattungStartIndex >= 0 ? $messages.slice(kostenerstattungStartIndex) : []
+	);
 
 	// Find index where results phase starts (first message with therapists)
 	const resultsStartIndex = $derived(
@@ -254,7 +335,7 @@
 
 	const resultsMessages = $derived(
 		resultsStartIndex > 0
-			? $messages.slice(resultsStartIndex).filter(
+			? $messages.slice(resultsStartIndex, kostenerstattungStartIndex > 0 ? kostenerstattungStartIndex : undefined).filter(
 					(msg) => !(SEPARATELY_RENDERED_KEYS as readonly string[]).includes(msg.contentKey ?? '')
 				)
 			: []
@@ -290,16 +371,79 @@
 <div class="flex h-[100dvh] flex-col">
 	<!-- header -->
 	<header class="border-b-2 border-pencil bg-paper">
-		<div class="mx-auto max-w-2xl px-4 py-3">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<KarlAvatar size="md" href="/" />
-					<div>
-						<h1 class="font-heading text-xl font-bold">{m.app_name()}</h1>
-						<p class="text-sm text-pencil/60">{m.chat_header()}</p>
+		<div class="mx-auto max-w-2xl px-3 py-2">
+			<div class="flex items-center justify-between gap-2">
+				<a href="/" class="flex items-center gap-2 min-w-0">
+					<KarlAvatar size="sm" />
+					<h1 class="font-heading text-lg font-bold truncate">{m.app_name()}</h1>
+				</a>
+				<div class="flex items-center gap-3 sm:gap-4 shrink-0">
+					<!-- desktop icons -->
+					<div class="hidden sm:flex items-center gap-4">
+						<LangToggle />
+						<button
+							onclick={() => theme.toggle()}
+							class="text-pencil/50 hover:text-blue-pen"
+							title={m.chat_toggle_theme()}
+						>
+							{#if $theme === 'dark'}
+								<Sun size={18} strokeWidth={2.5} />
+							{:else}
+								<Moon size={18} strokeWidth={2.5} />
+							{/if}
+						</button>
+						{#if canUndo}
+							<button
+								onclick={handleUndo}
+								class="text-pencil/50 hover:text-blue-pen"
+								title={m.chat_undo()}
+							>
+								<Undo2 size={18} strokeWidth={2.5} />
+							</button>
+						{/if}
+						<button
+							onclick={handleReset}
+							class="text-pencil/50 hover:text-red-marker"
+							title={m.chat_new_start()}
+						>
+							<RotateCcw size={18} strokeWidth={2.5} />
+						</button>
 					</div>
+					<div class="hidden min-[225px]:block">
+						<UserMenu />
+					</div>
+					<a
+						href="https://www.patreon.com/karlhelps"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="hidden min-[225px]:block text-pencil/50 hover:text-red-marker"
+						title={m.support_patreon()}
+					>
+						<PatreonIcon size={16} />
+					</a>
+					<a href="/contacts" class="flex items-center gap-1 text-pencil/50 hover:text-blue-pen" title={m.contacts_title()}>
+						<ClipboardList size={18} strokeWidth={2.5} />
+						<span class="hidden min-[225px]:inline text-xs">{m.contacts_title()}</span>
+						{#if $contacts.length > 0}
+							<span class="flex h-4 w-4 items-center justify-center rounded-full bg-red-marker text-[10px] text-white">{$contacts.length}</span>
+						{/if}
+					</a>
+					<!-- mobile hamburger -->
+					<button
+						onclick={() => showMobileMenu = !showMobileMenu}
+						class="sm:hidden text-pencil/50 hover:text-blue-pen"
+					>
+						{#if showMobileMenu}
+							<X size={20} strokeWidth={2.5} />
+						{:else}
+							<Menu size={20} strokeWidth={2.5} />
+						{/if}
+					</button>
 				</div>
-				<div class="flex items-center gap-4">
+			</div>
+			<!-- mobile menu dropdown -->
+			{#if showMobileMenu}
+				<div class="sm:hidden flex items-center justify-end gap-4 mt-2 pt-2 border-t border-pencil/20">
 					<LangToggle />
 					<button
 						onclick={() => theme.toggle()}
@@ -314,40 +458,36 @@
 					</button>
 					{#if canUndo}
 						<button
-							onclick={handleUndo}
-							class="text-pencil/50 hover:text-blue-pen"
+							onclick={() => { handleUndo(); showMobileMenu = false; }}
+							class="min-[225px]:hidden text-pencil/50 hover:text-blue-pen"
 							title={m.chat_undo()}
 						>
 							<Undo2 size={18} strokeWidth={2.5} />
 						</button>
 					{/if}
 					<button
-						onclick={handleReset}
+						onclick={() => { handleReset(); showMobileMenu = false; }}
 						class="text-pencil/50 hover:text-red-marker"
 						title={m.chat_new_start()}
 					>
 						<RotateCcw size={18} strokeWidth={2.5} />
 					</button>
+					<div class="min-[225px]:hidden">
+						<UserMenu />
+					</div>
 					<a
 						href="https://www.patreon.com/karlhelps"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-pencil/50 hover:text-red-marker"
+						class="min-[225px]:hidden text-pencil/50 hover:text-red-marker"
 						title={m.support_patreon()}
 					>
 						<PatreonIcon size={16} />
 					</a>
-					<a href="/contacts" class="flex items-center gap-1 text-sm text-pencil/70 hover:text-blue-pen" title={m.contacts_title()}>
-						<ClipboardList size={20} strokeWidth={2.5} />
-						<span class="hidden md:inline">{m.contacts_title()}</span>
-						{#if $contacts.length > 0}
-							<span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-marker text-xs text-white">{$contacts.length}</span>
-						{/if}
-					</a>
 				</div>
-			</div>
+			{/if}
 			<!-- progress bar -->
-			<div class="mt-2 flex items-center gap-2">
+			<div class="mt-1.5 flex items-center gap-2">
 				<div class="progress-bar">
 					<div class="progress-fill" style:width="{progress}%"></div>
 				</div>
@@ -465,7 +605,7 @@
 				<div data-section="results">
 				<ChatSection
 					title={m.chat_section_results()}
-					collapsible={false}
+					collapsible={true}
 				>
 					<div class="results-container" class:loading={$chatState === 'searching'}>
 						{#if $chatState === 'searching'}
@@ -476,16 +616,110 @@
 						{/if}
 						{#if allTherapists.length > 0}
 							{#if allTherapists.length > 5}
-								<div class="mb-8">
+								<div class="mb-6">
 									<MessageBubble
 										role="karl"
 										contentKey="karl_results_encouragement"
 									/>
+									<!-- action buttons right after encouragement -->
+									{#if $chatState === 'results'}
+										<div class="results-actions mt-3">
+											<button
+												onclick={() => handleOptionSelect(resultsActionOptions[0])}
+												class="action-chip"
+												style:border-radius={wobbly.button}
+											>
+												<FileCheck size={16} />
+												{m.option_had_erstgespraech()}
+											</button>
+											<FoundTherapistButton onclick={() => handleOptionSelect(resultsActionOptions[1])} />
+										</div>
+									{/if}
 								</div>
 							{/if}
+
+							<!-- contact progress for kostenerstattung -->
+							{#if $contacts.length > 0}
+								<div class="contact-progress mb-4">
+									<span class="progress-text">{m.karl_results_progress({ count: $contacts.length })}</span>
+									<div class="progress-dots">
+										{#each Array(10) as _, i}
+											<span class="dot" class:filled={i < $contacts.length} class:target={i >= 5 && i < 10}></span>
+										{/each}
+									</div>
+								</div>
+							{/if}
+
 							<TherapistList therapists={allTherapists} />
 						{/if}
 					</div>
+				</ChatSection>
+				</div>
+			{/if}
+
+			<!-- Kostenerstattung section -->
+			{#if isInKostenerstattung && kostenerstattungMessages.length > 0}
+				<div data-section="kostenerstattung">
+				<ChatSection
+					title={m.chat_section_kostenerstattung()}
+					collapsible={true}
+				>
+					<div class="space-y-4">
+						{#each kostenerstattungMessages as message (message.id)}
+							<MessageBubble
+								role={message.role}
+								content={message.content}
+								contentKey={message.contentKey}
+								contentParams={message.contentParams}
+							/>
+							{#if $chatState === 'kostenerstattung_granted' && message.contentKey === 'karl_kostenerstattung_granted'}
+								<div class="flex flex-wrap justify-center gap-3">
+									<button
+										onclick={() => handleOptionSelect(kostenerstattungGrantedOptions[0])}
+										class="action-chip"
+										style:border-radius={wobbly.button}
+									>
+										<ExternalLink size={16} />
+										Privatpraxen bei {$campaignDraft.plz || 'deiner PLZ'} (Therapie.de)
+									</button>
+									<FoundTherapistButton onclick={() => handleOptionSelect(resultsActionOptions[1])} />
+								</div>
+							{:else if message.options?.length && message === lastMessage}
+								<OptionButtons
+									options={message.options}
+									multiSelect={message.multiSelect}
+									onSelect={handleOptionSelect}
+									onMultiSubmit={handleMultiSelect}
+								/>
+							{/if}
+						{/each}
+					</div>
+				</ChatSection>
+				</div>
+			{/if}
+
+			<!-- Success section -->
+			{#if isInSuccess}
+				<div data-section="success">
+				<ChatSection
+					title={m.chat_section_success()}
+					collapsible={false}
+				>
+					{#if $isTyping}
+						<TypingIndicator />
+					{:else}
+						<MessageBubble role="karl" contentKey="karl_success" />
+						<div class="flex justify-center mt-4">
+							<button
+								onclick={triggerConfetti}
+								class="option-btn mehr-konfetti"
+								style:border-radius={wobbly.button}
+							>
+								<PartyPopper size={16} class="mr-1" />
+								Mehr Konfetti
+							</button>
+						</div>
+					{/if}
 				</ChatSection>
 				</div>
 			{/if}
@@ -547,7 +781,7 @@
 
 {#if showReSearchModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-	<div class="modal-overlay" onclick={() => (showReSearchModal = false)}>
+	<div class="modal-overlay" onclick={() => setReSearchModal(false)}>
 		<div
 			class="modal-content small"
 			onclick={(e) => e.stopPropagation()}
@@ -556,14 +790,14 @@
 			<p class="modal-text">{m.karl_research_prompt()}</p>
 			<div class="modal-buttons">
 				<button
-					onclick={() => { showReSearchModal = false; chat.triggerReSearch(false); }}
+					onclick={() => { setReSearchModal(false); chat.triggerReSearch(false); }}
 					class="modal-btn primary"
 					style:border-radius={wobbly.button}
 				>
 					{m.option_replace_results()}
 				</button>
 				<button
-					onclick={() => { showReSearchModal = false; chat.triggerReSearch(true); }}
+					onclick={() => { setReSearchModal(false); chat.triggerReSearch(true); }}
 					class="modal-btn"
 					style:border-radius={wobbly.button}
 				>
@@ -653,5 +887,91 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		margin-bottom: 1rem;
+	}
+
+	.contact-progress {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background-color: var(--color-postit);
+		border: 1px solid var(--color-pencil);
+		border-radius: 0.5rem;
+	}
+
+	.progress-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-pencil);
+	}
+
+	.progress-dots {
+		display: flex;
+		gap: 0.375rem;
+	}
+
+	.dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background-color: var(--color-erased);
+		border: 1px solid var(--color-pencil);
+		opacity: 0.4;
+	}
+
+	.dot.filled {
+		background-color: var(--color-blue-pen);
+		opacity: 1;
+	}
+
+	.dot.target:not(.filled) {
+		border-style: dashed;
+		opacity: 0.6;
+	}
+
+	.results-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75rem;
+	}
+
+	.action-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.625rem 1rem;
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		transition: all 100ms;
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	.action-chip:hover {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.action-chip.success {
+		border-color: var(--color-blue-pen);
+		color: var(--color-blue-pen);
+	}
+
+	.action-chip.success:hover {
+		background-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.mehr-konfetti {
+		opacity: 0.6;
+	}
+
+	.mehr-konfetti:hover {
+		opacity: 1;
 	}
 </style>

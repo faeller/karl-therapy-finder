@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { wobbly } from '$lib/utils/wobbly';
-	import { Mail, Phone, MapPin, PhoneCall, ExternalLink } from 'lucide-svelte';
+	import { Mail, Phone, MapPin, PhoneCall, ExternalLink, Loader2 } from 'lucide-svelte';
 	import type { Therapist } from '$lib/types';
 	import { generateMailto } from '$lib/utils/mailto';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
+	import { user } from '$lib/stores/user';
 	import { get } from 'svelte/store';
 	import { m } from '$lib/paraglide/messages';
 	import KarlAvatar from './KarlAvatar.svelte';
+	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 
 	interface Props {
 		therapist: Therapist;
@@ -24,6 +26,17 @@
 	const pendingContact = $derived(
 		$contacts.find((c) => c.therapistId === therapist.id && c.status === 'pending')
 	);
+
+	// call feature state
+	let callState = $state<'idle' | 'scheduling' | 'scheduled' | 'error'>('idle');
+	let callError = $state<string | null>(null);
+	let scheduledTime = $state<string | null>(null);
+
+	// check if user can use auto-call
+	const canUseAutoCall = $derived(
+		$user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
+	);
+	const hasPhone = $derived(!!therapist.phone);
 
 	function copyEmail() {
 		if (therapist.email) {
@@ -62,6 +75,78 @@
 			contacts.removeByTherapistId(therapist.id);
 		}
 		onContactConfirm?.(confirmed);
+	}
+
+	async function handleAutoCallClick() {
+		if (!canUseAutoCall || !hasPhone || callState === 'scheduling') return;
+
+		callState = 'scheduling';
+		callError = null;
+
+		const campaign = get(campaignDraft);
+
+		try {
+			// map campaign fields to call params
+			const patientName = campaign.forSelf ? 'Patient' : (campaign.clientName || 'Patient');
+			const insuranceMap = { GKV: 'gesetzlich versichert', PKV: 'privat versichert', Selbstzahler: 'Selbstzahler' };
+			const patientInsurance = insuranceMap[campaign.insuranceType || 'GKV'] || 'gesetzlich versichert';
+			const therapyType = campaign.therapyTypes?.length ? campaign.therapyTypes[0] : 'Psychotherapie';
+
+			const response = await fetch('/api/calls/schedule', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					therapistId: therapist.id,
+					therapistName: therapist.name,
+					eId: therapist.id, // tk e_id is stored as therapist.id
+					patientName,
+					patientInsurance,
+					therapyType,
+					callbackPhone: '', // user needs to provide this - could add to campaign
+					urgency: campaign.urgency || 'medium'
+				})
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({})) as { message?: string };
+				if (response.status === 402) {
+					callError = errorData.message?.includes('credits')
+						? m.therapist_call_no_credits()
+						: m.therapist_call_tier_required();
+				} else if (response.status === 403) {
+					callError = m.therapist_call_blocked();
+				} else if (response.status === 409) {
+					callError = m.therapist_call_already_scheduled();
+				} else {
+					callError = m.therapist_call_error();
+				}
+				callState = 'error';
+				return;
+			}
+
+			const data = await response.json() as { scheduledAt: string };
+			scheduledTime = new Date(data.scheduledAt).toLocaleString('de-DE', {
+				weekday: 'short',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+			callState = 'scheduled';
+
+			// add to contacts with auto-call status
+			contacts.add({
+				therapistId: therapist.id,
+				therapistName: therapist.name,
+				therapistEmail: therapist.email,
+				therapistPhone: therapist.phone,
+				therapistAddress: therapist.address,
+				method: 'auto-call',
+				status: 'pending'
+			});
+		} catch (e) {
+			console.error('auto-call scheduling failed:', e);
+			callError = m.therapist_call_error();
+			callState = 'error';
+		}
 	}
 </script>
 
@@ -151,14 +236,38 @@
 				</a>
 			{/if}
 
-			<button
-				disabled
-				class="action-btn coming-soon flex-1"
-				style:border-radius={wobbly.button}
-			>
-				<PhoneCall size={16} strokeWidth={2.5} />
-				{m.therapist_call_for_me()}
-			</button>
+			{#if callState === 'scheduled'}
+				<div class="action-btn scheduled flex-1" style:border-radius={wobbly.button}>
+					<PhoneCall size={16} strokeWidth={2.5} />
+					{m.therapist_call_scheduled_short({ time: scheduledTime || '' })}
+				</div>
+			{:else if callState === 'scheduling'}
+				<button disabled class="action-btn scheduling flex-1" style:border-radius={wobbly.button}>
+					<Loader2 size={16} strokeWidth={2.5} class="animate-spin" />
+					{m.therapist_call_scheduling()}
+				</button>
+			{:else if canUseAutoCall && hasPhone}
+				<button
+					onclick={handleAutoCallClick}
+					class="action-btn auto-call flex-1"
+					class:error={callState === 'error'}
+					style:border-radius={wobbly.button}
+					title={callError || ''}
+				>
+					<PhoneCall size={16} strokeWidth={2.5} />
+					{callError || m.therapist_call_for_me()}
+				</button>
+			{:else}
+				<button
+					disabled
+					class="action-btn coming-soon flex-1"
+					style:border-radius={wobbly.button}
+					title={!hasPhone ? 'Keine Telefonnummer' : m.therapist_call_for_me_soon()}
+				>
+					<PatreonIcon size={14} />
+					{m.therapist_call_for_me_disabled()}
+				</button>
+			{/if}
 		</div>
 	</div>
 
@@ -244,6 +353,37 @@
 		cursor: not-allowed;
 		background-color: var(--color-erased);
 		box-shadow: none;
+	}
+
+	.action-btn.auto-call {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.action-btn.auto-call:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	.action-btn.auto-call.error {
+		background-color: transparent;
+		border-color: var(--color-red-marker);
+		color: var(--color-red-marker);
+		font-size: 0.75rem;
+	}
+
+	.action-btn.scheduling {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	.action-btn.scheduled {
+		background-color: var(--color-erased);
+		border-style: dashed;
+		font-size: 0.8rem;
+		color: var(--color-pencil);
+		opacity: 0.8;
 	}
 
 	.confirm-prompt {

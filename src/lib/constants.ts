@@ -12,7 +12,14 @@ export const STORAGE_KEYS = {
 // message content keys that get special handling (rendered in dedicated sections)
 export const SEPARATELY_RENDERED_KEYS = [
 	'terminservice_intro',
-	'karl_searching'
+	'karl_searching',
+	'karl_erstgespraech_done',
+	'karl_probatorik',
+	'karl_hausarzt',
+	'karl_antrag_sent',
+	'karl_widerspruch',
+	'karl_kostenerstattung_granted',
+	'karl_success'
 ] as const;
 
 // cache TTL for therapist API (3 hours in seconds)

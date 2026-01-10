@@ -1,39 +1,57 @@
-import { derived } from 'svelte/store';
-import { createPersistedArrayStore } from './createPersistedStore';
-import { STORAGE_KEYS } from '$lib/constants';
+// contacts store - wrapper around dataSession for backwards compatibility
+import { derived, type Readable } from 'svelte/store';
+import { dataSession } from './dataSession';
 import { nanoid } from 'nanoid';
 import type { ContactAttempt } from '$lib/types';
 
 // waiting times that qualify for kostenerstattung
 const QUALIFYING_WAIT_TIMES = ['3-6 Monate', '> 6 Monate'] as const;
 
-function createContactsStore() {
-	const base = createPersistedArrayStore<ContactAttempt>(STORAGE_KEYS.contacts);
+interface ContactsStore extends Readable<ContactAttempt[]> {
+	add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => void;
+	updateStatus: (id: string, status: ContactAttempt['status'], waitingTime?: string) => void;
+	remove: (id: string) => void;
+	removeByTherapistId: (therapistId: string) => void;
+	updateStatusByTherapistId: (therapistId: string, status: ContactAttempt['status']) => void;
+	clear: () => void;
+}
+
+function createContactsStore(): ContactsStore {
+	const derived$ = derived(dataSession, ($data) => $data.contacts);
 
 	return {
-		subscribe: base.subscribe,
+		subscribe: derived$.subscribe,
 		add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => {
-			base.add({
-				...contact,
-				id: nanoid(),
-				contactDate: new Date().toISOString()
-			} as ContactAttempt);
+			dataSession.updateContacts((contacts) => [
+				...contacts,
+				{
+					...contact,
+					id: nanoid(),
+					contactDate: new Date().toISOString()
+				} as ContactAttempt
+			]);
 		},
 		updateStatus: (id: string, status: ContactAttempt['status'], waitingTime?: string) => {
-			base.updateItem(
-				(c) => c.id === id,
-				(c) => ({ ...c, status, waitingTime: waitingTime ?? c.waitingTime })
+			dataSession.updateContacts((contacts) =>
+				contacts.map((c) =>
+					c.id === id ? { ...c, status, waitingTime: waitingTime ?? c.waitingTime } : c
+				)
 			);
 		},
-		remove: (id: string) => base.remove((c) => c.id === id),
-		removeByTherapistId: (therapistId: string) => base.remove((c) => c.therapistId === therapistId),
+		remove: (id: string) => {
+			dataSession.updateContacts((contacts) => contacts.filter((c) => c.id !== id));
+		},
+		removeByTherapistId: (therapistId: string) => {
+			dataSession.updateContacts((contacts) => contacts.filter((c) => c.therapistId !== therapistId));
+		},
 		updateStatusByTherapistId: (therapistId: string, status: ContactAttempt['status']) => {
-			base.updateItem(
-				(c) => c.therapistId === therapistId,
-				(c) => ({ ...c, status })
+			dataSession.updateContacts((contacts) =>
+				contacts.map((c) => (c.therapistId === therapistId ? { ...c, status } : c))
 			);
 		},
-		clear: base.clear
+		clear: () => {
+			dataSession.updateContacts(() => []);
+		}
 	};
 }
 

@@ -44,7 +44,24 @@ export const OptionId = {
 
 	// re-search
 	replaceResults: 'replace_results',
-	mergeResults: 'merge_results'
+	mergeResults: 'merge_results',
+
+	// results actions
+	hadErstgespraech: 'had_erstgespraech',
+	foundTherapist: 'found_therapist',
+
+	// kostenerstattung flow
+	hasPtv11: 'has_ptv11',
+	noPtv11: 'no_ptv11',
+	probatorikDone: 'probatorik_done',
+	probatorikSkip: 'probatorik_skip',
+	hausarztDone: 'hausarzt_done',
+	antragSent: 'antrag_sent',
+	antragApproved: 'antrag_approved',
+	antragDeclined: 'antrag_declined',
+	widerspruchSent: 'widerspruch_sent',
+	widerspruchApproved: 'widerspruch_approved',
+	findPrivateTherapist: 'find_private_therapist'
 } as const;
 
 export type OptionIdType = (typeof OptionId)[keyof typeof OptionId];

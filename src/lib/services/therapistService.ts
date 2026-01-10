@@ -58,7 +58,7 @@ export async function searchTherapists(
 		throw new SearchError('server', `API error: ${res.status}`);
 	}
 
-	const data = await res.json();
+	const data: TherapistSearchResult = await res.json();
 	return {
 		therapists: data.therapists || [],
 		totalResults: data.totalResults || 0,

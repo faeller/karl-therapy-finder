@@ -12,7 +12,8 @@
 		{ key: 'waiting_1_month', value: '< 1 Monat' },
 		{ key: 'waiting_1_3_months', value: '1-3 Monate' },
 		{ key: 'waiting_3_6_months', value: '3-6 Monate' },
-		{ key: 'waiting_6_plus_months', value: '> 6 Monate' }
+		{ key: 'waiting_6_plus_months', value: '> 6 Monate' },
+		{ key: 'waiting_no_spot', value: 'Kein Platz' }
 	];
 	const statusKeys: Record<ContactAttempt['status'], string> = {
 		pending: 'status_pending',
@@ -50,7 +51,8 @@
 			waiting_1_month: m.waiting_1_month,
 			waiting_1_3_months: m.waiting_1_3_months,
 			waiting_3_6_months: m.waiting_3_6_months,
-			waiting_6_plus_months: m.waiting_6_plus_months
+			waiting_6_plus_months: m.waiting_6_plus_months,
+			waiting_no_spot: m.waiting_no_spot
 		};
 		return labels[key]?.() ?? key;
 	}

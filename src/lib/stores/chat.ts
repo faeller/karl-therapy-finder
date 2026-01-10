@@ -1,9 +1,8 @@
 // chat orchestrator - coordinates state machine, messages, and campaign
-import { writable, get } from 'svelte/store';
-import { browser } from '$app/environment';
+import { derived, writable, get } from 'svelte/store';
 import type { ChatState, ChatMessage, ChatOption, Therapist, EditableField } from '$lib/types';
-import { STORAGE_KEYS } from '$lib/constants';
 import { campaignDraft } from './campaign';
+import { dataSession } from './dataSession';
 import { extractPlz } from '$lib/data/plzLookup';
 import { OptionId } from '$lib/data/optionIds';
 import { applyOption, applyOptions, resetPreferences } from '$lib/data/optionMapping';
@@ -11,30 +10,19 @@ import { createKarlMessage, createUserMessage, simulateTyping } from './messageF
 import { searchTherapists, mergeTherapists, SearchError } from '$lib/services/therapistService';
 import { stateConfigs, noResultsConfig, getFieldForState } from './chatStates';
 
-// persistence helpers
-function loadState(): ChatState {
-	if (!browser) return 'greeting';
-	return (localStorage.getItem(STORAGE_KEYS.chatState) as ChatState) || 'greeting';
-}
-
-function loadMessages(): ChatMessage[] {
-	if (!browser) return [];
-	try {
-		const saved = localStorage.getItem(STORAGE_KEYS.chatMessages);
-		return saved ? JSON.parse(saved) : [];
-	} catch {
-		return [];
-	}
-}
-
-// stores
-const state = writable<ChatState>(loadState());
-const messages = writable<ChatMessage[]>(loadMessages());
+// derived stores from dataSession
+const state = derived(dataSession, ($data) => $data.chatState);
+const messages = derived(dataSession, ($data) => $data.chatMessages);
 const isTyping = writable(false);
 
-// auto-persist
-state.subscribe((s) => browser && localStorage.setItem(STORAGE_KEYS.chatState, s));
-messages.subscribe((m) => browser && localStorage.setItem(STORAGE_KEYS.chatMessages, JSON.stringify(m)));
+// helpers to update state/messages through dataSession
+function setState(newState: ChatState) {
+	dataSession.updateChatState(newState);
+}
+
+function updateMessages(updater: (msgs: ChatMessage[]) => ChatMessage[]) {
+	dataSession.updateChatMessages(updater);
+}
 
 // merge flag for re-search (intentionally module-level, reset after use)
 let mergeResults = false;
@@ -52,7 +40,7 @@ async function say(
 	} = {}
 ) {
 	await simulateTyping((t) => isTyping.set(t));
-	messages.update((msgs) => [
+	updateMessages((msgs) => [
 		...msgs,
 		createKarlMessage({
 			content: opts.content,
@@ -67,29 +55,29 @@ async function say(
 }
 
 function addUserMessage(content: string, field?: EditableField, contentKey?: string) {
-	messages.update((msgs) => [...msgs, createUserMessage(content, field, contentKey)]);
+	updateMessages((msgs) => [...msgs, createUserMessage(content, field, contentKey)]);
 }
 
 // state machine
 async function transitionTo(newState: ChatState) {
-	state.set(newState);
+	setState(newState);
 	const config = stateConfigs[newState];
 	const draft = get(campaignDraft);
 
 	// special cases requiring dynamic logic
 	if (newState === 'location') {
-		// check if we already have PLZ from history or draft
-		const msgs = get(messages);
+		// check if we already answered location in THIS conversation
+		const msgs = dataSession.getData().chatMessages;
 		const locationMsg = msgs.find((m) => m.field === 'location' && m.role === 'user');
-		const plzFromHistory = locationMsg ? extractPlz(locationMsg.content) : undefined;
 
-		if (plzFromHistory) {
-			campaignDraft.update((d) => ({ ...d, plz: plzFromHistory }));
+		if (locationMsg) {
+			// already answered in this conversation, skip
+			const plzFromHistory = extractPlz(locationMsg.content);
+			if (plzFromHistory) campaignDraft.update((d) => ({ ...d, plz: plzFromHistory }));
 			return transitionTo('insurance_type');
 		}
-		if (draft.plz) return transitionTo('insurance_type');
 
-		// dynamic message based on client name
+		// show location question (even if draft has PLZ from previous session)
 		const messageKey = draft.clientName ? 'karl_location_with_name' : 'karl_location';
 		const params = draft.clientName ? { name: draft.clientName } : undefined;
 		return say(messageKey, { input: 'plz', options: config?.options, params });
@@ -97,9 +85,9 @@ async function transitionTo(newState: ChatState) {
 
 	if (newState === 'searching') {
 		// no typing simulation - overlay handles animation
-		messages.update((msgs) => [...msgs, createKarlMessage({ contentKey: 'karl_searching' })]);
+		updateMessages((msgs) => [...msgs, createKarlMessage({ contentKey: 'karl_searching' })]);
 		await handleResultsState();
-		state.set('results');
+		setState('results');
 		return;
 	}
 
@@ -116,7 +104,7 @@ async function transitionTo(newState: ChatState) {
 }
 
 async function handleResultsState() {
-	const msgs = get(messages);
+	const msgs = dataSession.getData().chatMessages;
 	const locationMsg = msgs.find((m) => m.field === 'location' && m.role === 'user');
 	let plz = locationMsg ? extractPlz(locationMsg.content) : undefined;
 
@@ -169,7 +157,7 @@ async function handleResultsState() {
 
 // handlers
 async function handleOption(option: ChatOption) {
-	const currentState = get(state);
+	const currentState = dataSession.getData().chatState;
 	const field = getFieldForState(currentState);
 
 	if (!option.isAction) {
@@ -185,7 +173,7 @@ async function handleOption(option: ChatOption) {
 }
 
 async function handleInput(text: string) {
-	const currentState = get(state);
+	const currentState = dataSession.getData().chatState;
 	const field = getFieldForState(currentState);
 	addUserMessage(text, field);
 
@@ -226,30 +214,35 @@ async function handleMultiSelect(options: ChatOption[]) {
 
 // lifecycle
 function start() {
-	const msgs = get(messages);
-	if (msgs.length === 0) {
+	const data = dataSession.getData();
+	if (data.chatMessages.length === 0) {
 		transitionTo('greeting');
 		return;
 	}
-	const lastMsg = msgs.at(-1);
+
+	// searching is transient - if we reload mid-search, re-run it
+	if (data.chatState === 'searching') {
+		handleResultsState().then(() => setState('results'));
+		return;
+	}
+
+	// only re-transition if last message is user AND there's no karl response yet
+	const lastMsg = data.chatMessages.at(-1);
 	if (lastMsg?.role === 'user') {
-		transitionTo(get(state));
+		// check if karl already responded to this user message
+		const config = stateConfigs[data.chatState];
+		const karlAlreadyResponded = data.chatMessages.some(
+			(m) => m.role === 'karl' && m.contentKey === config?.messageKey
+		);
+		if (!karlAlreadyResponded) {
+			transitionTo(data.chatState);
+		}
 	}
 }
 
 function reset() {
-	if (browser) {
-		localStorage.removeItem(STORAGE_KEYS.chatState);
-		localStorage.removeItem(STORAGE_KEYS.chatMessages);
-	}
-	messages.set([]);
-	campaignDraft.reset();
+	dataSession.reset();
 	transitionTo('greeting');
-}
-
-function hydrateChat() {
-	state.set(loadState());
-	messages.set(loadMessages());
 }
 
 // edit/undo support
@@ -281,16 +274,26 @@ function rebuildCampaignFromMessages(msgs: ChatMessage[]) {
 }
 
 function rewindTo(messageIndex: number) {
-	const currentMessages = get(messages);
+	const currentMessages = dataSession.getData().chatMessages;
 	if (messageIndex < 0 || messageIndex >= currentMessages.length) return;
 
 	const remainingMessages = currentMessages.slice(0, messageIndex);
-	messages.set(remainingMessages);
+	updateMessages(() => remainingMessages);
 	rebuildCampaignFromMessages(remainingMessages);
 
-	const lastKarl = remainingMessages.at(-1);
+	// find the last karl message with a contentKey
+	const lastKarl = [...remainingMessages].reverse().find((m) => m.role === 'karl' && m.contentKey);
 	if (!lastKarl) return transitionTo('greeting');
-	if (lastKarl.options || lastKarl.inputType) state.set('greeting');
+
+	// find state that matches this message's contentKey
+	const matchingEntry = Object.entries(stateConfigs).find(
+		([, config]) => config?.messageKey === lastKarl.contentKey
+	);
+	if (matchingEntry) {
+		setState(matchingEntry[0] as ChatState);
+	} else {
+		transitionTo('greeting');
+	}
 }
 
 async function updateMessage(
@@ -299,11 +302,11 @@ async function updateMessage(
 	option?: ChatOption,
 	contentKey?: string
 ) {
-	const msgs = get(messages);
+	const msgs = dataSession.getData().chatMessages;
 	const msg = msgs[messageIndex];
 	const finalContentKey = contentKey ?? (option ? `option_${option.id}` : msg?.contentKey);
 
-	messages.update((m) =>
+	updateMessages((m) =>
 		m.map((msg, i) => (i !== messageIndex ? msg : { ...msg, content: newContent, contentKey: finalContentKey }))
 	);
 
@@ -317,7 +320,7 @@ async function updateMessage(
 		});
 	}
 
-	return get(messages).some((m) => m.therapists?.length);
+	return dataSession.getData().chatMessages.some((m) => m.therapists?.length);
 }
 
 async function triggerReSearch(merge: boolean) {
@@ -332,7 +335,6 @@ export const chat = {
 	handleOption,
 	handleInput,
 	handleMultiSelect,
-	hydrateChat,
 	start,
 	reset,
 	rewindTo,
