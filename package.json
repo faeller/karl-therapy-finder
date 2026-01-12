@@ -60,7 +60,7 @@
 	"dependencies": {
 		"bcryptjs": "^3.0.3",
 		"cheerio": "^1.1.2",
-		"jspdf": "^3.0.4",
+		"jspdf": "^4.0.0",
 		"lucide-svelte": "^0.556.0",
 		"nanoid": "^5.1.6"
 	}
