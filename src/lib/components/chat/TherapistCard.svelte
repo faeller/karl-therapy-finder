@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { Mail, Phone, MapPin, PhoneCall, ExternalLink, Loader2 } from 'lucide-svelte';
+	import { Mail, Phone, MapPin, PhoneCall, ExternalLink, Loader2, Search } from 'lucide-svelte';
 	import type { Therapist } from '$lib/types';
 	import { generateMailto } from '$lib/utils/mailto';
 	import { campaignDraft } from '$lib/stores/campaign';
@@ -8,7 +9,6 @@
 	import { user } from '$lib/stores/user';
 	import { get } from 'svelte/store';
 	import { m } from '$lib/paraglide/messages';
-	import KarlAvatar from './KarlAvatar.svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 
 	interface Props {
@@ -37,6 +37,15 @@
 		$user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
 	);
 	const hasPhone = $derived(!!therapist.phone);
+
+	// extract city from address (format: "Street, PLZ City")
+	const googleSearchUrl = $derived.by(() => {
+		const parts = therapist.address?.split(',');
+		const cityPart = parts?.[1]?.trim() || '';
+		const city = cityPart.replace(/^\d{5}\s*/, '');
+		const query = `${therapist.name} ${city}`.trim();
+		return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+	});
 
 	function copyEmail() {
 		if (therapist.email) {
@@ -71,6 +80,7 @@
 	function confirmContact(confirmed: boolean) {
 		if (confirmed) {
 			contacts.updateStatusByTherapistId(therapist.id, 'sent');
+			goto('/contacts');
 		} else {
 			contacts.removeByTherapistId(therapist.id);
 		}
@@ -189,6 +199,18 @@
 			{/if}
 		</div>
 
+		<div class="flex items-center gap-2">
+			<Search size={16} strokeWidth={2.5} class="shrink-0" />
+			<a
+				href={googleSearchUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="underline hover:text-blue-pen"
+			>
+				Auf Google suchen
+			</a>
+		</div>
+
 		{#if therapist.profileUrl}
 			<div class="flex items-center gap-2">
 				<ExternalLink size={16} strokeWidth={2.5} class="shrink-0" />
@@ -275,16 +297,13 @@
 
 {#if pendingContact}
 	<div class="confirm-prompt">
-		<div class="confirm-message">
-			<KarlAvatar size="sm" />
-			<span>
-				{#if pendingContact.method === 'email'}
-					{m.email_sent_question({ name: therapist.name })}
-				{:else}
-					{m.phone_call_question({ name: therapist.name })}
-				{/if}
-			</span>
-		</div>
+		<p class="confirm-message">
+			{#if pendingContact.method === 'email'}
+				{m.email_sent_question({ name: therapist.name })}
+			{:else}
+				{m.phone_call_question({ name: therapist.name })}
+			{/if}
+		</p>
 		<div class="confirm-buttons">
 			<button
 				onclick={() => confirmContact(true)}
@@ -395,9 +414,6 @@
 	}
 
 	.confirm-message {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
 		margin-bottom: 0.5rem;
 		font-size: 0.875rem;
 	}

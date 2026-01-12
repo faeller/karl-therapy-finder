@@ -5,15 +5,17 @@ import {
 	locationOptions,
 	insuranceTypeOptions,
 	ageGroupOptions,
-	therapyTypeOptions,
+	// therapyTypeOptions,
 	preferenceOptions,
 	summaryOptions,
 	editHintOptions,
 	terminserviceOptions,
 	noResultsOptions,
 	erstgespraechOptions,
+	ptv11DringendOptions,
 	probatorikOptions,
 	hausarztOptions,
+	antragEinreichenOptions,
 	antragOptions,
 	widerspruchOptions,
 	kostenerstattungGrantedOptions
@@ -58,11 +60,11 @@ export const stateConfigs: Partial<Record<ChatState, StateConfig>> = {
 		messageKey: 'karl_age_group',
 		options: ageGroupOptions
 	},
-	therapy_type: {
-		messageKey: 'karl_therapy_type',
-		options: therapyTypeOptions,
-		field: 'therapyTypes'
-	},
+	// therapy_type: {
+	// 	messageKey: 'karl_therapy_type',
+	// 	options: therapyTypeOptions,
+	// 	field: 'therapyTypes'
+	// },
 	preferences: {
 		messageKey: 'karl_preferences',
 		options: preferenceOptions,
@@ -86,6 +88,10 @@ export const stateConfigs: Partial<Record<ChatState, StateConfig>> = {
 		messageKey: 'karl_erstgespraech_done',
 		options: erstgespraechOptions
 	},
+	ptv11_dringend: {
+		messageKey: 'karl_ptv11_dringend',
+		options: ptv11DringendOptions
+	},
 	probatorik: {
 		messageKey: 'karl_probatorik',
 		options: probatorikOptions
@@ -93,6 +99,10 @@ export const stateConfigs: Partial<Record<ChatState, StateConfig>> = {
 	hausarzt: {
 		messageKey: 'karl_hausarzt',
 		options: hausarztOptions
+	},
+	antrag_einreichen: {
+		messageKey: 'karl_antrag_einreichen',
+		options: antragEinreichenOptions
 	},
 	antrag_sent: {
 		messageKey: 'karl_antrag_sent',

@@ -1,5 +1,12 @@
 import type { ContactAttempt } from '$lib/types';
 
+function getMethodText(contact: ContactAttempt): string {
+	if (contact.method === 'email') return 'E-Mail';
+	if (contact.method === 'phone') return 'Telefon';
+	if (contact.method === 'auto-call') return 'Telefon';
+	return contact.method;
+}
+
 export async function generatePdf(contacts: ContactAttempt[]) {
 	// dynamic import to avoid SSR issues
 	const { jsPDF } = await import('jspdf');
@@ -9,82 +16,122 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 	let y = 20;
 
 	// title
-	doc.setFontSize(18);
+	doc.setFontSize(14);
 	doc.setFont('helvetica', 'bold');
-	doc.text('Kontaktprotokoll Therapieplatzsuche', pageWidth / 2, y, { align: 'center' });
-	y += 10;
+	doc.text('Kontaktprotokoll Therapieplatzsuche', 20, y);
+	y += 7;
 
-	// subtitle
+	// date
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'normal');
-	doc.text(`Erstellt am ${new Date().toLocaleDateString('de-DE')}`, pageWidth / 2, y, {
-		align: 'center'
-	});
-	y += 15;
+	doc.text(`Erstellt am ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 20, y);
+	y += 10;
 
-	// intro text
-	doc.setFontSize(10);
+	// intro
 	const introText =
 		'Dieses Dokument dokumentiert meine Bemühungen, einen Therapieplatz zu finden. ' +
 		'Es dient als Nachweis für das Kostenerstattungsverfahren gemäß § 13 Abs. 3 SGB V.';
 	const introLines = doc.splitTextToSize(introText, pageWidth - 40);
 	doc.text(introLines, 20, y);
-	y += introLines.length * 5 + 10;
+	y += introLines.length * 5 + 8;
+
+	// table column positions
+	const col1 = 22; // Datum
+	const col2 = 46; // Praxis/Adresse
+	const col3 = 125; // Kontakt
+	const col4 = 150; // Rückmeldung
+	const tableWidth = pageWidth - 40;
+	const rowHeight = 8;
 
 	// table header
+	doc.setFillColor(220, 220, 220);
+	doc.rect(20, y - 5, tableWidth, rowHeight, 'F');
 	doc.setFont('helvetica', 'bold');
-	doc.setFillColor(240, 240, 240);
-	doc.rect(20, y - 4, pageWidth - 40, 8, 'F');
-	doc.text('Praxis', 22, y);
-	doc.text('Datum', 90, y);
-	doc.text('Kontaktweg', 115, y);
-	doc.text('Ergebnis', 145, y);
-	y += 8;
+	doc.setFontSize(9);
+	doc.text('Datum', col1, y);
+	doc.text('Praxis / Adresse', col2, y);
+	doc.text('Kontakt', col3, y);
+	doc.text('Rückmeldung', col4, y);
+
+	// header border
+	doc.setDrawColor(150);
+	doc.rect(20, y - 5, tableWidth, rowHeight);
+	y += rowHeight;
 
 	// table rows
 	doc.setFont('helvetica', 'normal');
+	doc.setFontSize(8);
+
 	contacts.forEach((contact, index) => {
+		// check if we need a new page
 		if (y > 270) {
 			doc.addPage();
 			y = 20;
+			// repeat header on new page
+			doc.setFillColor(220, 220, 220);
+			doc.rect(20, y - 5, tableWidth, rowHeight, 'F');
+			doc.setFont('helvetica', 'bold');
+			doc.setFontSize(9);
+			doc.text('Datum', col1, y);
+			doc.text('Praxis / Adresse', col2, y);
+			doc.text('Kontakt', col3, y);
+			doc.text('Rückmeldung', col4, y);
+			doc.setDrawColor(150);
+			doc.rect(20, y - 5, tableWidth, rowHeight);
+			y += rowHeight;
+			doc.setFont('helvetica', 'normal');
+			doc.setFontSize(8);
 		}
 
+		// row content
+		const dateStr = new Date(contact.contactDate).toLocaleDateString('de-DE', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		});
+		const timeStr = new Date(contact.contactDate).toLocaleTimeString('de-DE', {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+
+		// build practice info (name + address + phone)
+		let practiceInfo = contact.therapistName;
+		if (contact.therapistAddress) {
+			practiceInfo += '\n' + contact.therapistAddress;
+		}
+		if (contact.therapistPhone && (contact.method === 'phone' || contact.method === 'auto-call')) {
+			practiceInfo += '\nTel: ' + contact.therapistPhone;
+		}
+
+		const practiceLines = doc.splitTextToSize(practiceInfo, 78);
+		const currentRowHeight = Math.max(rowHeight, practiceLines.length * 4 + 4);
+
+		// alternating row background
 		if (index % 2 === 0) {
 			doc.setFillColor(250, 250, 250);
-			doc.rect(20, y - 4, pageWidth - 40, 8, 'F');
+			doc.rect(20, y - 5, tableWidth, currentRowHeight, 'F');
 		}
 
-		const name = contact.therapistName.substring(0, 25);
-		const date = new Date(contact.contactDate).toLocaleDateString('de-DE');
-		const method = contact.method === 'email' ? 'E-Mail' : contact.method;
-		const result = getResultText(contact);
+		// row border
+		doc.setDrawColor(200);
+		doc.rect(20, y - 5, tableWidth, currentRowHeight);
 
-		doc.text(name, 22, y);
-		doc.text(date, 90, y);
-		doc.text(method, 115, y);
-		doc.text(result, 145, y);
-		y += 8;
+		// cell content
+		doc.text(dateStr, col1, y);
+		doc.text(timeStr, col1, y + 4);
+		doc.text(practiceLines, col2, y);
+		doc.text(getMethodText(contact), col3, y);
+		doc.text(getResultText(contact), col4, y);
+
+		y += currentRowHeight;
 	});
 
-	// summary
+	// legal note at bottom
 	y += 10;
-	const qualifying = contacts.filter(
-		(c) =>
-			c.status === 'no_reply' || c.waitingTime === '3-6 Monate' || c.waitingTime === '> 6 Monate'
-	);
-
-	doc.setFont('helvetica', 'bold');
-	doc.text('Zusammenfassung:', 20, y);
-	y += 6;
-	doc.setFont('helvetica', 'normal');
-	doc.text(`Gesamte Kontaktversuche: ${contacts.length}`, 20, y);
-	y += 5;
-	doc.text(`Keine Rückmeldung: ${contacts.filter((c) => c.status === 'no_reply').length}`, 20, y);
-	y += 5;
-	doc.text(`Wartezeit > 3 Monate: ${qualifying.length}`, 20, y);
-	y += 15;
-
-	// legal note
+	if (y > 260) {
+		doc.addPage();
+		y = 20;
+	}
 	doc.setFontSize(8);
 	doc.setTextColor(100);
 	const legalText =
@@ -94,14 +141,33 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 		'in der Regel als unzumutbar.';
 	const legalLines = doc.splitTextToSize(legalText, pageWidth - 40);
 	doc.text(legalLines, 20, y);
+	doc.setTextColor(0);
 
+	return doc;
+}
+
+export async function downloadPdf(contacts: ContactAttempt[]) {
+	const doc = await generatePdf(contacts);
 	doc.save('kontaktprotokoll.pdf');
+}
+
+export async function viewPdf(contacts: ContactAttempt[]) {
+	const doc = await generatePdf(contacts);
+	const blob = doc.output('blob');
+	const url = URL.createObjectURL(blob);
+	window.open(url, '_blank');
 }
 
 function getResultText(contact: ContactAttempt): string {
 	if (contact.status === 'no_reply') return 'Keine Antwort';
 	if (contact.status === 'pending') return 'Ausstehend';
 	if (contact.status === 'sent') return 'Gesendet';
-	if (contact.waitingTime) return `Wartezeit: ${contact.waitingTime}`;
+	if (contact.waitingTime) {
+		// clean up symbols for PDF
+		const cleaned = contact.waitingTime
+			.replace('> ', 'über ')
+			.replace('< ', 'unter ');
+		return `Wartezeit ${cleaned}`;
+	}
 	return 'Antwort erhalten';
 }

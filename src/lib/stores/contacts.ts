@@ -10,6 +10,8 @@ const QUALIFYING_WAIT_TIMES = ['3-6 Monate', '> 6 Monate'] as const;
 interface ContactsStore extends Readable<ContactAttempt[]> {
 	add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => void;
 	updateStatus: (id: string, status: ContactAttempt['status'], waitingTime?: string) => void;
+	updateDate: (id: string, contactDate: string) => void;
+	updateMethod: (id: string, method: ContactAttempt['method']) => void;
 	remove: (id: string) => void;
 	removeByTherapistId: (therapistId: string) => void;
 	updateStatusByTherapistId: (therapistId: string, status: ContactAttempt['status']) => void;
@@ -36,6 +38,16 @@ function createContactsStore(): ContactsStore {
 				contacts.map((c) =>
 					c.id === id ? { ...c, status, waitingTime: waitingTime ?? c.waitingTime } : c
 				)
+			);
+		},
+		updateDate: (id: string, contactDate: string) => {
+			dataSession.updateContacts((contacts) =>
+				contacts.map((c) => (c.id === id ? { ...c, contactDate } : c))
+			);
+		},
+		updateMethod: (id: string, method: ContactAttempt['method']) => {
+			dataSession.updateContacts((contacts) =>
+				contacts.map((c) => (c.id === id ? { ...c, method } : c))
 			);
 		},
 		remove: (id: string) => {

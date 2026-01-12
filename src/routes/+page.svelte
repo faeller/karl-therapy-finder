@@ -11,46 +11,53 @@
 	import { m } from '$lib/paraglide/messages';
 </script>
 
-<div class="relative flex min-h-[100dvh] flex-col items-center justify-center px-4 py-12">
+<div class="relative flex min-h-[100dvh] flex-col items-center justify-center px-4 py-8 md:py-12">
 	<!-- controls -->
 	<div class="controls">
 		<LangToggle />
-		<UserMenu />
-		<a
-			href="https://www.patreon.com/karlhelps"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="icon-btn"
-			title={m.support_patreon()}
-		>
-			<PatreonIcon size={18} />
-		</a>
-		<button
-			onclick={() => theme.toggle()}
-			class="icon-btn"
-			title={m.chat_toggle_theme()}
-		>
-			{#if $theme === 'dark'}
-				<Sun size={20} strokeWidth={2.5} />
-			{:else}
-				<Moon size={20} strokeWidth={2.5} />
-			{/if}
-		</button>
+		<div class="icon-group">
+			<UserMenu />
+			<a
+				href="https://www.patreon.com/karlhelps"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="icon-btn"
+				title={m.support_patreon()}
+			>
+				<PatreonIcon size={16} />
+			</a>
+			<button
+				onclick={() => theme.toggle()}
+				class="icon-btn"
+				title={m.chat_toggle_theme()}
+			>
+				{#if $theme === 'dark'}
+					<Sun size={18} strokeWidth={2.5} />
+				{:else}
+					<Moon size={18} strokeWidth={2.5} />
+				{/if}
+			</button>
+		</div>
 	</div>
 
-	<div class="w-full max-w-md text-center">
+	<div class="w-full max-w-md text-center mt-10 md:mt-0">
 		<!-- logo -->
-		<div class="mb-6 flex justify-center">
-			<KarlAvatar size="xl" shadow="md" />
+		<div class="mb-4 md:mb-6 flex justify-center">
+			<div class="md:hidden">
+				<KarlAvatar size="lg" shadow="md" />
+			</div>
+			<div class="hidden md:block">
+				<KarlAvatar size="xl" shadow="md" />
+			</div>
 		</div>
 
-		<h1 class="mb-2 font-heading text-4xl font-bold md:text-5xl">{m.app_name()}</h1>
-		<p class="mb-8 text-lg text-pencil/70 md:text-xl">
+		<h1 class="mb-1 md:mb-2 font-heading text-3xl font-bold md:text-5xl">{m.app_name()}</h1>
+		<p class="mb-6 md:mb-8 text-base md:text-xl text-pencil/70">
 			{m.app_tagline()}
 		</p>
 
-		<WobblyCard decoration="tape" class="mb-8 text-left">
-			<p class="mb-4">
+		<WobblyCard decoration="tape" class="mb-6 md:mb-8 text-left text-sm md:text-base">
+			<p class="mb-3 md:mb-4">
 				{m.landing_intro()}
 			</p>
 			<p class="font-bold">
@@ -62,11 +69,11 @@
 			{m.landing_cta()}
 		</WobblyButton>
 
-		<p class="mt-6 text-sm text-pencil/50">
+		<p class="mt-4 md:mt-6 text-xs md:text-sm text-pencil/50">
 			{m.landing_privacy()}
 		</p>
 
-		<footer class="mt-12 text-center">
+		<footer class="mt-8 md:mt-12 text-center">
 			<p class="text-xs text-pencil/40">&copy; 2025 Merle Fäller</p>
 			<div class="mt-2 flex justify-center gap-4 text-xs">
 				<a href="/impressum" class="text-pencil/40 hover:text-pencil/70 transition-colors">Impressum</a>
@@ -83,10 +90,19 @@
 		right: 1rem;
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 1rem;
+	}
+	.icon-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 	.icon-btn {
-		padding: 0.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
 		border-radius: 9999px;
 		color: var(--color-pencil);
 		opacity: 0.5;

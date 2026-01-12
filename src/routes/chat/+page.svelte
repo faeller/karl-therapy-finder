@@ -127,8 +127,11 @@
 	});
 
 	// auto-scroll on new messages
+	let prevMessageCount = 0;
 	$effect(() => {
-		if ($messages.length && messagesContainer) {
+		const count = $messages.length;
+		if (count && messagesContainer && count !== prevMessageCount) {
+			prevMessageCount = count;
 			setTimeout(() => {
 				if (isInSuccess) {
 					// scroll to success section
@@ -139,13 +142,8 @@
 						messagesContainer.scrollTop = messagesContainer.scrollHeight;
 					}
 				} else if (isInKostenerstattung) {
-					// in kostenerstattung flow, scroll to that section
-					const kostenSection = messagesContainer.querySelector('[data-section="kostenerstattung"]');
-					if (kostenSection) {
-						kostenSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-					} else {
-						messagesContainer.scrollTop = messagesContainer.scrollHeight;
-					}
+					// scroll to bottom to show latest message
+					messagesContainer.scrollTop = messagesContainer.scrollHeight;
 				} else if (isInResults) {
 					// in results, scroll to show the results section
 					const resultsSection = messagesContainer.querySelector('[data-section="results"]');
@@ -306,8 +304,8 @@
 	}
 
 	// Determine chat phases
-	const kostenerstattungStates = ['erstgespraech_done', 'probatorik', 'hausarzt', 'antrag_sent', 'widerspruch', 'kostenerstattung_granted'] as const;
-	const kostenerstattungMessageKeys = ['karl_erstgespraech_done', 'karl_probatorik', 'karl_hausarzt', 'karl_antrag_sent', 'karl_widerspruch', 'karl_kostenerstattung_granted'] as const;
+	const kostenerstattungStates = ['erstgespraech_done', 'ptv11_dringend', 'probatorik', 'hausarzt', 'antrag_einreichen', 'antrag_sent', 'widerspruch', 'kostenerstattung_granted'] as const;
+	const kostenerstattungMessageKeys = ['karl_erstgespraech_done', 'karl_ptv11_dringend', 'karl_probatorik', 'karl_hausarzt', 'karl_antrag_einreichen', 'karl_antrag_sent', 'karl_widerspruch', 'karl_kostenerstattung_granted'] as const;
 	const isInSuccess = $derived($chatState === 'success');
 	const isInKostenerstattung = $derived(kostenerstattungStates.includes($chatState as typeof kostenerstattungStates[number]));
 	const isInResults = $derived(['terminservice', 'searching', 'results'].includes($chatState) || isInKostenerstattung || isInSuccess);
@@ -616,7 +614,7 @@
 						{/if}
 						{#if allTherapists.length > 0}
 							{#if allTherapists.length > 5}
-								<div class="mb-6">
+								<div class="mb-14">
 									<MessageBubble
 										role="karl"
 										contentKey="karl_results_encouragement"
@@ -658,11 +656,12 @@
 			{/if}
 
 			<!-- Kostenerstattung section -->
-			{#if isInKostenerstattung && kostenerstattungMessages.length > 0}
+			{#if (isInKostenerstattung || isInSuccess) && kostenerstattungMessages.length > 0}
 				<div data-section="kostenerstattung">
 				<ChatSection
 					title={m.chat_section_kostenerstattung()}
 					collapsible={true}
+					defaultOpen={!isInSuccess}
 				>
 					<div class="space-y-4">
 						{#each kostenerstattungMessages as message (message.id)}

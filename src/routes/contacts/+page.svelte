@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { contacts, qualifyingContacts } from '$lib/stores/contacts';
-	import { generatePdf } from '$lib/utils/pdf';
+	import { downloadPdf, viewPdf } from '$lib/utils/pdf';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import ChipButton from '$lib/components/ui/ChipButton.svelte';
-	import { ArrowLeft, FileDown, Trash2 } from 'lucide-svelte';
+	import { ArrowLeft, FileDown, Eye, Trash2, Pencil } from 'lucide-svelte';
 	import type { ContactAttempt } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
 
@@ -15,12 +15,13 @@
 		{ key: 'waiting_6_plus_months', value: '> 6 Monate' },
 		{ key: 'waiting_no_spot', value: 'Kein Platz' }
 	];
-	const statusKeys: Record<ContactAttempt['status'], string> = {
-		pending: 'status_pending',
-		sent: 'status_sent',
-		replied: 'status_replied',
-		no_reply: 'status_no_reply'
-	};
+
+	const methodOptions: { key: ContactAttempt['method']; label: string }[] = [
+		{ key: 'email', label: 'E-Mail' },
+		{ key: 'phone', label: 'Telefon' }
+	];
+
+	let editingDateId = $state<string | null>(null);
 
 	function updateStatus(id: string, status: ContactAttempt['status']) {
 		contacts.updateStatus(id, status);
@@ -28,6 +29,15 @@
 
 	function updateWaitingTime(id: string, waitingTime: string) {
 		contacts.updateStatus(id, 'replied', waitingTime);
+	}
+
+	function updateDate(id: string, dateStr: string) {
+		contacts.updateDate(id, new Date(dateStr).toISOString());
+		editingDateId = null;
+	}
+
+	function updateMethod(id: string, method: ContactAttempt['method']) {
+		contacts.updateMethod(id, method);
 	}
 
 	function removeContact(id: string) {
@@ -57,8 +67,16 @@
 		return labels[key]?.() ?? key;
 	}
 
-	function downloadPdf() {
-		generatePdf($contacts);
+	function toDateInputValue(isoDate: string): string {
+		return isoDate.split('T')[0];
+	}
+
+	function handleDownload() {
+		downloadPdf($contacts);
+	}
+
+	function handleView() {
+		viewPdf($contacts);
 	}
 </script>
 
@@ -87,17 +105,23 @@
 					</div>
 				</div>
 
-				{#if $qualifyingContacts.length >= 5}
-					<div class="mt-4 border-t border-pencil/20 pt-4">
+				<div class="mt-4 border-t border-pencil/20 pt-4">
+					{#if $qualifyingContacts.length >= 5}
 						<p class="mb-3 text-sm">
 							{m.contacts_qualifying_hint()}
 						</p>
-						<WobblyButton onclick={downloadPdf} size="sm">
+					{/if}
+					<div class="flex flex-wrap gap-2">
+						<WobblyButton onclick={handleView} size="sm" variant="secondary">
+							<Eye size={18} strokeWidth={2.5} class="mr-2 inline" />
+							Ansehen
+						</WobblyButton>
+						<WobblyButton onclick={handleDownload} size="sm">
 							<FileDown size={18} strokeWidth={2.5} class="mr-2 inline" />
 							{m.contacts_download_pdf()}
 						</WobblyButton>
 					</div>
-				{/if}
+				</div>
 			</WobblyCard>
 		{/if}
 
@@ -119,27 +143,63 @@
 								{#if contact.therapistAddress}
 									<p class="text-sm text-pencil/60">{contact.therapistAddress}</p>
 								{/if}
-								<p class="mt-1 text-xs text-pencil/40">
-									{new Date(contact.contactDate).toLocaleDateString('de-DE')} via {contact.method === 'email' ? 'E-Mail' : contact.method}
-								</p>
+								<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-pencil/40">
+									{#if editingDateId === contact.id}
+										<input
+											type="date"
+											value={toDateInputValue(contact.contactDate)}
+											onchange={(e) => updateDate(contact.id, e.currentTarget.value)}
+											onblur={() => editingDateId = null}
+											class="rounded border border-pencil/30 bg-paper px-1 py-0.5 text-xs"
+										/>
+									{:else}
+										<button
+											onclick={() => editingDateId = contact.id}
+											class="flex items-center gap-1 hover:text-blue-pen"
+										>
+											{new Date(contact.contactDate).toLocaleDateString('de-DE')}
+											<Pencil size={10} />
+										</button>
+									{/if}
+								</div>
 							</div>
 							<button
 								onclick={() => removeContact(contact.id)}
 								class="text-pencil/40 hover:text-red-marker"
+								title="Löschen"
 							>
 								<Trash2 size={18} strokeWidth={2.5} />
 							</button>
 						</div>
 
-						<div class="mt-3 flex flex-wrap gap-2">
-							{#each ['pending', 'sent', 'replied', 'no_reply'] as status}
-								<ChipButton
-									selected={contact.status === status}
-									onclick={() => updateStatus(contact.id, status as ContactAttempt['status'])}
-								>
-									{getStatusLabel(status as ContactAttempt['status'])}
-								</ChipButton>
-							{/each}
+						<!-- contact method -->
+						<div class="mt-3">
+							<label class="mb-1 block text-xs text-pencil/60">Kontaktweg:</label>
+							<div class="flex flex-wrap gap-2">
+								{#each methodOptions as option}
+									<ChipButton
+										selected={contact.method === option.key}
+										onclick={() => updateMethod(contact.id, option.key)}
+									>
+										{option.label}
+									</ChipButton>
+								{/each}
+							</div>
+						</div>
+
+						<!-- status -->
+						<div class="mt-3">
+							<label class="mb-1 block text-xs text-pencil/60">Status:</label>
+							<div class="flex flex-wrap gap-2">
+								{#each ['pending', 'sent', 'replied', 'no_reply'] as status}
+									<ChipButton
+										selected={contact.status === status}
+										onclick={() => updateStatus(contact.id, status as ContactAttempt['status'])}
+									>
+										{getStatusLabel(status as ContactAttempt['status'])}
+									</ChipButton>
+								{/each}
+							</div>
 						</div>
 
 						{#if contact.status === 'replied'}

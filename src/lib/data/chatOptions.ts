@@ -12,13 +12,13 @@ export const locationOptions: ChatOption[] = [
 
 export const insuranceTypeOptions: ChatOption[] = [
 	{ id: OptionId.gkv, labelDe: 'Gesetzlich (GKV)', emoji: '🏥', nextState: 'insurance_details' },
-	{ id: OptionId.pkv, labelDe: 'Privat (PKV)', emoji: '💳', nextState: 'therapy_type' },
-	{ id: OptionId.selfPay, labelDe: 'Selbstzahler', emoji: '💶', nextState: 'therapy_type' }
+	{ id: OptionId.pkv, labelDe: 'Privat (PKV)', emoji: '💳', nextState: 'preferences' },
+	{ id: OptionId.selfPay, labelDe: 'Selbstzahler', emoji: '💶', nextState: 'preferences' }
 ];
 
 export const ageGroupOptions: ChatOption[] = [
-	{ id: OptionId.adult, labelDe: 'Über 21 (Erwachsene)', emoji: '🧑', nextState: 'therapy_type' },
-	{ id: OptionId.youth, labelDe: 'Unter 21 (KJP möglich)', emoji: '👶', nextState: 'therapy_type' }
+	{ id: OptionId.adult, labelDe: 'Über 21 (Erwachsene)', emoji: '🧑', nextState: 'preferences' },
+	{ id: OptionId.youth, labelDe: 'Unter 21 (KJP möglich)', emoji: '👶', nextState: 'preferences' }
 ];
 
 export const therapyTypeOptions: ChatOption[] = [
@@ -76,8 +76,13 @@ export const resultsActionOptions: ChatOption[] = [
 
 // kostenerstattung flow
 export const erstgespraechOptions: ChatOption[] = [
-	{ id: OptionId.hasPtv11, labelDe: 'Ja, ich habe das PTV-11', nextState: 'probatorik' },
-	{ id: OptionId.noPtv11, labelDe: 'Nein / Weiß nicht', nextState: 'probatorik' }
+	{ id: OptionId.hasPtv11, labelDe: 'Ja, ich habe das PTV-11', nextState: 'ptv11_dringend' },
+	{ id: OptionId.noPtv11, labelDe: 'Nein / Weiß nicht', nextState: 'hausarzt' }
+];
+
+export const ptv11DringendOptions: ChatOption[] = [
+	{ id: OptionId.dringendYes, labelDe: 'Ja, ist angekreuzt', nextState: 'probatorik' },
+	{ id: OptionId.dringendNo, labelDe: 'Nein / Weiß nicht', nextState: 'hausarzt' }
 ];
 
 export const probatorikOptions: ChatOption[] = [
@@ -86,7 +91,11 @@ export const probatorikOptions: ChatOption[] = [
 ];
 
 export const hausarztOptions: ChatOption[] = [
-	{ id: OptionId.hausarztDone, labelDe: 'Bescheinigung geholt', nextState: 'antrag_sent' }
+	{ id: OptionId.hausarztDone, labelDe: 'Bescheinigung geholt', nextState: 'antrag_einreichen' }
+];
+
+export const antragEinreichenOptions: ChatOption[] = [
+	{ id: OptionId.antragEingereicht, labelDe: 'Antrag abgeschickt', nextState: 'antrag_sent' }
 ];
 
 export const antragOptions: ChatOption[] = [
@@ -95,7 +104,7 @@ export const antragOptions: ChatOption[] = [
 ];
 
 export const widerspruchOptions: ChatOption[] = [
-	{ id: OptionId.widerspruchApproved, labelDe: 'Widerspruch erfolgreich!', nextState: 'kostenerstattung_granted' }
+	{ id: OptionId.widerspruchEingereicht, labelDe: 'Widerspruch eingereicht', nextState: 'antrag_sent' }
 ];
 
 export const kostenerstattungGrantedOptions: ChatOption[] = [
