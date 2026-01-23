@@ -42,6 +42,23 @@
 		}
 	}
 
+	// bad outcomes that should show red even if status is "completed"
+	const badOutcomes = ['rejected_ai', 'rejected_privacy', 'rejected_other', 'no_availability', 'connection_failed'];
+	const neutralOutcomes = ['no_answer', 'unclear', 'callback'];
+
+	function getEffectiveStatusColor(status: string, outcome?: string): string {
+		if (status === 'completed' && outcome) {
+			if (badOutcomes.includes(outcome)) return 'text-red-marker';
+			if (neutralOutcomes.includes(outcome)) return 'text-yellow-600';
+			if (outcome === 'success') return 'text-green-600';
+		}
+		return getStatusColor(status);
+	}
+
+	function isPositiveOutcome(outcome?: string): boolean {
+		return outcome === 'success';
+	}
+
 	interface Props {
 		therapist: Therapist;
 		open: boolean;
@@ -405,9 +422,11 @@
 					<div class="calls-list">
 						{#each preflightData?.existingCalls || [] as call}
 							<div class="call-item">
-								<div class="call-status {getStatusColor(call.status)}">
-									{#if call.status === 'completed'}
+								<div class="call-status {getEffectiveStatusColor(call.status, call.outcome)}">
+									{#if call.status === 'completed' && isPositiveOutcome(call.outcome)}
 										<CheckCircle size={16} />
+									{:else if call.status === 'completed'}
+										<XCircle size={16} />
 									{:else if call.status === 'scheduled'}
 										<Clock size={16} />
 									{:else}
@@ -483,9 +502,11 @@
 
 						<!-- status header with outcome badge -->
 						<div class="details-header">
-							<div class="details-status {getStatusColor(selectedCall.status)}">
-								{#if selectedCall.status === CallStatus.COMPLETED}
+							<div class="details-status {getEffectiveStatusColor(selectedCall.status, selectedCall.outcome)}">
+								{#if selectedCall.status === CallStatus.COMPLETED && isPositiveOutcome(selectedCall.outcome)}
 									<CheckCircle size={20} />
+								{:else if selectedCall.status === CallStatus.COMPLETED}
+									<XCircle size={20} />
 								{:else if selectedCall.status === CallStatus.SCHEDULED}
 									<Clock size={20} />
 								{:else if selectedCall.status === CallStatus.IN_PROGRESS}
