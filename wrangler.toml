@@ -4,7 +4,7 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [vars]
-PUBLIC_APP_URL = "https://karl2.pages.dev"
+PUBLIC_APP_URL = "https://karl-helps.org"
 
 [[kv_namespaces]]
 binding = "THERAPIST_CACHE"

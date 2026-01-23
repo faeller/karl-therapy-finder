@@ -1,7 +1,7 @@
 {
 	"name": "KARL - Therapieplatz finden",
 	"short_name": "KARL",
-	"description": "Therapieplatz finden, ohne verrückt zu werden",
+	"description": "Therapieplatz finden, ohne den Verstand zu verlieren",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#fdfbf7",
