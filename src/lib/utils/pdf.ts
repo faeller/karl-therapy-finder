@@ -1,9 +1,10 @@
 import type { ContactAttempt } from '$lib/types';
+import { m } from '$lib/paraglide/messages';
 
 function getMethodText(contact: ContactAttempt): string {
-	if (contact.method === 'email') return 'E-Mail';
-	if (contact.method === 'phone') return 'Telefon';
-	if (contact.method === 'auto-call') return 'Telefon';
+	if (contact.method === 'email') return m.pdf_method_email();
+	if (contact.method === 'phone') return m.pdf_method_phone();
+	if (contact.method === 'auto-call') return m.pdf_method_phone();
 	return contact.method;
 }
 
@@ -18,19 +19,18 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 	// title
 	doc.setFontSize(14);
 	doc.setFont('helvetica', 'bold');
-	doc.text('Kontaktprotokoll Therapieplatzsuche', 20, y);
+	doc.text(m.pdf_title(), 20, y);
 	y += 7;
 
 	// date
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'normal');
-	doc.text(`Erstellt am ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 20, y);
+	const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+	doc.text(m.pdf_created_at({ date: dateStr }), 20, y);
 	y += 10;
 
 	// intro
-	const introText =
-		'Dieses Dokument dokumentiert meine Bemühungen, einen Therapieplatz zu finden. ' +
-		'Es dient als Nachweis für das Kostenerstattungsverfahren gemäß § 13 Abs. 3 SGB V.';
+	const introText = m.pdf_intro();
 	const introLines = doc.splitTextToSize(introText, pageWidth - 40);
 	doc.text(introLines, 20, y);
 	y += introLines.length * 5 + 8;
@@ -48,10 +48,10 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 	doc.rect(20, y - 5, tableWidth, rowHeight, 'F');
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(9);
-	doc.text('Datum', col1, y);
-	doc.text('Praxis / Adresse', col2, y);
-	doc.text('Kontakt', col3, y);
-	doc.text('Rückmeldung', col4, y);
+	doc.text(m.pdf_header_date(), col1, y);
+	doc.text(m.pdf_header_practice(), col2, y);
+	doc.text(m.pdf_header_method(), col3, y);
+	doc.text(m.pdf_header_result(), col4, y);
 
 	// header border
 	doc.setDrawColor(150);
@@ -72,10 +72,10 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 			doc.rect(20, y - 5, tableWidth, rowHeight, 'F');
 			doc.setFont('helvetica', 'bold');
 			doc.setFontSize(9);
-			doc.text('Datum', col1, y);
-			doc.text('Praxis / Adresse', col2, y);
-			doc.text('Kontakt', col3, y);
-			doc.text('Rückmeldung', col4, y);
+			doc.text(m.pdf_header_date(), col1, y);
+			doc.text(m.pdf_header_practice(), col2, y);
+			doc.text(m.pdf_header_method(), col3, y);
+			doc.text(m.pdf_header_result(), col4, y);
 			doc.setDrawColor(150);
 			doc.rect(20, y - 5, tableWidth, rowHeight);
 			y += rowHeight;
@@ -100,7 +100,7 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 			practiceInfo += '\n' + contact.therapistAddress;
 		}
 		if (contact.therapistPhone && (contact.method === 'phone' || contact.method === 'auto-call')) {
-			practiceInfo += '\nTel: ' + contact.therapistPhone;
+			practiceInfo += '\n' + m.pdf_tel_prefix() + ' ' + contact.therapistPhone;
 		}
 
 		const practiceLines = doc.splitTextToSize(practiceInfo, 78);
@@ -134,11 +134,7 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 	}
 	doc.setFontSize(8);
 	doc.setTextColor(100);
-	const legalText =
-		'Gemäß § 13 Abs. 3 SGB V haben Versicherte Anspruch auf Kostenerstattung, wenn die ' +
-		'Krankenkasse eine unaufschiebbare Leistung nicht rechtzeitig erbringen kann. ' +
-		'Bei psychotherapeutischen Behandlungen gilt eine Wartezeit von mehr als drei Monaten ' +
-		'in der Regel als unzumutbar.';
+	const legalText = m.pdf_legal();
 	const legalLines = doc.splitTextToSize(legalText, pageWidth - 40);
 	doc.text(legalLines, 20, y);
 	doc.setTextColor(0);
@@ -148,7 +144,7 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 
 export async function downloadPdf(contacts: ContactAttempt[]) {
 	const doc = await generatePdf(contacts);
-	doc.save('kontaktprotokoll.pdf');
+	doc.save(m.pdf_filename());
 }
 
 export async function viewPdf(contacts: ContactAttempt[]) {
@@ -159,15 +155,15 @@ export async function viewPdf(contacts: ContactAttempt[]) {
 }
 
 function getResultText(contact: ContactAttempt): string {
-	if (contact.status === 'no_reply') return 'Keine Antwort';
-	if (contact.status === 'pending') return 'Ausstehend';
-	if (contact.status === 'sent') return 'Gesendet';
+	if (contact.status === 'no_reply') return m.status_no_reply();
+	if (contact.status === 'pending') return m.status_pending();
+	if (contact.status === 'sent') return m.status_sent();
 	if (contact.waitingTime) {
 		// clean up symbols for PDF
 		const cleaned = contact.waitingTime
-			.replace('> ', 'über ')
-			.replace('< ', 'unter ');
-		return `Wartezeit ${cleaned}`;
+			.replace('> ', m.pdf_status_over() + ' ')
+			.replace('< ', m.pdf_status_under() + ' ');
+		return m.pdf_status_waiting({ time: cleaned });
 	}
-	return 'Antwort erhalten';
+	return m.status_replied();
 }

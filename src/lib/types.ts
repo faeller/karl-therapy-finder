@@ -16,8 +16,10 @@ export type ChatState =
 	| 'results'
 	// kostenerstattung flow
 	| 'erstgespraech_done'
+	| 'ptv11_dringend'
 	| 'probatorik'
 	| 'hausarzt'
+	| 'antrag_einreichen'
 	| 'antrag_sent'
 	| 'widerspruch'
 	| 'kostenerstattung_granted'

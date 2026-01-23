@@ -53,14 +53,15 @@ export const OptionId = {
 	// kostenerstattung flow
 	hasPtv11: 'has_ptv11',
 	noPtv11: 'no_ptv11',
+	dringendYes: 'dringend_yes',
+	dringendNo: 'dringend_no',
 	probatorikDone: 'probatorik_done',
 	probatorikSkip: 'probatorik_skip',
 	hausarztDone: 'hausarzt_done',
-	antragSent: 'antrag_sent',
+	antragEingereicht: 'antrag_eingereicht',
 	antragApproved: 'antrag_approved',
 	antragDeclined: 'antrag_declined',
-	widerspruchSent: 'widerspruch_sent',
-	widerspruchApproved: 'widerspruch_approved',
+	widerspruchEingereicht: 'widerspruch_eingereicht',
 	findPrivateTherapist: 'find_private_therapist'
 } as const;
 
