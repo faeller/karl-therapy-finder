@@ -247,11 +247,23 @@
 	}
 
 	async function handleCancel(callId: string) {
-		// TODO: implement backend cancellation via DELETE /api/calls/{callId}
-		// for now just remove from local contacts store
-		contacts.removeByTherapistId(therapist.id);
-		console.warn('[AutoCallModal] backend cancellation not implemented, callId:', callId);
-		await fetchPreflight();
+		try {
+			const response = await fetch('/api/calls/cancel', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ callId })
+			});
+
+			if (!response.ok) {
+				const data = await response.json().catch(() => ({}));
+				console.error('[AutoCallModal] cancel failed:', data);
+			}
+
+			contacts.removeByTherapistId(therapist.id);
+			await fetchPreflight();
+		} catch (e) {
+			console.error('[AutoCallModal] cancel error:', e);
+		}
 	}
 
 	function showDetails(callId: string) {

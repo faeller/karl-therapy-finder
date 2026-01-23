@@ -464,11 +464,13 @@ export async function handleCallWebhook(
 	// 1. karl_call_id from dynamic_variables (scheduled calls via batch api)
 	// 2. batch_call_id from metadata (batch api stores this, different from conversation_id)
 	// 3. conversation_id matching elevenlabs_conv_id (fallback)
+	// 4. phone number + scheduled status (last resort for call_initiation_failure which lacks the above)
 	const karlCallId = data.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
 	const conversationId = data.conversation_id;
 	const batchCallId = data.metadata?.batch_call?.batch_call_id;
+	const phoneNumber = data.user_id; // phone number that was called
 
-	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
+	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId, 'phone:', phoneNumber);
 
 	let call: typeof table.scheduledCalls.$inferSelect | undefined;
 
@@ -502,8 +504,29 @@ export async function handleCallWebhook(
 		call = found;
 	}
 
+	// last resort: match by phone + scheduled status + time window (for call_initiation_failure which lacks dynamic_variables)
+	if (!call && phoneNumber) {
+		// only match calls scheduled within 1 hour before now (call should have been triggered recently)
+		const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+		const [found] = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(and(
+				eq(table.scheduledCalls.therapistPhone, phoneNumber),
+				eq(table.scheduledCalls.status, 'scheduled'),
+				gt(table.scheduledCalls.scheduledAt, oneHourAgo),
+				lt(table.scheduledCalls.scheduledAt, now)
+			))
+			.orderBy(desc(table.scheduledCalls.scheduledAt))
+			.limit(1);
+		call = found;
+		if (call) {
+			console.log('[webhook] matched by phone + time window:', phoneNumber, 'call:', call.id);
+		}
+	}
+
 	if (!call) {
-		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
+		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId, 'phone:', phoneNumber);
 		return null;
 	}
 
