@@ -42,9 +42,10 @@
 		}
 	}
 
-	// bad outcomes that should show red even if status is "completed"
-	const badOutcomes = ['rejected_ai', 'rejected_privacy', 'rejected_other', 'no_availability', 'connection_failed'];
-	const neutralOutcomes = ['no_answer', 'unclear', 'callback'];
+	// bad outcomes that should show red - actual rejections/failures
+	const badOutcomes = ['rejected_ai', 'rejected_privacy', 'rejected_other', 'connection_failed'];
+	// neutral - got through but no appointment (still useful for kontaktprotokoll)
+	const neutralOutcomes = ['no_answer', 'unclear', 'callback', 'no_availability'];
 
 	function getEffectiveStatusColor(status: string, outcome?: string): string {
 		if (status === 'completed' && outcome) {
@@ -79,15 +80,17 @@
 		fullName: string;
 		callbackPhone: string;
 		email: string;
+		pronouns: string;
+		joinWaitlist: boolean;
 	}
 
 	function loadSavedForm(): SavedFormData {
-		if (!browser) return { fullName: '', callbackPhone: '', email: '' };
+		if (!browser) return { fullName: '', callbackPhone: '', email: '', pronouns: 'auto', joinWaitlist: true };
 		try {
 			const saved = localStorage.getItem(STORAGE_KEY);
 			if (saved) return JSON.parse(saved);
 		} catch {}
-		return { fullName: '', callbackPhone: '', email: '' };
+		return { fullName: '', callbackPhone: '', email: '', pronouns: 'auto', joinWaitlist: true };
 	}
 
 	function saveForm() {
@@ -96,7 +99,9 @@
 			localStorage.setItem(STORAGE_KEY, JSON.stringify({
 				fullName: fullName.trim(),
 				callbackPhone: callbackPhone.trim(),
-				email: email.trim()
+				email: email.trim(),
+				pronouns,
+				joinWaitlist
 			}));
 		} catch {}
 	}
@@ -149,8 +154,18 @@
 	let fullName = $state('');
 	let callbackPhone = $state('');
 	let email = $state('');
+	let pronouns = $state('auto');
+	let joinWaitlist = $state(true);
 	let consent = $state(false);
 	let formLoaded = $state(false);
+
+	const pronounOptions = [
+		{ value: 'auto', label: m.autocall_pronouns_auto() },
+		{ value: 'she', label: m.autocall_pronouns_she() },
+		{ value: 'he', label: m.autocall_pronouns_he() },
+		{ value: 'they', label: m.autocall_pronouns_they() },
+		{ value: 'none', label: m.autocall_pronouns_none() }
+	];
 
 	const isDebugTherapist = $derived(therapist.id === DEBUG_THERAPIST_ID);
 	const isDebugMode = $derived($debug.enabled);
@@ -167,6 +182,8 @@
 				if (saved.fullName) fullName = saved.fullName;
 				if (saved.callbackPhone) callbackPhone = saved.callbackPhone;
 				if (saved.email) email = saved.email;
+				if (saved.pronouns) pronouns = saved.pronouns;
+				if (saved.joinWaitlist !== undefined) joinWaitlist = saved.joinWaitlist;
 				formLoaded = true;
 			}
 
@@ -794,6 +811,36 @@
 							style:border-radius={wobbly.sm}
 						/>
 						<p class="hint">{m.autocall_form_email_hint()}</p>
+					</div>
+
+					<div class="field">
+						<label for="pronouns">{m.autocall_form_pronouns()}</label>
+						<select
+							id="pronouns"
+							bind:value={pronouns}
+							class="input"
+							style:border-radius={wobbly.sm}
+						>
+							{#each pronounOptions as opt}
+								<option value={opt.value}>{opt.label}</option>
+							{/each}
+						</select>
+						<p class="hint">
+							{m.autocall_form_pronouns_hint()}
+							<a href="https://github.com/faeller/karl-therapy-finder/issues" target="_blank" rel="noopener" class="hint-link">{m.autocall_form_pronouns_link()}</a>
+						</p>
+					</div>
+
+					<div class="option-field">
+						<input
+							id="joinWaitlist"
+							type="checkbox"
+							bind:checked={joinWaitlist}
+							class="checkbox"
+						/>
+						<label for="joinWaitlist">
+							{m.autocall_form_waitlist()}
+						</label>
 					</div>
 
 					<div class="consent-field">
@@ -1690,6 +1737,21 @@
 		font-size: 0.75rem;
 		color: var(--color-pencil);
 		opacity: 0.6;
+	}
+
+	.hint-link {
+		color: var(--color-blue-pen);
+		text-decoration: underline;
+	}
+
+	.option-field {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.option-field label {
+		font-size: 0.875rem;
 	}
 
 	.consent-field {

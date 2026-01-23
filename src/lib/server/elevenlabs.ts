@@ -198,8 +198,8 @@ export async function verifyWebhookSignature(
 ): Promise<boolean> {
 	const webhookSecret = env.ELEVENLABS_WEBHOOK_SECRET;
 	if (!webhookSecret) {
-		console.warn('[elevenlabs] ELEVENLABS_WEBHOOK_SECRET not configured, skipping verification');
-		return true; // allow in dev without secret
+		console.error('[elevenlabs] ELEVENLABS_WEBHOOK_SECRET not configured, rejecting webhook');
+		return false;
 	}
 
 	if (!signatureHeader) {
@@ -272,13 +272,24 @@ export function buildPracticeCallVariables(
 	therapyType: string,
 	callbackPhone: string,
 	urgency: 'low' | 'medium' | 'high' = 'medium',
-	patientEmail?: string
+	patientEmail?: string,
+	pronouns: string = 'auto',
+	joinWaitlist: boolean = true
 ): Record<string, string> {
 	const now = new Date();
 	const hours = now.getHours();
 	let greeting = 'Guten Tag';
 	if (hours < 11) greeting = 'Guten Morgen';
 	else if (hours >= 18) greeting = 'Guten Abend';
+
+	// map pronouns to german text for the agent
+	const pronounsMap: Record<string, string> = {
+		auto: 'karl entscheidet',
+		she: 'sie/ihr',
+		he: 'er/ihm',
+		they: 'they/them',
+		none: 'nur name'
+	};
 
 	return {
 		patient_name: patientName,
@@ -287,6 +298,8 @@ export function buildPracticeCallVariables(
 		callback_phone: callbackPhone,
 		patient_email: patientEmail || '',
 		urgency: urgency === 'high' ? 'dringend' : urgency === 'low' ? 'nicht dringend' : 'mittel',
+		pronouns: pronounsMap[pronouns] || 'automatisch',
+		join_waitlist: joinWaitlist ? 'ja' : 'nein',
 		greeting,
 		current_date: now.toLocaleDateString('de-DE'),
 		current_time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
