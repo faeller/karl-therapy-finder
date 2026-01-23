@@ -265,6 +265,16 @@ export async function scheduleCall(
 		throw new Error('No available call slots found');
 	}
 
+	// store call params for retries
+	const callMetadata = JSON.stringify({
+		patientName: params.patientName,
+		patientInsurance: params.patientInsurance,
+		therapyType: params.therapyType,
+		callbackPhone: params.callbackPhone,
+		patientEmail: params.patientEmail,
+		urgency: params.urgency
+	});
+
 	// create call record
 	const callId = nanoid();
 	await db.insert(table.scheduledCalls).values({
@@ -278,6 +288,7 @@ export async function scheduleCall(
 		attemptNumber: 1,
 		maxAttempts: MAX_ATTEMPTS,
 		status: 'scheduled',
+		callMetadata,
 		createdAt: now,
 		updatedAt: now
 	});
@@ -356,6 +367,17 @@ export async function scheduleDebugCall(
 	const callId = nanoid();
 	console.log('[scheduleDebugCall] created callId:', callId, 'scheduledAt:', scheduledAt.toISOString());
 
+	// store call params for retries
+	const callMetadata = JSON.stringify({
+		patientName: params.patientName,
+		patientInsurance: params.patientInsurance,
+		therapyType: params.therapyType,
+		callbackPhone: params.callbackPhone,
+		patientEmail: params.patientEmail,
+		urgency: params.urgency,
+		isDebug: true
+	});
+
 	// create call record - use provided ids or fall back to debug defaults
 	await db.insert(table.scheduledCalls).values({
 		id: callId,
@@ -366,8 +388,9 @@ export async function scheduleDebugCall(
 		eId: params.eId || 'debug',
 		scheduledAt,
 		attemptNumber: 1,
-		maxAttempts: 1,
+		maxAttempts: MAX_ATTEMPTS,
 		status: 'scheduled',
+		callMetadata,
 		createdAt: now,
 		updatedAt: now
 	});
@@ -746,39 +769,95 @@ async function scheduleRetry(
 	call: table.ScheduledCall,
 	failureType: RetryFailureType = 'other'
 ): Promise<void> {
-	// get opening hours
-	const [cached] = await db
-		.select()
-		.from(table.therapistCache)
-		.where(eq(table.therapistCache.eId, call.eId!))
-		.limit(1);
-
-	if (!cached?.openingHours) {
-		return; // can't retry without opening hours
+	// parse stored call metadata
+	const metadata = call.callMetadata ? JSON.parse(call.callMetadata) : null;
+	if (!metadata) {
+		console.log('[scheduleRetry] no call metadata, cannot retry');
+		return;
 	}
 
-	const hours = JSON.parse(cached.openingHours) as OpeningHours;
-	const newSlot = calculateRetrySlot(hours, call.scheduledAt, call.attemptNumber || 1, failureType);
-
-	if (!newSlot) {
-		return; // no available slots
-	}
-
+	const isDebug = metadata.isDebug === true;
 	const now = new Date();
+	let scheduledAt: Date;
+
+	if (isDebug) {
+		// debug mode: schedule 30 seconds from now (24/7 availability)
+		scheduledAt = new Date(now.getTime() + 30 * 1000);
+		console.log('[scheduleRetry] debug mode, scheduling in 30s');
+	} else {
+		// production: use cached opening hours
+		const [cached] = await db
+			.select()
+			.from(table.therapistCache)
+			.where(eq(table.therapistCache.eId, call.eId!))
+			.limit(1);
+
+		if (!cached?.openingHours) {
+			console.log('[scheduleRetry] no cached hours, cannot retry');
+			return;
+		}
+
+		const hours = JSON.parse(cached.openingHours) as OpeningHours;
+		const newSlot = calculateRetrySlot(hours, call.scheduledAt, call.attemptNumber || 1, failureType);
+
+		if (!newSlot) {
+			console.log('[scheduleRetry] no available slots');
+			return;
+		}
+		scheduledAt = newSlot.date;
+	}
+
+	const newAttempt = (call.attemptNumber || 1) + 1;
 
 	// update call for retry
 	await db
 		.update(table.scheduledCalls)
 		.set({
-			scheduledAt: newSlot.date,
-			attemptNumber: (call.attemptNumber || 1) + 1,
+			scheduledAt,
+			attemptNumber: newAttempt,
 			status: 'scheduled',
 			updatedAt: now
 		})
 		.where(eq(table.scheduledCalls.id, call.id));
 
-	// todo: re-trigger elevenlabs call
-	// for now, just update the record - a cron job could pick it up
+	// trigger elevenlabs call
+	try {
+		const variables = {
+			...buildPracticeCallVariables(
+				metadata.patientName,
+				metadata.patientInsurance,
+				metadata.therapyType,
+				metadata.callbackPhone,
+				metadata.urgency,
+				metadata.patientEmail
+			),
+			karl_call_id: call.id
+		};
+
+		const agentId = getPracticeCallerAgentId();
+		const result = await triggerOutboundCall({
+			agentId,
+			phoneNumber: call.therapistPhone,
+			dynamicVariables: variables,
+			scheduledAt,
+			callName: `karl_retry_${call.id}_${newAttempt}`
+		});
+
+		// update batch id
+		await db
+			.update(table.scheduledCalls)
+			.set({ elevenlabsConvId: result.batchId, updatedAt: new Date() })
+			.where(eq(table.scheduledCalls.id, call.id));
+
+		console.log('[scheduleRetry] retry scheduled, attempt:', newAttempt, 'batchId:', result.batchId);
+	} catch (e) {
+		console.error('[scheduleRetry] failed to trigger call:', e);
+		// mark as failed since we couldn't schedule
+		await db
+			.update(table.scheduledCalls)
+			.set({ status: 'failed', notes: 'Retry scheduling failed', updatedAt: new Date() })
+			.where(eq(table.scheduledCalls.id, call.id));
+	}
 }
 
 async function addToBlocklist(

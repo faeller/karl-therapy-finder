@@ -74,6 +74,7 @@ export const scheduledCalls = sqliteTable('scheduled_calls', {
 	rejectionReason: text('rejection_reason'),
 	notes: text('notes'),
 	durationSeconds: integer('duration_seconds'),
+	callMetadata: text('call_metadata'), // json with original call params for retries
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 	completedAt: integer('completed_at', { mode: 'timestamp' })
