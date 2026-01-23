@@ -4,8 +4,12 @@ import type { RequestHandler } from './$types';
 import { getPatreonAuthUrl } from '$lib/server/patreon';
 import { encodeBase64url } from '@oslojs/encoding';
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
-	const redirectUri = `${url.origin}/auth/patreon/callback`;
+export const GET: RequestHandler = async ({ url, cookies, request }) => {
+	// handle proxied requests (cloudflare tunnel, etc)
+	const proto = request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+	const host = request.headers.get('x-forwarded-host') || url.host;
+	const origin = `${proto}://${host}`;
+	const redirectUri = `${origin}/auth/patreon/callback`;
 
 	// generate state for csrf protection
 	const state = encodeBase64url(crypto.getRandomValues(new Uint8Array(16)));
