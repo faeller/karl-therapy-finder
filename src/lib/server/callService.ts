@@ -504,24 +504,25 @@ export async function handleCallWebhook(
 		call = found;
 	}
 
-	// last resort: match by phone + scheduled status + time window (for call_initiation_failure which lacks dynamic_variables)
+	// last resort: match by phone + scheduled status + scheduledAt close to event time
 	if (!call && phoneNumber) {
-		// only match calls scheduled within 1 hour before now (call should have been triggered recently)
-		const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+		// webhook event_timestamp should be within ~5 min of scheduledAt
+		const eventTime = new Date(payload.event_timestamp * 1000);
+		const fiveMinBefore = new Date(eventTime.getTime() - 5 * 60 * 1000);
+		const fiveMinAfter = new Date(eventTime.getTime() + 5 * 60 * 1000);
 		const [found] = await db
 			.select()
 			.from(table.scheduledCalls)
 			.where(and(
 				eq(table.scheduledCalls.therapistPhone, phoneNumber),
 				eq(table.scheduledCalls.status, 'scheduled'),
-				gt(table.scheduledCalls.scheduledAt, oneHourAgo),
-				lt(table.scheduledCalls.scheduledAt, now)
+				gt(table.scheduledCalls.scheduledAt, fiveMinBefore),
+				lt(table.scheduledCalls.scheduledAt, fiveMinAfter)
 			))
-			.orderBy(desc(table.scheduledCalls.scheduledAt))
 			.limit(1);
 		call = found;
 		if (call) {
-			console.log('[webhook] matched by phone + time window:', phoneNumber, 'call:', call.id);
+			console.log('[webhook] matched by phone + scheduledAt:', phoneNumber, 'call:', call.id);
 		}
 	}
 
