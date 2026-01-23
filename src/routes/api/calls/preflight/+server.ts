@@ -47,10 +47,19 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 
 	const db = getDb(d1);
 	const eId = url.searchParams.get('eId');
-	const isDebug = url.searchParams.get('isDebug') === 'true';
+	const wantsDebug = url.searchParams.get('isDebug') === 'true';
+
+	// SECURITY: debug features require isAdmin
+	const isAdmin = locals.user.isAdmin === true;
+	const isDebug = wantsDebug && isAdmin;
 
 	if (!eId) {
 		error(400, 'Missing eId parameter');
+	}
+
+	// reject debug attempts from non-admins
+	if ((wantsDebug || eId === DEBUG_THERAPIST_ID) && !isAdmin) {
+		error(403, 'Debug mode requires admin access');
 	}
 
 	// for debug therapist (fake one), return mock data with immediate scheduling

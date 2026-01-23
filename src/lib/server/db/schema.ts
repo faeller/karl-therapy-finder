@@ -9,6 +9,7 @@ export const user = sqliteTable('user', {
 	pledgeTier: text('pledge_tier'), // 'free' | 'supporter' | 'premium' etc
 	pledgeAmountCents: integer('pledge_amount_cents'),
 	syncEnabled: integer('sync_enabled', { mode: 'boolean' }).default(false),
+	isAdmin: integer('is_admin', { mode: 'boolean' }).default(false),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });

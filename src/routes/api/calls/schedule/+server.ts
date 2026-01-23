@@ -40,8 +40,14 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 	}
 
 	// handle debug mode - skip tier checks, override phone with debug test phone
+	// SECURITY: debug mode requires isAdmin
 	const isDebugTherapist = body.therapistId === DEBUG_THERAPIST_ID;
-	const isDebugMode = body.isDebug && body.debugTestPhone;
+	const isDebugMode = body.isDebug && body.debugTestPhone && locals.user.isAdmin === true;
+
+	// reject debug attempts from non-admins
+	if ((body.isDebug || isDebugTherapist) && !locals.user.isAdmin) {
+		error(403, 'Debug mode requires admin access');
+	}
 
 	// validate required fields
 	if (isDebugMode) {
