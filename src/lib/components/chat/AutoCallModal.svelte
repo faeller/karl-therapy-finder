@@ -1,0 +1,1706 @@
+<script lang="ts">
+	import { untrack } from 'svelte';
+	import { wobbly } from '$lib/utils/wobbly';
+	import { X, Loader2, CheckCircle, AlertCircle, Phone, Trash2, Clock, Calendar, PhoneCall, History, XCircle, Info, ChevronLeft, MessageSquare, Hash, ExternalLink } from 'lucide-svelte';
+	import { browser } from '$app/environment';
+	import type { Therapist } from '$lib/types';
+	import { debug, DEBUG_THERAPIST_ID } from '$lib/stores/debug';
+	import { contacts } from '$lib/stores/contacts';
+	import { campaignDraft } from '$lib/stores/campaign';
+	import { get } from 'svelte/store';
+	import { CallStatus, CallOutcome, getStatusLabel, getOutcomeLabel, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
+	import { m } from '$lib/paraglide/messages';
+
+	interface Props {
+		therapist: Therapist;
+		open: boolean;
+		onClose: () => void;
+	}
+
+	let { therapist, open, onClose }: Props = $props();
+
+	type Step = 'loading' | 'confirm' | 'form' | 'scheduling' | 'success' | 'error' | 'history' | 'details';
+	let step = $state<Step>('loading');
+	let error = $state<string | null>(null);
+	let scheduledTime = $state<string | null>(null);
+	let selectedCallId = $state<string | null>(null);
+
+	// persist form data in localStorage
+	const STORAGE_KEY = 'karl_call_form';
+	interface SavedFormData {
+		fullName: string;
+		callbackPhone: string;
+		email: string;
+	}
+
+	function loadSavedForm(): SavedFormData {
+		if (!browser) return { fullName: '', callbackPhone: '', email: '' };
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) return JSON.parse(saved);
+		} catch {}
+		return { fullName: '', callbackPhone: '', email: '' };
+	}
+
+	function saveForm() {
+		if (!browser) return;
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify({
+				fullName: fullName.trim(),
+				callbackPhone: callbackPhone.trim(),
+				email: email.trim()
+			}));
+		} catch {}
+	}
+
+	// preflight data
+	interface CallRecord {
+		id: string;
+		status: string;
+		outcome?: string;
+		scheduledAt?: string;
+		completedAt?: string;
+		createdAt?: string;
+		updatedAt?: string;
+		durationSeconds?: number;
+		appointmentDate?: string;
+		appointmentTime?: string;
+		callbackInfo?: string;
+		rejectionReason?: string;
+		notes?: string;
+		transcript?: string;
+		analysis?: string;
+		elevenlabsConvId?: string;
+		attemptNumber?: number;
+		maxAttempts?: number;
+		therapistPhone?: string;
+	}
+
+	interface PreflightData {
+		therapist: {
+			name?: string;
+			phone?: string;
+			openingHours: {
+				regular: Array<{ day: string; start: string; end: string }>;
+				sprechstunde?: Array<{ day: string; start: string; end: string }>;
+				notes?: string;
+			};
+		};
+		nextSlot: {
+			date: string;
+			isSprechstunde: boolean;
+			isImmediate: boolean;
+		} | null;
+		existingCalls: CallRecord[];
+		canSchedule: boolean;
+		canScheduleReason?: string;
+	}
+	let preflightData = $state<PreflightData | null>(null);
+
+	// form fields
+	let fullName = $state('');
+	let callbackPhone = $state('');
+	let email = $state('');
+	let consent = $state(false);
+	let formLoaded = $state(false);
+
+	const isDebugTherapist = $derived(therapist.id === DEBUG_THERAPIST_ID);
+	const isDebugMode = $derived($debug.enabled);
+
+	// single effect for modal open: load form data, prefill debug phone, fetch preflight
+	$effect(() => {
+		if (!open) return;
+
+		// use untrack to prevent form field reads from triggering effect re-runs
+		untrack(() => {
+			// load saved form data (only once per component lifecycle)
+			if (!formLoaded && browser) {
+				const saved = loadSavedForm();
+				if (saved.fullName) fullName = saved.fullName;
+				if (saved.callbackPhone) callbackPhone = saved.callbackPhone;
+				if (saved.email) email = saved.email;
+				formLoaded = true;
+			}
+
+			// prefill callback phone from debug store if empty
+			if (isDebugMode && !callbackPhone) {
+				const debugState = get(debug);
+				if (debugState.callbackPhone) {
+					callbackPhone = debugState.callbackPhone;
+				}
+			}
+		});
+
+		fetchPreflight();
+	});
+
+	async function fetchPreflight() {
+		step = 'loading';
+		error = null;
+		preflightData = null;
+
+		try {
+			const params = new URLSearchParams({ eId: therapist.id });
+			if (isDebugMode) {
+				params.set('isDebug', 'true');
+			}
+
+			const response = await fetch(`/api/calls/preflight?${params}`);
+			if (!response.ok) {
+				const data = await response.json().catch(() => ({})) as { message?: string };
+				throw new Error(data.message || `Error ${response.status}`);
+			}
+
+			const data = await response.json() as PreflightData;
+			preflightData = data;
+
+			// if there are existing calls, show history first
+			if (data.existingCalls.length > 0) {
+				step = 'history';
+			} else if (data.nextSlot) {
+				step = 'confirm';
+			} else {
+				error = m.autocall_no_times();
+				step = 'error';
+			}
+		} catch (e) {
+			error = e instanceof Error ? e.message : m.autocall_error_loading();
+			step = 'error';
+		}
+	}
+
+	const canSubmit = $derived(
+		fullName.trim().length >= 2 &&
+		callbackPhone.trim().length >= 6 &&
+		consent
+	);
+
+	function proceedToForm() {
+		step = 'form';
+	}
+
+	async function handleSubmit() {
+		if (!canSubmit || !preflightData?.nextSlot) return;
+
+		step = 'scheduling';
+		error = null;
+
+		// save form data for next time
+		saveForm();
+
+		const campaign = get(campaignDraft);
+		const insuranceMap: Record<string, string> = {
+			GKV: 'gesetzlich versichert',
+			PKV: 'privat versichert',
+			Selbstzahler: 'Selbstzahler'
+		};
+
+		try {
+			const debugState = get(debug);
+			const response = await fetch('/api/calls/schedule', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					therapistId: therapist.id,
+					therapistName: therapist.name,
+					eId: therapist.id,
+					patientName: fullName.trim(),
+					patientInsurance: insuranceMap[campaign.insuranceType || 'GKV'] || 'gesetzlich versichert',
+					therapyType: campaign.therapyTypes?.length ? campaign.therapyTypes[0] : 'Psychotherapie',
+					callbackPhone: callbackPhone.trim(),
+					patientEmail: email.trim() || undefined,
+					urgency: campaign.urgency || 'medium',
+					isDebug: isDebugMode || isDebugTherapist,
+					debugTestPhone: isDebugMode ? debugState.testPhone : undefined
+				})
+			});
+
+			if (!response.ok) {
+				const data = await response.json().catch(() => ({})) as { message?: string };
+				throw new Error(data.message || `Error ${response.status}`);
+			}
+
+			const data = await response.json() as { scheduledAt: string };
+			scheduledTime = formatDateTime(data.scheduledAt);
+
+			// add to contacts
+			contacts.add({
+				therapistId: therapist.id,
+				therapistName: therapist.name,
+				therapistEmail: therapist.email,
+				therapistPhone: therapist.phone,
+				therapistAddress: therapist.address,
+				method: 'auto-call',
+				status: 'pending'
+			});
+
+			step = 'success';
+		} catch (e) {
+			error = e instanceof Error ? e.message : m.autocall_error_unknown();
+			step = 'error';
+		}
+	}
+
+	function handleClose() {
+		if (step === 'scheduling') return;
+		onClose();
+	}
+
+	async function handleCancel(callId: string) {
+		// TODO: implement backend cancellation via DELETE /api/calls/{callId}
+		// for now just remove from local contacts store
+		contacts.removeByTherapistId(therapist.id);
+		console.warn('[AutoCallModal] backend cancellation not implemented, callId:', callId);
+		await fetchPreflight();
+	}
+
+	function showDetails(callId: string) {
+		selectedCallId = callId;
+		step = 'details';
+	}
+
+	const selectedCall = $derived(
+		preflightData?.existingCalls.find(c => c.id === selectedCallId)
+	);
+
+	function formatDuration(seconds: number): string {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+	}
+
+	function parseAnalysis(analysisJson: string | undefined): Record<string, unknown> | null {
+		if (!analysisJson) return null;
+		try {
+			return JSON.parse(analysisJson);
+		} catch {
+			return null;
+		}
+	}
+
+	// formatting helpers
+	function formatDateTime(iso: string): string {
+		return new Date(iso).toLocaleString('de-DE', {
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	function formatDate(iso: string): string {
+		return new Date(iso).toLocaleDateString('de-DE', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long'
+		});
+	}
+
+	function formatTime(iso: string): string {
+		return new Date(iso).toLocaleTimeString('de-DE', {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	const dayNames = $derived<Record<string, string>>({
+		mon: m.day_mon(), tue: m.day_tue(), wed: m.day_wed(), thu: m.day_thu(), fri: m.day_fri(), sat: m.day_sat(), sun: m.day_sun()
+	});
+
+	function formatOpeningHours(hours: PreflightData['therapist']['openingHours']): string[] {
+		if (!hours.regular.length) return [];
+
+		// group by day
+		const byDay: Record<string, string[]> = {};
+		for (const slot of hours.regular) {
+			const day = dayNames[slot.day] || slot.day;
+			if (!byDay[day]) byDay[day] = [];
+			byDay[day].push(`${slot.start}–${slot.end}`);
+		}
+
+		return Object.entries(byDay).map(([day, times]) => `${day} ${times.join(', ')}`);
+	}
+
+</script>
+
+{#if open}
+	<div class="modal-backdrop" onclick={handleClose} onkeydown={(e) => e.key === 'Escape' && handleClose()} role="button" tabindex="-1">
+		<div
+			class="modal-content"
+			style:border-radius={wobbly.lg}
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={() => {}}
+			role="dialog"
+			aria-modal="true"
+		>
+			<button class="close-btn" onclick={handleClose} disabled={step === 'scheduling'}>
+				<X size={20} />
+			</button>
+
+			<div class="modal-header">
+				<PhoneCall size={24} />
+				<h2>{m.autocall_title()}</h2>
+			</div>
+
+			<p class="therapist-name">{therapist.name}</p>
+
+			{#if step === 'loading'}
+				<div class="state-view">
+					<Loader2 size={48} class="animate-spin text-blue-pen" />
+					<p class="state-title">{m.autocall_loading()}</p>
+					<p class="state-hint">{m.autocall_loading_hint()}</p>
+				</div>
+
+			{:else if step === 'history'}
+				<div class="history-section">
+					<div class="history-header">
+						<History size={18} />
+						<span>{m.autocall_history_title()}</span>
+					</div>
+
+					<div class="calls-list">
+						{#each preflightData?.existingCalls || [] as call}
+							<div class="call-item">
+								<div class="call-status {getStatusColor(call.status)}">
+									{#if call.status === 'completed'}
+										<CheckCircle size={16} />
+									{:else if call.status === 'scheduled'}
+										<Clock size={16} />
+									{:else}
+										<XCircle size={16} />
+									{/if}
+									<span>{getStatusLabel(call.status)}</span>
+								</div>
+
+								<div class="call-details">
+									{#if call.scheduledAt}
+										<span class="call-time">{formatDateTime(call.scheduledAt)}</span>
+									{/if}
+									{#if call.status === 'scheduled' && call.attemptNumber && call.attemptNumber > 1}
+										<span class="call-attempt">{m.autocall_attempt({ current: call.attemptNumber, max: call.maxAttempts || 3 })}</span>
+									{/if}
+									{#if call.outcome}
+										<span class="call-outcome">{getOutcomeLabel(call.outcome)}</span>
+									{/if}
+									{#if call.appointmentDate}
+										<span class="call-appointment">Termin: {call.appointmentDate} {call.appointmentTime}</span>
+									{/if}
+									{#if call.status === 'failed' && call.notes}
+										<span class="call-notes-preview">{call.notes.slice(0, 60)}...</span>
+									{/if}
+								</div>
+
+								<div class="call-actions">
+									{#if call.status === 'scheduled'}
+										<button class="action-link cancel-link" onclick={() => handleCancel(call.id)}>
+											<Trash2 size={14} />
+											{m.autocall_cancel()}
+										</button>
+									{/if}
+									{#if call.status === 'completed' || call.status === 'failed'}
+										<button class="action-link info-link" onclick={() => showDetails(call.id)}>
+											<Info size={14} />
+											{m.autocall_more_info()}
+										</button>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+
+					{#if preflightData?.nextSlot && preflightData.canSchedule}
+						<button class="new-call-btn" style:border-radius={wobbly.button} onclick={() => step = 'confirm'}>
+							<Phone size={18} />
+							{m.autocall_new_call()}
+						</button>
+					{:else if !preflightData?.canSchedule}
+						<p class="blocked-hint">
+							{#if preflightData?.canScheduleReason === 'call_already_scheduled'}
+								{m.autocall_blocked_scheduled()}
+							{:else if preflightData?.canScheduleReason === 'therapist_blocked'}
+								{m.autocall_blocked_practice()}
+							{:else if preflightData?.canScheduleReason === 'tier_required'}
+								{m.autocall_blocked_tier()}
+							{:else}
+								{m.autocall_blocked_default()}
+							{/if}
+						</p>
+					{/if}
+				</div>
+
+			{:else if step === 'details'}
+				{#if selectedCall}
+					{@const analysis = parseAnalysis(selectedCall.analysis)}
+					<div class="details-section">
+						<button class="back-link" onclick={() => step = 'history'}>
+							<ChevronLeft size={16} />
+							{m.autocall_back()}
+						</button>
+
+						<!-- status header with outcome badge -->
+						<div class="details-header">
+							<div class="details-status {getStatusColor(selectedCall.status)}">
+								{#if selectedCall.status === CallStatus.COMPLETED}
+									<CheckCircle size={20} />
+								{:else if selectedCall.status === CallStatus.SCHEDULED}
+									<Clock size={20} />
+								{:else if selectedCall.status === CallStatus.IN_PROGRESS}
+									<Loader2 size={20} class="animate-spin" />
+								{:else}
+									<XCircle size={20} />
+								{/if}
+								<span>{getStatusLabel(selectedCall.status)}</span>
+							</div>
+							{#if selectedCall.outcome}
+								<span class="outcome-badge {getOutcomeColor(selectedCall.outcome)}">{getOutcomeLabel(selectedCall.outcome)}</span>
+							{/if}
+						</div>
+
+						<!-- appointment highlight (if successful) -->
+						{#if selectedCall.appointmentDate}
+							<div class="appointment-card">
+								<Calendar size={24} />
+								<div>
+									<span class="appointment-label">{m.autocall_appointment_title()}</span>
+									<span class="appointment-value">{selectedCall.appointmentDate} {selectedCall.appointmentTime || ''}</span>
+								</div>
+							</div>
+						{/if}
+
+						<!-- callback info highlight -->
+						{#if selectedCall.callbackInfo}
+							<div class="callback-card">
+								<Phone size={20} />
+								<div>
+									<span class="callback-label">{m.autocall_callback_title()}</span>
+									<span class="callback-value">{selectedCall.callbackInfo}</span>
+								</div>
+							</div>
+						{/if}
+
+						<!-- rejection warning -->
+						{#if selectedCall.rejectionReason}
+							<div class="rejection-card">
+								<AlertCircle size={20} />
+								<div>
+									<span class="rejection-label">{m.autocall_rejection_title()}</span>
+									<span class="rejection-value">{selectedCall.rejectionReason}</span>
+								</div>
+							</div>
+						{/if}
+
+						<!-- summary -->
+						{#if selectedCall.notes}
+							<div class="summary-card">
+								<MessageSquare size={18} />
+								<p>{selectedCall.notes}</p>
+							</div>
+						{/if}
+
+						<!-- call timing details -->
+						<div class="timing-section">
+							<h4><Clock size={14} /> {m.autocall_timing_title()}</h4>
+							<div class="timing-grid">
+								{#if selectedCall.scheduledAt}
+									<div class="timing-item">
+										<span class="timing-label">{m.autocall_timing_scheduled()}</span>
+										<span class="timing-value">{formatDateTime(selectedCall.scheduledAt)}</span>
+									</div>
+								{/if}
+								{#if selectedCall.completedAt}
+									<div class="timing-item">
+										<span class="timing-label">{m.autocall_timing_completed()}</span>
+										<span class="timing-value">{formatDateTime(selectedCall.completedAt)}</span>
+									</div>
+								{/if}
+								{#if selectedCall.durationSeconds}
+									<div class="timing-item">
+										<span class="timing-label">{m.autocall_timing_duration()}</span>
+										<span class="timing-value">{formatDuration(selectedCall.durationSeconds)}</span>
+									</div>
+								{/if}
+								{#if selectedCall.attemptNumber}
+									<div class="timing-item">
+										<span class="timing-label">{m.autocall_timing_attempt()}</span>
+										<span class="timing-value">{selectedCall.attemptNumber} / {selectedCall.maxAttempts || 3}</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+
+						<!-- transcript -->
+						{#if selectedCall.transcript}
+							<div class="transcript-section">
+								<h4><MessageSquare size={14} /> {m.autocall_transcript_title()}</h4>
+								<div class="transcript-container">
+									{#each selectedCall.transcript.split('\n') as line}
+										{@const isAgent = line.startsWith('agent:')}
+										{@const isUser = line.startsWith('user:')}
+										<div class="transcript-line" class:agent={isAgent} class:user={isUser}>
+											{#if isAgent}
+												<span class="speaker agent">{m.autocall_speaker_karl()}</span>
+											{:else if isUser}
+												<span class="speaker user">{m.autocall_speaker_practice()}</span>
+											{/if}
+											<span class="message">{line.replace(/^(agent|user):\s*/, '')}</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- elevenlabs analysis (structured) -->
+						{#if analysis}
+							<div class="analysis-section">
+								<h4><Info size={14} /> {m.autocall_analysis_title()}</h4>
+
+								{#if analysis.call_successful}
+									<div class="analysis-row">
+										<span class="analysis-label">{m.autocall_analysis_success()}</span>
+										<span class="analysis-value {analysis.call_successful === 'success' ? 'success' : 'failure'}">
+											{analysis.call_successful}
+										</span>
+									</div>
+								{/if}
+
+								{#if analysis.transcript_summary}
+									<div class="analysis-summary">
+										<span class="analysis-label">{m.autocall_analysis_summary()}</span>
+										<p>{analysis.transcript_summary}</p>
+									</div>
+								{/if}
+
+								{#if analysis.data_collection_results}
+									<div class="data-collection">
+										<span class="analysis-label">{m.autocall_analysis_data()}</span>
+										<div class="data-grid">
+											{#each Object.entries(analysis.data_collection_results) as [key, result]}
+												{@const r = result as { value?: string; rationale?: string }}
+												<div class="data-item">
+													<span class="data-key">{key.replace(/_/g, ' ')}</span>
+													<span class="data-value">{r.value || '–'}</span>
+													{#if r.rationale}
+														<span class="data-rationale">{r.rationale}</span>
+													{/if}
+												</div>
+											{/each}
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- technical details (collapsible) -->
+						<details class="tech-details">
+							<summary><Hash size={14} /> {m.autocall_tech_title()}</summary>
+							<div class="tech-grid">
+								<div class="tech-item">
+									<span class="tech-label">{m.autocall_tech_call_id()}</span>
+									<code class="tech-value">{selectedCall.id}</code>
+								</div>
+								{#if selectedCall.elevenlabsConvId}
+									<div class="tech-item">
+										<span class="tech-label">{m.autocall_tech_conv_id()}</span>
+										<code class="tech-value">{selectedCall.elevenlabsConvId}</code>
+									</div>
+								{/if}
+								{#if selectedCall.therapistPhone}
+									<div class="tech-item">
+										<span class="tech-label">{m.autocall_tech_phone()}</span>
+										<code class="tech-value">{selectedCall.therapistPhone}</code>
+									</div>
+								{/if}
+								{#if selectedCall.createdAt}
+									<div class="tech-item">
+										<span class="tech-label">{m.autocall_tech_created()}</span>
+										<span class="tech-value">{formatDateTime(selectedCall.createdAt)}</span>
+									</div>
+								{/if}
+								{#if selectedCall.updatedAt}
+									<div class="tech-item">
+										<span class="tech-label">{m.autocall_tech_updated()}</span>
+										<span class="tech-value">{formatDateTime(selectedCall.updatedAt)}</span>
+									</div>
+								{/if}
+							</div>
+						</details>
+					</div>
+				{/if}
+
+			{:else if step === 'confirm'}
+				<div class="confirm-section">
+					<div class="proposed-time">
+						<div class="time-icon">
+							<Calendar size={32} class="text-blue-pen" />
+						</div>
+						<div class="time-details">
+							<p class="time-label">{m.autocall_proposed_time()}</p>
+							{#if preflightData?.nextSlot}
+								<p class="time-value">{formatDate(preflightData.nextSlot.date)}</p>
+								<p class="time-value-lg">{formatTime(preflightData.nextSlot.date)} {m.autocall_time_suffix()}</p>
+								{#if preflightData.nextSlot.isSprechstunde}
+									<p class="time-hint sprechstunde">{m.autocall_phone_hours()}</p>
+								{/if}
+								{#if preflightData.nextSlot.isImmediate}
+									<p class="time-hint debug">{m.autocall_debug_immediate()}</p>
+								{/if}
+							{/if}
+						</div>
+					</div>
+
+					{#if preflightData?.therapist.openingHours.regular.length}
+						<div class="opening-hours">
+							<p class="hours-label">{m.autocall_opening_hours()}</p>
+							<div class="hours-list">
+								{#each formatOpeningHours(preflightData.therapist.openingHours) as line}
+									<span class="hours-line">{line}</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<div class="confirm-question">
+						<p>{m.autocall_confirm_question({
+							date: preflightData?.nextSlot ? formatDate(preflightData.nextSlot.date) : '',
+							time: preflightData?.nextSlot ? formatTime(preflightData.nextSlot.date) + ' ' + m.autocall_time_suffix() : '',
+							name: therapist.name
+						})}</p>
+					</div>
+
+					<div class="confirm-actions">
+						<button class="confirm-btn primary" style:border-radius={wobbly.button} onclick={proceedToForm}>
+							{m.autocall_confirm_yes()}
+						</button>
+						{#if preflightData?.existingCalls.length}
+							<button class="confirm-btn secondary" style:border-radius={wobbly.button} onclick={() => step = 'history'}>
+								{m.autocall_confirm_history()}
+							</button>
+						{/if}
+					</div>
+				</div>
+
+			{:else if step === 'form'}
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="form">
+					<div class="form-header">
+						<p class="form-time">
+							{m.autocall_form_time({ time: preflightData?.nextSlot ? formatDateTime(preflightData.nextSlot.date) : '' })}
+							{#if preflightData?.nextSlot?.isImmediate}
+								<span class="debug-badge">{m.autocall_form_debug()}</span>
+							{/if}
+						</p>
+					</div>
+
+					<div class="field">
+						<label for="fullName">{m.autocall_form_name()} *</label>
+						<input
+							id="fullName"
+							type="text"
+							bind:value={fullName}
+							placeholder="Max Mustermann"
+							class="input"
+							style:border-radius={wobbly.sm}
+							required
+						/>
+						<p class="hint">{m.autocall_form_name_hint()}</p>
+					</div>
+
+					<div class="field">
+						<label for="callbackPhone">{m.autocall_form_phone()} *</label>
+						<input
+							id="callbackPhone"
+							type="tel"
+							bind:value={callbackPhone}
+							placeholder="+49 170 1234567"
+							class="input"
+							style:border-radius={wobbly.sm}
+							required
+						/>
+						<p class="hint">{m.autocall_form_phone_hint()}</p>
+					</div>
+
+					<div class="field">
+						<label for="email">{m.autocall_form_email()}</label>
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							placeholder="max@beispiel.de"
+							class="input"
+							style:border-radius={wobbly.sm}
+						/>
+						<p class="hint">{m.autocall_form_email_hint()}</p>
+					</div>
+
+					<div class="consent-field">
+						<input
+							id="consent"
+							type="checkbox"
+							bind:checked={consent}
+							class="checkbox"
+						/>
+						<label for="consent">
+							{m.autocall_form_consent()}
+						</label>
+					</div>
+
+					<div class="form-actions">
+						<button class="back-btn" type="button" style:border-radius={wobbly.button} onclick={() => step = 'confirm'}>
+							{m.autocall_back()}
+						</button>
+						<button
+							type="submit"
+							class="submit-btn"
+							style:border-radius={wobbly.button}
+							disabled={!canSubmit}
+						>
+							{m.autocall_form_submit()}
+						</button>
+					</div>
+				</form>
+
+			{:else if step === 'scheduling'}
+				<div class="state-view">
+					<Loader2 size={48} class="animate-spin text-blue-pen" />
+					<p class="state-title">{m.autocall_scheduling()}</p>
+				</div>
+
+			{:else if step === 'success'}
+				<div class="state-view success">
+					<CheckCircle size={48} class="text-green-600" />
+					<p class="state-title">{m.autocall_success_title()}</p>
+					<p class="state-detail">{m.autocall_success_time({ time: scheduledTime || '' })}</p>
+					<p class="state-hint">{m.autocall_success_hint()}</p>
+					<button class="done-btn" style:border-radius={wobbly.button} onclick={handleClose}>
+						{m.autocall_success_done()}
+					</button>
+				</div>
+
+			{:else if step === 'error'}
+				<div class="state-view error">
+					<AlertCircle size={48} class="text-red-marker" />
+					<p class="state-title">{m.autocall_error_title()}</p>
+					<p class="state-detail">{error}</p>
+					<button class="retry-btn" style:border-radius={wobbly.button} onclick={fetchPreflight}>
+						{m.autocall_error_retry()}
+					</button>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
+
+<style>
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+		padding: 1rem;
+	}
+
+	.modal-content {
+		position: relative;
+		background: var(--color-paper);
+		border: 3px solid var(--color-pencil);
+		box-shadow: var(--shadow-hard);
+		padding: 1.5rem;
+		max-width: 420px;
+		width: 100%;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+
+	.close-btn {
+		position: absolute;
+		top: 0.75rem;
+		right: 0.75rem;
+		padding: 0.25rem;
+		opacity: 0.5;
+		transition: opacity 100ms;
+	}
+
+	.close-btn:hover:not(:disabled) {
+		opacity: 1;
+	}
+
+	.close-btn:disabled {
+		cursor: not-allowed;
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.modal-header h2 {
+		font-family: var(--font-heading);
+		font-size: 1.25rem;
+		font-weight: bold;
+	}
+
+	.therapist-name {
+		font-size: 0.875rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		margin-bottom: 1.25rem;
+	}
+
+	/* state views */
+	.state-view {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 2rem 1rem;
+		gap: 0.75rem;
+	}
+
+	.state-title {
+		font-family: var(--font-heading);
+		font-size: 1.25rem;
+		font-weight: bold;
+	}
+
+	.state-detail {
+		font-size: 0.9375rem;
+	}
+
+	.state-hint {
+		font-size: 0.8125rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		margin-top: 0.25rem;
+	}
+
+	/* history section */
+	.history-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.history-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		color: var(--color-pencil);
+		opacity: 0.8;
+	}
+
+	.calls-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.call-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+	}
+
+	.call-status {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+	}
+
+	.call-details {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		font-size: 0.8125rem;
+		color: var(--color-pencil);
+		opacity: 0.8;
+	}
+
+	.call-time {
+		background: var(--color-paper);
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.25rem;
+	}
+
+	.call-outcome {
+		background: var(--color-paper);
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.25rem;
+	}
+
+	.call-appointment {
+		color: var(--color-blue-pen);
+		font-weight: 500;
+	}
+
+	.call-attempt {
+		font-size: 0.7rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		background: var(--color-erased);
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+	}
+
+	.call-notes-preview {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		font-style: italic;
+	}
+
+	.action-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.75rem;
+		opacity: 0.8;
+	}
+
+	.action-link:hover {
+		opacity: 1;
+	}
+
+	.cancel-link {
+		color: var(--color-red-marker);
+		align-self: flex-start;
+	}
+
+	.info-link {
+		color: var(--color-blue-pen);
+	}
+
+	.call-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	/* details section */
+	.details-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.8125rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		margin-bottom: 0.5rem;
+	}
+
+	.back-link:hover {
+		opacity: 1;
+	}
+
+	.details-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.details-status {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+	.outcome-badge {
+		padding: 0.25rem 0.625rem;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		border: 1px solid;
+	}
+
+	/* highlight cards */
+	.appointment-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem;
+		background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+		border: 2px solid #22c55e;
+		border-radius: 0.5rem;
+		color: #166534;
+	}
+
+	:global(:root.dark) .appointment-card {
+		background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+		border-color: #22c55e;
+		color: #86efac;
+	}
+
+	.appointment-card div {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.appointment-label {
+		font-size: 0.75rem;
+		opacity: 0.8;
+	}
+
+	.appointment-value {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+
+	.callback-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: #dbeafe;
+		border: 1px solid #3b82f6;
+		border-radius: 0.5rem;
+		color: #1e40af;
+	}
+
+	:global(:root.dark) .callback-card {
+		background: #1e3a5f;
+		border-color: #3b82f6;
+		color: #93c5fd;
+	}
+
+	.callback-card div {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.callback-label {
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+		opacity: 0.8;
+	}
+
+	.callback-value {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.rejection-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: #fee2e2;
+		border: 1px solid #ef4444;
+		border-radius: 0.5rem;
+		color: #991b1b;
+	}
+
+	:global(:root.dark) .rejection-card {
+		background: #450a0a;
+		border-color: #ef4444;
+		color: #fca5a5;
+	}
+
+	.rejection-card div {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.rejection-label {
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+		opacity: 0.8;
+	}
+
+	.rejection-value {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.summary-card {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+
+	.summary-card p {
+		margin: 0;
+	}
+
+	/* timing section */
+	.timing-section h4,
+	.transcript-section h4,
+	.analysis-section h4 {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-pencil);
+		opacity: 0.8;
+		margin-bottom: 0.5rem;
+	}
+
+	.timing-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.5rem;
+	}
+
+	.timing-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		padding: 0.5rem;
+		background: var(--color-erased);
+		border-radius: 0.375rem;
+	}
+
+	.timing-label {
+		font-size: 0.6875rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	.timing-value {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	/* transcript section */
+	.transcript-container {
+		max-height: 450px;
+		overflow-y: auto;
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.transcript-line {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		padding: 0.5rem;
+		border-radius: 0.375rem;
+		font-size: 0.8125rem;
+		line-height: 1.4;
+	}
+
+	.transcript-line.agent {
+		background: #dbeafe;
+		margin-right: 1rem;
+	}
+
+	.transcript-line.user {
+		background: #f3f4f6;
+		margin-left: 1rem;
+	}
+
+	:global(:root.dark) .transcript-line.agent {
+		background: #1e3a5f;
+	}
+
+	:global(:root.dark) .transcript-line.user {
+		background: #374151;
+	}
+
+	.speaker {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	.speaker.agent {
+		color: #1d4ed8;
+	}
+
+	.speaker.user {
+		color: #374151;
+	}
+
+	:global(:root.dark) .speaker.agent {
+		color: #93c5fd;
+	}
+
+	:global(:root.dark) .speaker.user {
+		color: #d1d5db;
+	}
+
+	.message {
+		color: var(--color-pencil);
+	}
+
+	/* analysis section */
+	.analysis-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5rem;
+		background: var(--color-erased);
+		border-radius: 0.375rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.analysis-label {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	.analysis-value {
+		font-weight: 600;
+		font-size: 0.875rem;
+	}
+
+	.analysis-value.success {
+		color: #16a34a;
+	}
+
+	.analysis-value.failure {
+		color: #dc2626;
+	}
+
+	:global(:root.dark) .analysis-value.success {
+		color: #4ade80;
+	}
+
+	:global(:root.dark) .analysis-value.failure {
+		color: #f87171;
+	}
+
+	.analysis-summary {
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.analysis-summary p {
+		margin: 0.375rem 0 0 0;
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+
+	.data-collection {
+		margin-top: 0.5rem;
+	}
+
+	.data-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		margin-top: 0.375rem;
+	}
+
+	.data-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		padding: 0.5rem;
+		background: var(--color-paper);
+		border: 1px solid var(--color-erased);
+		border-radius: 0.375rem;
+	}
+
+	.data-key {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		text-transform: capitalize;
+	}
+
+	.data-value {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.data-rationale {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		font-style: italic;
+	}
+
+	/* technical details */
+	.tech-details {
+		margin-top: 0.5rem;
+	}
+
+	.tech-details summary {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: 0.375rem;
+	}
+
+	.tech-details summary:hover {
+		opacity: 1;
+		background: var(--color-erased);
+	}
+
+	.tech-details[open] summary {
+		margin-bottom: 0.75rem;
+	}
+
+	.tech-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.tech-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.375rem 0.5rem;
+		background: var(--color-erased);
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
+	}
+
+	.tech-label {
+		color: var(--color-pencil);
+		opacity: 0.7;
+	}
+
+	.tech-value {
+		font-family: ui-monospace, monospace;
+		font-size: 0.6875rem;
+		background: var(--color-paper);
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		max-width: 180px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.new-call-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1rem;
+		background: var(--color-blue-pen);
+		border: 2px solid var(--color-blue-pen);
+		color: white;
+		font-family: var(--font-body);
+		font-size: 0.9375rem;
+		font-weight: 500;
+		transition: all 100ms;
+		margin-top: 0.5rem;
+	}
+
+	.new-call-btn:hover {
+		background: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	.blocked-hint {
+		font-size: 0.8125rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		text-align: center;
+		padding: 0.75rem;
+	}
+
+	/* confirm section */
+	.confirm-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.proposed-time {
+		display: flex;
+		gap: 1rem;
+		padding: 1rem;
+		background: linear-gradient(135deg, var(--color-erased) 0%, var(--color-paper) 100%);
+		border: 2px solid var(--color-blue-pen);
+		border-radius: 0.75rem;
+	}
+
+	.time-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem;
+	}
+
+	.time-details {
+		flex: 1;
+	}
+
+	.time-label {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		margin-bottom: 0.25rem;
+	}
+
+	.time-value {
+		font-family: var(--font-heading);
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.time-value-lg {
+		font-family: var(--font-heading);
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: var(--color-blue-pen);
+	}
+
+	.time-hint {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		margin-top: 0.25rem;
+	}
+
+	.time-hint.sprechstunde {
+		color: var(--color-blue-pen);
+		opacity: 1;
+		font-weight: 500;
+	}
+
+	.time-hint.debug {
+		color: var(--color-red-marker);
+		opacity: 0.8;
+		font-style: italic;
+	}
+
+	.opening-hours {
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+	}
+
+	.hours-label {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+		margin-bottom: 0.375rem;
+	}
+
+	.hours-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+	}
+
+	.hours-line {
+		font-size: 0.8125rem;
+		background: var(--color-paper);
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.25rem;
+		white-space: nowrap;
+	}
+
+	.confirm-question {
+		font-size: 0.9375rem;
+		line-height: 1.5;
+	}
+
+	.confirm-question strong {
+		color: var(--color-blue-pen);
+	}
+
+	.confirm-actions {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.confirm-btn {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		border: 2px solid var(--color-pencil);
+		background: var(--color-paper);
+		font-family: var(--font-body);
+		font-size: 0.9375rem;
+		transition: all 100ms;
+	}
+
+	.confirm-btn.primary {
+		background: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.confirm-btn.primary:hover {
+		background: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	.confirm-btn.secondary:hover {
+		background: var(--color-erased);
+	}
+
+	/* form */
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.form-header {
+		padding: 0.5rem 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
+	}
+
+	.form-time strong {
+		color: var(--color-blue-pen);
+	}
+
+	.debug-badge {
+		display: inline-block;
+		margin-left: 0.5rem;
+		padding: 0.125rem 0.375rem;
+		background: var(--color-red-marker);
+		color: white;
+		font-size: 0.6875rem;
+		font-weight: 500;
+		border-radius: 0.25rem;
+		vertical-align: middle;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.field label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.input {
+		padding: 0.5rem 0.75rem;
+		border: 2px solid var(--color-pencil);
+		background: var(--color-paper);
+		font-family: var(--font-body);
+		font-size: 1rem;
+	}
+
+	.input:focus {
+		outline: none;
+		border-color: var(--color-blue-pen);
+	}
+
+	.hint {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+	}
+
+	.consent-field {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.5rem;
+	}
+
+	.checkbox {
+		width: 1.25rem;
+		height: 1.25rem;
+		margin-top: 0.125rem;
+		flex-shrink: 0;
+	}
+
+	.consent-field label {
+		font-size: 0.8125rem;
+		line-height: 1.4;
+	}
+
+	.form-actions {
+		display: flex;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.back-btn {
+		padding: 0.75rem 1rem;
+		border: 2px solid var(--color-pencil);
+		background: var(--color-paper);
+		font-family: var(--font-body);
+		font-size: 0.9375rem;
+		transition: all 100ms;
+	}
+
+	.back-btn:hover {
+		background: var(--color-erased);
+	}
+
+	.submit-btn {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		background: var(--color-blue-pen);
+		border: 2px solid var(--color-blue-pen);
+		color: white;
+		font-family: var(--font-body);
+		font-size: 1rem;
+		font-weight: 500;
+		transition: all 100ms;
+	}
+
+	.submit-btn:hover:not(:disabled) {
+		background: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	.submit-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.done-btn, .retry-btn {
+		margin-top: 1rem;
+		padding: 0.625rem 1.5rem;
+		border: 2px solid var(--color-pencil);
+		background: var(--color-paper);
+		font-family: var(--font-body);
+		font-size: 0.9375rem;
+		transition: all 100ms;
+	}
+
+	.done-btn:hover, .retry-btn:hover {
+		background: var(--color-erased);
+	}
+</style>
