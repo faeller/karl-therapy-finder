@@ -160,3 +160,19 @@ export const privacyIncidents = sqliteTable('privacy_incidents', {
 });
 
 export type PrivacyIncident = typeof privacyIncidents.$inferSelect;
+
+// webhook logs - stores raw webhook payloads for debugging
+export const webhookLogs = sqliteTable('webhook_logs', {
+	id: text('id').primaryKey(),
+	source: text('source').notNull(), // elevenlabs, etc
+	conversationId: text('conversation_id'),
+	callId: text('call_id').references(() => scheduledCalls.id),
+	status: text('status'),
+	rawPayload: text('raw_payload').notNull(), // full json
+	headers: text('headers'), // relevant headers as json
+	processedAt: integer('processed_at', { mode: 'timestamp' }),
+	processingError: text('processing_error'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export type WebhookLog = typeof webhookLogs.$inferSelect;
