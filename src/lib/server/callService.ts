@@ -11,6 +11,7 @@ import {
 	getPracticeCallerAgentId,
 	estimateCallCost,
 	getConversationCost,
+	getConversation,
 	type ElevenLabsWebhookPayload,
 	type AnalyzedCallResult
 } from './elevenlabs';
@@ -461,16 +462,15 @@ export async function handleCallWebhook(
 	const data = payload.data;
 
 	// try to find the call by:
-	// 1. karl_call_id from dynamic_variables (scheduled calls via batch api)
-	// 2. batch_call_id from metadata (batch api stores this, different from conversation_id)
-	// 3. conversation_id matching elevenlabs_conv_id (fallback)
-	// 4. phone number + scheduled status (last resort for call_initiation_failure which lacks the above)
+	// 1. karl_call_id from dynamic_variables
+	// 2. batch_call_id from metadata
+	// 3. conversation_id matching elevenlabs_conv_id
+	// 4. fetch from API if webhook lacks the above (call_initiation_failure case)
 	const karlCallId = data.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
 	const conversationId = data.conversation_id;
 	const batchCallId = data.metadata?.batch_call?.batch_call_id;
-	const phoneNumber = data.user_id; // phone number that was called
 
-	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId, 'phone:', phoneNumber);
+	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
 
 	let call: typeof table.scheduledCalls.$inferSelect | undefined;
 
@@ -504,30 +504,48 @@ export async function handleCallWebhook(
 		call = found;
 	}
 
-	// last resort: match by phone + scheduled status + scheduledAt close to event time
-	if (!call && phoneNumber) {
-		// webhook event_timestamp should be within ~5 min of scheduledAt
-		const eventTime = new Date(payload.event_timestamp * 1000);
-		const fiveMinBefore = new Date(eventTime.getTime() - 5 * 60 * 1000);
-		const fiveMinAfter = new Date(eventTime.getTime() + 5 * 60 * 1000);
-		const [found] = await db
-			.select()
-			.from(table.scheduledCalls)
-			.where(and(
-				eq(table.scheduledCalls.therapistPhone, phoneNumber),
-				eq(table.scheduledCalls.status, 'scheduled'),
-				gt(table.scheduledCalls.scheduledAt, fiveMinBefore),
-				lt(table.scheduledCalls.scheduledAt, fiveMinAfter)
-			))
-			.limit(1);
-		call = found;
-		if (call) {
-			console.log('[webhook] matched by phone + scheduledAt:', phoneNumber, 'call:', call.id);
+	// last resort: fetch conversation details from API to get karl_call_id or batch_call_id
+	if (!call && conversationId) {
+		try {
+			console.log('[webhook] fetching conversation details from API:', conversationId);
+			const convDetails = await getConversation(conversationId);
+
+			// try karl_call_id from dynamic_variables
+			const apiKarlCallId = convDetails?.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
+			if (apiKarlCallId) {
+				const [found] = await db
+					.select()
+					.from(table.scheduledCalls)
+					.where(eq(table.scheduledCalls.id, apiKarlCallId))
+					.limit(1);
+				call = found;
+				if (call) {
+					console.log('[webhook] matched via API karl_call_id:', apiKarlCallId);
+				}
+			}
+
+			// try batch_call_id from metadata
+			if (!call) {
+				const apiBatchCallId = convDetails?.metadata?.batch_call?.batch_call_id;
+				if (apiBatchCallId) {
+					const [found] = await db
+						.select()
+						.from(table.scheduledCalls)
+						.where(eq(table.scheduledCalls.elevenlabsConvId, apiBatchCallId))
+						.limit(1);
+					call = found;
+					if (call) {
+						console.log('[webhook] matched via API batch_call_id:', apiBatchCallId);
+					}
+				}
+			}
+		} catch (e) {
+			console.error('[webhook] failed to fetch conversation details:', e);
 		}
 	}
 
 	if (!call) {
-		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId, 'phone:', phoneNumber);
+		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
 		return null;
 	}
 
