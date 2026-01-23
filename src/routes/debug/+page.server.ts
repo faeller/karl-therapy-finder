@@ -2,12 +2,13 @@
 import type { PageServerLoad, Actions } from './$types';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { getUserCredits, addCredits, getTherapistDetails } from '$lib/server/callService';
 import { handleCallWebhook } from '$lib/server/callService';
 import type { ElevenLabsWebhookPayload } from '$lib/server/elevenlabs';
 import { env } from '$env/dynamic/private';
+import { nanoid } from 'nanoid';
 
 // auth handled in hooks.server.ts via HTTP Basic Auth
 
@@ -22,6 +23,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			blocklist: [],
 			cache: [],
 			costEvents: [],
+			webhookLogs: [],
 			envStatus: { configured: false, missing: [] }
 		};
 	}
@@ -39,7 +41,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		}
 	};
 
-	const [calls, credits, blocklist, cache, costEvents] = await Promise.all([
+	const [calls, credits, blocklist, cache, costEvents, webhookLogs] = await Promise.all([
 		// all calls for this user (or all if admin)
 		safeQuery(
 			() => userId
@@ -74,6 +76,29 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			() => userId
 				? db.select().from(table.callCostEvents).where(eq(table.callCostEvents.userId, userId)).orderBy(desc(table.callCostEvents.createdAt)).limit(50)
 				: db.select().from(table.callCostEvents).orderBy(desc(table.callCostEvents.createdAt)).limit(50),
+			[]
+		),
+		// webhook logs with cost data
+		safeQuery(
+			async () => {
+				const logs = await db.select().from(table.webhookLogs).orderBy(desc(table.webhookLogs.createdAt)).limit(50);
+				// get costs for logs that have callId
+				const callIds = logs.map(l => l.callId).filter(Boolean) as string[];
+				if (callIds.length === 0) return logs.map(l => ({ ...l, callCostUsd: null, callCostMetadata: null }));
+
+				const costs = await db.select({
+					callId: table.callCostEvents.callId,
+					costUsd: table.callCostEvents.costUsd,
+					metadata: table.callCostEvents.metadata
+				}).from(table.callCostEvents)
+					.where(sql`${table.callCostEvents.callId} IN (${sql.join(callIds.map(id => sql`${id}`), sql`, `)})`);
+
+				const costMap = new Map(costs.map(c => [c.callId, { costUsd: c.costUsd, metadata: c.metadata }]));
+				return logs.map(l => {
+					const cost = l.callId ? costMap.get(l.callId) : null;
+					return { ...l, callCostUsd: cost?.costUsd || null, callCostMetadata: cost?.metadata || null };
+				});
+			},
 			[]
 		)
 	]);
@@ -114,6 +139,11 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			...e,
 			createdAt: e.createdAt?.toISOString()
 		})),
+		webhookLogs: webhookLogs.map((w) => ({
+			...w,
+			createdAt: w.createdAt?.toISOString(),
+			processedAt: w.processedAt?.toISOString()
+		})),
 		envStatus: {
 			configured: missing.length === 0,
 			missing
@@ -139,19 +169,21 @@ export const actions: Actions = {
 
 	// fetch therapist details (tests opening hours parsing)
 	fetchTherapist: async ({ locals, platform, request }) => {
-		if (!locals.user) return { success: false, error: 'not authenticated' };
+		if (!locals.user) return { success: false, action: 'fetchTherapist', error: 'not authenticated' };
+
+		const userId = locals.user.id;
 
 		const d1 = await getD1(platform);
-		if (!d1) return { success: false, error: 'db not available' };
+		if (!d1) return { success: false, action: 'fetchTherapist', error: 'db not available' };
 
 		const db = getDb(d1);
 		const data = await request.formData();
 		const eId = data.get('eId') as string;
 
-		if (!eId) return { success: false, error: 'eId required' };
+		if (!eId) return { success: false, action: 'fetchTherapist', error: 'eId required' };
 
 		try {
-			const { details, costUsd } = await getTherapistDetails(db, eId, locals.user.id);
+			const { details, costUsd } = await getTherapistDetails(db, eId, userId);
 			return {
 				success: true,
 				action: 'fetchTherapist',
@@ -162,7 +194,7 @@ export const actions: Actions = {
 				costUsd
 			};
 		} catch (e) {
-			return { success: false, error: String(e) };
+			return { success: false, action: 'fetchTherapist', error: String(e) };
 		}
 	},
 
@@ -186,23 +218,49 @@ export const actions: Actions = {
 		const [call] = await db.select().from(table.scheduledCalls).where(eq(table.scheduledCalls.id, callId)).limit(1);
 		if (!call) return { success: false, error: 'call not found' };
 
-		// simulate webhook payload
+		// simulate webhook payload (new nested structure)
+		const convId = call.elevenlabsConvId || `sim_${callId}`;
 		const payload: ElevenLabsWebhookPayload = {
-			conversation_id: call.elevenlabsConvId || `sim_${callId}`,
-			status: (status as 'completed' | 'failed' | 'no_answer' | 'busy' | 'voicemail') || 'completed',
-			duration_seconds: durationSeconds,
-			transcript: transcript || undefined
+			type: 'post_call_transcription',
+			event_timestamp: Math.floor(Date.now() / 1000),
+			data: {
+				conversation_id: convId,
+				status: status || 'done',
+				transcript: transcript ? [{ role: 'user', message: transcript }] : undefined,
+				metadata: {
+					call_duration_secs: durationSeconds
+				}
+			}
 		};
 
 		// if no convId, set one so webhook can find it
 		if (!call.elevenlabsConvId) {
-			await db.update(table.scheduledCalls).set({ elevenlabsConvId: payload.conversation_id }).where(eq(table.scheduledCalls.id, callId));
+			await db.update(table.scheduledCalls).set({ elevenlabsConvId: convId }).where(eq(table.scheduledCalls.id, callId));
 		}
 
+		const now = new Date();
+
+		// create webhook log entry (like the real webhook endpoint does)
+		const logId = nanoid();
+		await db.insert(table.webhookLogs).values({
+			id: logId,
+			source: 'elevenlabs-simulated',
+			conversationId: convId,
+			status: status || 'done',
+			rawPayload: JSON.stringify(payload),
+			createdAt: now
+		});
+
 		try {
-			await handleCallWebhook(db, payload);
+			const resultCallId = await handleCallWebhook(db, payload);
+			await db.update(table.webhookLogs)
+				.set({ callId: resultCallId, processedAt: new Date() })
+				.where(eq(table.webhookLogs.id, logId));
 			return { success: true, action: 'simulateWebhook', callId, status };
 		} catch (e) {
+			await db.update(table.webhookLogs)
+				.set({ processingError: String(e), processedAt: new Date() })
+				.where(eq(table.webhookLogs.id, logId));
 			return { success: false, error: String(e) };
 		}
 	},

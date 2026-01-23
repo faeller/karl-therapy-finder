@@ -3,7 +3,8 @@
 	import { invalidateAll } from '$app/navigation';
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { ArrowLeft, RefreshCw, Phone, Clock, Ban, Database, DollarSign, Loader2, CheckCircle, XCircle, AlertTriangle, Play, Trash2 } from 'lucide-svelte';
+	import { ArrowLeft, RefreshCw, Phone, Clock, Ban, Database, DollarSign, Loader2, CheckCircle, XCircle, AlertTriangle, Play, Trash2, Bug, Webhook } from 'lucide-svelte';
+	import { debug } from '$lib/stores/debug';
 
 	let { data, form } = $props();
 
@@ -65,6 +66,34 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 	function formatCost(usd: string | null): string {
 		if (!usd) return '-';
 		return `$${parseFloat(usd).toFixed(4)}`;
+	}
+
+	// estimate cost from raw webhook payload (credits * $0.13/1000)
+	const CREDITS_TO_USD = 0.13 / 1000;
+	function estimateCostFromPayload(rawPayload: string): { cost: string; credits: number; breakdown: string; duration: number } | null {
+		try {
+			const payload = JSON.parse(rawPayload);
+			const meta = payload.data?.metadata;
+			if (!meta) return null;
+
+			const charging = meta.charging;
+			const totalCredits = meta.cost || 0;
+			const duration = meta.call_duration_secs || 0;
+			if (!totalCredits && !charging) return null;
+
+			const callCredits = charging?.call_charge || 0;
+			const llmCredits = charging?.llm_charge || 0;
+			const credits = totalCredits || (callCredits + llmCredits);
+			const cost = (credits * CREDITS_TO_USD).toFixed(4);
+			return {
+				cost: `$${cost}`,
+				credits,
+				breakdown: `${callCredits}+${llmCredits} credits`,
+				duration
+			};
+		} catch {
+			return null;
+		}
 	}
 
 	const statusColors: Record<string, string> = {
@@ -170,6 +199,55 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			</div>
 		</WobblyCard>
 
+		<!-- debug mode -->
+		<WobblyCard class="mb-4">
+			<h2 class="font-heading text-lg font-bold mb-3 flex items-center gap-2">
+				<Bug size={20} />
+				Debug Mode
+			</h2>
+			<p class="text-sm text-pencil/60 mb-4">adds a test therapist to the list with auto-call enabled</p>
+
+			<div class="space-y-3">
+				<div class="flex items-center gap-2">
+					<input
+						type="checkbox"
+						id="debugEnabled"
+						checked={$debug.enabled}
+						onchange={(e) => debug.setEnabled(e.currentTarget.checked)}
+						class="w-4 h-4"
+					/>
+					<label for="debugEnabled" class="text-sm">
+						enable debug mode
+					</label>
+				</div>
+
+				{#if $debug.enabled}
+					<div class="space-y-3">
+						<div>
+							<label class="text-sm text-pencil/70">test therapist phone (will be called)</label>
+							<input
+								type="tel"
+								value={$debug.testPhone}
+								oninput={(e) => debug.setTestPhone(e.currentTarget.value)}
+								placeholder="+49 170 1234567"
+								class="input-field w-full"
+							/>
+						</div>
+						<div>
+							<label class="text-sm text-pencil/70">callback phone (your number for callbacks)</label>
+							<input
+								type="tel"
+								value={$debug.callbackPhone}
+								oninput={(e) => debug.setCallbackPhone(e.currentTarget.value)}
+								placeholder="+49 170 1234567"
+								class="input-field w-full"
+							/>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</WobblyCard>
+
 		<!-- user & credits -->
 		<WobblyCard class="mb-4">
 			<h2 class="font-heading text-lg font-bold mb-3">User & Credits</h2>
@@ -202,7 +280,7 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 
 		<!-- test therapist fetch -->
 		<WobblyCard class="mb-4">
-			<h2 class="font-heading text-lg font-bold mb-3">Test Therapist Fetch (Opening Hours AI)</h2>
+			<h2 class="font-heading text-lg font-bold mb-3">Test Opening Hours Parser</h2>
 			<form method="POST" action="?/fetchTherapist" use:enhance={() => { loading = true; activeSection = 'fetch'; return async ({ update }) => { await update(); loading = false; activeSection = null; }; }} class="flex gap-2">
 				<input
 					type="text"
@@ -220,7 +298,13 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			{#if form?.action === 'fetchTherapist'}
 				<div class="mt-4 p-3 rounded bg-erased text-sm">
 					{#if form.success}
-						<div class="text-green-600 font-bold mb-2">cost: {formatCost(String(form.costUsd))}</div>
+						<div class="text-green-600 font-bold mb-2">
+							{#if form.costUsd === 0}
+								parsed via cheerio (free)
+							{:else}
+								parsed via ai, cost: {formatCost(String(form.costUsd))}
+							{/if}
+						</div>
 						<pre class="overflow-x-auto whitespace-pre-wrap font-mono text-xs">{JSON.stringify(form.details, null, 2)}</pre>
 					{:else}
 						<div class="text-red-marker">{form.error}</div>
@@ -578,6 +662,80 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 							</tr>
 						</tfoot>
 					</table>
+				</div>
+			{/if}
+		</WobblyCard>
+
+		<!-- webhook logs -->
+		<WobblyCard class="mb-4">
+			<h2 class="font-heading text-lg font-bold mb-3 flex items-center gap-2">
+				<Webhook size={20} />
+				Webhook Logs ({data.webhookLogs.length})
+			</h2>
+
+			{#if data.webhookLogs.length === 0}
+				<p class="text-pencil/60 text-sm">no webhooks received yet</p>
+			{:else}
+				<div class="space-y-3">
+					{#each data.webhookLogs as log}
+						<div class="border-2 border-pencil/20 rounded p-3">
+							<div class="flex items-start justify-between gap-2">
+								<div>
+									<div class="flex items-center gap-2">
+										<span class="font-mono text-sm">{log.source}</span>
+										{#if log.status}
+											<span class="text-xs px-2 py-0.5 rounded {log.status === 'completed' ? 'bg-green-100 text-green-800' : log.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+												{log.status}
+											</span>
+										{/if}
+										{#if log.processingError}
+											<span class="text-xs px-2 py-0.5 rounded bg-red-200 text-red-900">error</span>
+										{:else if log.processedAt}
+											<span class="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800">processed</span>
+										{:else}
+											<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">pending</span>
+										{/if}
+									</div>
+									{#if log.conversationId}
+										<div class="text-xs text-pencil/60 mt-1">conv: <span class="font-mono">{log.conversationId}</span></div>
+									{/if}
+									{#if log.callId}
+										<div class="text-xs text-pencil/60">
+											call: <span class="font-mono">{log.callId.slice(0, 8)}...</span>
+										</div>
+									{/if}
+									{#each [estimateCostFromPayload(log.rawPayload)].filter((x): x is NonNullable<typeof x> => !!x) as estCost}
+										<div class="text-xs mt-1 flex items-center gap-2">
+											<span class="font-mono text-green-600 font-bold">{estCost.cost}</span>
+											<span class="text-pencil/50">({estCost.breakdown})</span>
+											<span class="text-pencil/40">{estCost.duration}s</span>
+										</div>
+									{/each}
+								</div>
+								<div class="text-right text-xs text-pencil/50">
+									{formatDate(log.createdAt)}
+								</div>
+							</div>
+
+							{#if log.processingError}
+								<div class="mt-2 text-xs text-red-marker bg-red-50 p-2 rounded">
+									{log.processingError}
+								</div>
+							{/if}
+
+							<details class="mt-2">
+								<summary class="text-xs text-blue-pen cursor-pointer">raw payload</summary>
+								<pre class="mt-1 text-xs bg-erased p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">{JSON.stringify(JSON.parse(log.rawPayload), null, 2)}</pre>
+							</details>
+
+							{#if log.headers}
+								<details class="mt-1">
+									<summary class="text-xs text-blue-pen cursor-pointer">headers</summary>
+									<pre class="mt-1 text-xs bg-erased p-2 rounded overflow-x-auto whitespace-pre-wrap">{JSON.stringify(JSON.parse(log.headers), null, 2)}</pre>
+								</details>
+							{/if}
+						</div>
+					{/each}
 				</div>
 			{/if}
 		</WobblyCard>
