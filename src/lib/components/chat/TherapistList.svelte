@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { contacts } from '$lib/stores/contacts';
+	import { debug, DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 	import TherapistCard from './TherapistCard.svelte';
 	import type { Therapist } from '$lib/types';
 	import { ChevronDown, ChevronRight, CheckCircle, Download } from 'lucide-svelte';
@@ -12,7 +13,25 @@
 		therapists: Therapist[];
 	}
 
-	let { therapists }: Props = $props();
+	let { therapists: inputTherapists }: Props = $props();
+
+	// debug therapist injected at the top when debug mode is enabled
+	const debugTherapist = $derived<Therapist>({
+		id: DEBUG_THERAPIST_ID,
+		name: 'Debug: Test Therapist',
+		title: 'Therapist McTherapistface',
+		address: 'Therapist McTherapistface Str. 4, 10115 Berlin',
+		phone: $debug.testPhone || '+49 000 0000000',
+		email: 'debug@test.local',
+		therapyTypes: ['Debug', 'Test'],
+		insurances: ['GKV', 'PKV'],
+		languages: ['de'],
+		distance: 0.1
+	});
+
+	const therapists = $derived(
+		$debug.enabled ? [debugTherapist, ...inputTherapists] : inputTherapists
+	);
 
 	const INITIAL_SHOW = THERAPIST_LIST.initialShow;
 	const LOAD_MORE_COUNT = THERAPIST_LIST.loadMoreCount;

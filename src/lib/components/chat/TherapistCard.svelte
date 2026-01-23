@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { Mail, Phone, MapPin, PhoneCall, ExternalLink, Loader2, Search } from 'lucide-svelte';
+	import { Mail, Phone, MapPin, PhoneCall, ExternalLink, Search } from 'lucide-svelte';
 	import type { Therapist } from '$lib/types';
 	import { generateMailto } from '$lib/utils/mailto';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
 	import { user } from '$lib/stores/user';
+	import { debug, DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 	import { get } from 'svelte/store';
 	import { m } from '$lib/paraglide/messages';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
+	import AutoCallModal from './AutoCallModal.svelte';
 
 	interface Props {
 		therapist: Therapist;
@@ -27,16 +29,20 @@
 		$contacts.find((c) => c.therapistId === therapist.id && c.status === 'pending')
 	);
 
-	// call feature state
-	let callState = $state<'idle' | 'scheduling' | 'scheduled' | 'error'>('idle');
-	let callError = $state<string | null>(null);
-	let scheduledTime = $state<string | null>(null);
+	// auto-call modal state
+	let showAutoCallModal = $state(false);
 
-	// check if user can use auto-call
+	// check if user can use auto-call (debug mode, debug therapist, or paid tier)
+	const isDebugTherapist = $derived(therapist.id === DEBUG_THERAPIST_ID);
 	const canUseAutoCall = $derived(
-		$user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
+		$debug.enabled || isDebugTherapist || $user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
 	);
 	const hasPhone = $derived(!!therapist.phone);
+
+	// check if already has a scheduled/pending auto-call (for button styling only)
+	const hasScheduledCall = $derived(
+		$contacts.some((c) => c.therapistId === therapist.id && c.method === 'auto-call')
+	);
 
 	// extract city from address (format: "Street, PLZ City")
 	const googleSearchUrl = $derived.by(() => {
@@ -87,76 +93,9 @@
 		onContactConfirm?.(confirmed);
 	}
 
-	async function handleAutoCallClick() {
-		if (!canUseAutoCall || !hasPhone || callState === 'scheduling') return;
-
-		callState = 'scheduling';
-		callError = null;
-
-		const campaign = get(campaignDraft);
-
-		try {
-			// map campaign fields to call params
-			const patientName = campaign.forSelf ? 'Patient' : (campaign.clientName || 'Patient');
-			const insuranceMap = { GKV: 'gesetzlich versichert', PKV: 'privat versichert', Selbstzahler: 'Selbstzahler' };
-			const patientInsurance = insuranceMap[campaign.insuranceType || 'GKV'] || 'gesetzlich versichert';
-			const therapyType = campaign.therapyTypes?.length ? campaign.therapyTypes[0] : 'Psychotherapie';
-
-			const response = await fetch('/api/calls/schedule', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					therapistId: therapist.id,
-					therapistName: therapist.name,
-					eId: therapist.id, // tk e_id is stored as therapist.id
-					patientName,
-					patientInsurance,
-					therapyType,
-					callbackPhone: '', // user needs to provide this - could add to campaign
-					urgency: campaign.urgency || 'medium'
-				})
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({})) as { message?: string };
-				if (response.status === 402) {
-					callError = errorData.message?.includes('credits')
-						? m.therapist_call_no_credits()
-						: m.therapist_call_tier_required();
-				} else if (response.status === 403) {
-					callError = m.therapist_call_blocked();
-				} else if (response.status === 409) {
-					callError = m.therapist_call_already_scheduled();
-				} else {
-					callError = m.therapist_call_error();
-				}
-				callState = 'error';
-				return;
-			}
-
-			const data = await response.json() as { scheduledAt: string };
-			scheduledTime = new Date(data.scheduledAt).toLocaleString('de-DE', {
-				weekday: 'short',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-			callState = 'scheduled';
-
-			// add to contacts with auto-call status
-			contacts.add({
-				therapistId: therapist.id,
-				therapistName: therapist.name,
-				therapistEmail: therapist.email,
-				therapistPhone: therapist.phone,
-				therapistAddress: therapist.address,
-				method: 'auto-call',
-				status: 'pending'
-			});
-		} catch (e) {
-			console.error('auto-call scheduling failed:', e);
-			callError = m.therapist_call_error();
-			callState = 'error';
-		}
+	function openAutoCallModal() {
+		if (!canUseAutoCall || !hasPhone) return;
+		showAutoCallModal = true;
 	}
 </script>
 
@@ -258,26 +197,23 @@
 				</a>
 			{/if}
 
-			{#if callState === 'scheduled'}
-				<div class="action-btn scheduled flex-1" style:border-radius={wobbly.button}>
+			{#if hasScheduledCall}
+				<button
+					onclick={openAutoCallModal}
+					class="action-btn scheduled flex-1"
+					style:border-radius={wobbly.button}
+				>
 					<PhoneCall size={16} strokeWidth={2.5} />
-					{m.therapist_call_scheduled_short({ time: scheduledTime || '' })}
-				</div>
-			{:else if callState === 'scheduling'}
-				<button disabled class="action-btn scheduling flex-1" style:border-radius={wobbly.button}>
-					<Loader2 size={16} strokeWidth={2.5} class="animate-spin" />
-					{m.therapist_call_scheduling()}
+					Anruf geplant
 				</button>
 			{:else if canUseAutoCall && hasPhone}
 				<button
-					onclick={handleAutoCallClick}
+					onclick={openAutoCallModal}
 					class="action-btn auto-call flex-1"
-					class:error={callState === 'error'}
 					style:border-radius={wobbly.button}
-					title={callError || ''}
 				>
 					<PhoneCall size={16} strokeWidth={2.5} />
-					{callError || m.therapist_call_for_me()}
+					{m.therapist_call_for_me()}
 				</button>
 			{:else}
 				<button
@@ -286,7 +222,7 @@
 					style:border-radius={wobbly.button}
 					title={!hasPhone ? 'Keine Telefonnummer' : m.therapist_call_for_me_soon()}
 				>
-					<PatreonIcon size={14} />
+					<span class="shrink-0"><PatreonIcon size={14} /></span>
 					{m.therapist_call_for_me_disabled()}
 				</button>
 			{/if}
@@ -326,6 +262,12 @@
 		</div>
 	</div>
 {/if}
+
+<AutoCallModal
+	{therapist}
+	open={showAutoCallModal}
+	onClose={() => showAutoCallModal = false}
+/>
 
 <style>
 	.therapist-card {
@@ -383,18 +325,6 @@
 	.action-btn.auto-call:hover {
 		background-color: var(--color-red-marker);
 		border-color: var(--color-red-marker);
-	}
-
-	.action-btn.auto-call.error {
-		background-color: transparent;
-		border-color: var(--color-red-marker);
-		color: var(--color-red-marker);
-		font-size: 0.75rem;
-	}
-
-	.action-btn.scheduling {
-		opacity: 0.7;
-		cursor: wait;
 	}
 
 	.action-btn.scheduled {
