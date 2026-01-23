@@ -35,6 +35,7 @@
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/bcryptjs": "^3.0.0",
 		"@types/node": "^24",
+		"@vitejs/plugin-basic-ssl": "^2.1.4",
 		"@vitest/browser-playwright": "^4.0.10",
 		"autoprefixer": "^10.4.22",
 		"drizzle-kit": "^0.31.7",
