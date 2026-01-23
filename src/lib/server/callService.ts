@@ -439,16 +439,17 @@ export async function handleCallWebhook(
 
 	// try to find the call by:
 	// 1. karl_call_id from dynamic_variables (scheduled calls via batch api)
-	// 2. conversation_id matching elevenlabs_conv_id (fallback)
-	// note: conversation_initiation_client_data is sibling of metadata, not inside it
+	// 2. batch_call_id from metadata (batch api stores this, different from conversation_id)
+	// 3. conversation_id matching elevenlabs_conv_id (fallback)
 	const karlCallId = data.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
 	const conversationId = data.conversation_id;
+	const batchCallId = data.metadata?.batch_call?.batch_call_id;
 
-	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId);
+	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
 
 	let call: typeof table.scheduledCalls.$inferSelect | undefined;
 
-	// try karl_call_id first (widget calls)
+	// try karl_call_id first (passed via dynamic variables)
 	if (karlCallId) {
 		const [found] = await db
 			.select()
@@ -458,7 +459,17 @@ export async function handleCallWebhook(
 		call = found;
 	}
 
-	// fallback: try matching by conversation_id = elevenlabs_conv_id (batch calls)
+	// try batch_call_id (batch api - we store this in elevenlabs_conv_id)
+	if (!call && batchCallId) {
+		const [found] = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(eq(table.scheduledCalls.elevenlabsConvId, batchCallId))
+			.limit(1);
+		call = found;
+	}
+
+	// fallback: try matching by conversation_id
 	if (!call && conversationId) {
 		const [found] = await db
 			.select()
@@ -469,7 +480,7 @@ export async function handleCallWebhook(
 	}
 
 	if (!call) {
-		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId);
+		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId, 'batch_call_id:', batchCallId);
 		return null;
 	}
 

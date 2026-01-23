@@ -33,7 +33,7 @@
 	"autocall_blocked_scheduled": "Ein Anruf ist bereits geplant.",
 	"autocall_blocked_tier": "Premium-Mitgliedschaft erforderlich.",
 	"autocall_callback_title": "Rückruf",
-	"autocall_cancel": "Abbrechen",
+	"autocall_cancel": "Stornieren",
 	"autocall_confirm_history": "Bisherige Anrufe",
 	"autocall_confirm_question": "Möchtest du, dass KARL am {date} um {time} bei {name} anruft?",
 	"autocall_confirm_yes": "Ja, weiter",
