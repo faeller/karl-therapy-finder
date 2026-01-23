@@ -1,23 +1,34 @@
-import { json } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
+import { getD1 } from '$lib/server/d1';
 import * as table from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
-	const user = locals.user;
-	if (!user) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!locals.user) {
+		error(401, 'Not authenticated');
 	}
 
-	const body = await request.json();
+	const d1 = await getD1(platform);
+	if (!d1) {
+		error(500, 'Database not available');
+	}
+
+	const db = getDb(d1);
+
+	let body: { callId: string };
+	try {
+		body = await request.json();
+	} catch {
+		error(400, 'Invalid JSON body');
+	}
+
 	const { callId } = body;
 
 	if (!callId) {
-		return json({ error: 'Missing callId' }, { status: 400 });
+		error(400, 'Missing callId');
 	}
-
-	const db = getDb(platform);
 
 	// find the call and verify ownership
 	const [call] = await db
@@ -25,16 +36,16 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		.from(table.scheduledCalls)
 		.where(and(
 			eq(table.scheduledCalls.id, callId),
-			eq(table.scheduledCalls.userId, user.id)
+			eq(table.scheduledCalls.userId, locals.user.id)
 		))
 		.limit(1);
 
 	if (!call) {
-		return json({ error: 'Call not found' }, { status: 404 });
+		error(404, 'Call not found');
 	}
 
 	if (call.status !== 'scheduled') {
-		return json({ error: 'Can only cancel scheduled calls' }, { status: 400 });
+		error(400, 'Can only cancel scheduled calls');
 	}
 
 	// update status to cancelled
