@@ -801,7 +801,7 @@
 					</div>
 
 					<div class="field">
-						<label for="email">{m.autocall_form_email()}</label>
+						<label for="email">{m.autocall_form_email()} *</label>
 						<input
 							id="email"
 							type="email"
@@ -809,6 +809,7 @@
 							placeholder="max@beispiel.de"
 							class="input"
 							style:border-radius={wobbly.sm}
+							required
 						/>
 						<p class="hint">{m.autocall_form_email_hint()}</p>
 					</div>
