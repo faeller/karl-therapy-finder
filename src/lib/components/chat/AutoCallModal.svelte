@@ -8,8 +8,39 @@
 	import { contacts } from '$lib/stores/contacts';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { get } from 'svelte/store';
-	import { CallStatus, CallOutcome, getStatusLabel, getOutcomeLabel, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
+	import { CallStatus, CallOutcome, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
 	import { m } from '$lib/paraglide/messages';
+
+	// i18n status labels
+	function getStatusLabelI18n(status: string, attemptNumber?: number): string {
+		if (status === 'scheduled' && attemptNumber && attemptNumber > 1) {
+			return m.call_status_scheduled_retry();
+		}
+		switch (status) {
+			case 'scheduled': return m.call_status_scheduled();
+			case 'in_progress': return m.call_status_in_progress();
+			case 'completed': return m.call_status_completed();
+			case 'failed': return m.call_status_failed();
+			case 'cancelled': return m.call_status_cancelled();
+			default: return status;
+		}
+	}
+
+	// i18n outcome labels
+	function getOutcomeLabelI18n(outcome: string): string {
+		switch (outcome) {
+			case 'success': return m.call_outcome_success();
+			case 'callback': return m.call_outcome_callback();
+			case 'no_answer': return m.call_outcome_no_answer();
+			case 'no_availability': return m.call_outcome_no_availability();
+			case 'rejected_ai': return m.call_outcome_rejected_ai();
+			case 'rejected_privacy': return m.call_outcome_rejected_privacy();
+			case 'rejected_other': return m.call_outcome_rejected_other();
+			case 'unclear': return m.call_outcome_unclear();
+			case 'connection_failed': return m.call_outcome_connection_failed();
+			default: return outcome;
+		}
+	}
 
 	interface Props {
 		therapist: Therapist;
@@ -382,7 +413,7 @@
 									{:else}
 										<XCircle size={16} />
 									{/if}
-									<span>{getStatusLabel(call.status)}</span>
+									<span>{getStatusLabelI18n(call.status, call.attemptNumber)}</span>
 								</div>
 
 								<div class="call-details">
@@ -393,7 +424,7 @@
 										<span class="call-attempt">{m.autocall_attempt({ current: call.attemptNumber, max: call.maxAttempts || 3 })}</span>
 									{/if}
 									{#if call.outcome}
-										<span class="call-outcome">{getOutcomeLabel(call.outcome)}</span>
+										<span class="call-outcome">{getOutcomeLabelI18n(call.outcome)}</span>
 									{/if}
 									{#if call.appointmentDate}
 										<span class="call-appointment">Termin: {call.appointmentDate} {call.appointmentTime}</span>
@@ -462,10 +493,10 @@
 								{:else}
 									<XCircle size={20} />
 								{/if}
-								<span>{getStatusLabel(selectedCall.status)}</span>
+								<span>{getStatusLabelI18n(selectedCall.status, selectedCall.attemptNumber)}</span>
 							</div>
 							{#if selectedCall.outcome}
-								<span class="outcome-badge {getOutcomeColor(selectedCall.outcome)}">{getOutcomeLabel(selectedCall.outcome)}</span>
+								<span class="outcome-badge {getOutcomeColor(selectedCall.outcome)}">{getOutcomeLabelI18n(selectedCall.outcome)}</span>
 							{/if}
 						</div>
 
