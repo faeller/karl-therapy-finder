@@ -42,22 +42,11 @@
 		}
 	}
 
-	// bad outcomes that should show red - actual rejections/failures
-	const badOutcomes = ['rejected_ai', 'rejected_privacy', 'rejected_other', 'connection_failed'];
-	// neutral - got through but no appointment (still useful for kontaktprotokoll)
-	const neutralOutcomes = ['no_answer', 'unclear', 'callback', 'no_availability'];
+	// status color is based on status only - completed is always green (call worked)
+	// outcome badge has its own colors
 
-	function getEffectiveStatusColor(status: string, outcome?: string): string {
-		if (status === 'completed' && outcome) {
-			if (badOutcomes.includes(outcome)) return 'text-red-marker';
-			if (neutralOutcomes.includes(outcome)) return 'text-yellow-600';
-			if (outcome === 'success') return 'text-green-600';
-		}
-		return getStatusColor(status);
-	}
-
-	function isPositiveOutcome(outcome?: string): boolean {
-		return outcome === 'success';
+	function isCallCompleted(status: string): boolean {
+		return status === 'completed';
 	}
 
 	interface Props {
@@ -439,11 +428,9 @@
 					<div class="calls-list">
 						{#each preflightData?.existingCalls || [] as call}
 							<div class="call-item">
-								<div class="call-status {getEffectiveStatusColor(call.status, call.outcome)}">
-									{#if call.status === 'completed' && isPositiveOutcome(call.outcome)}
+								<div class="call-status {getStatusColor(call.status)}">
+									{#if isCallCompleted(call.status)}
 										<CheckCircle size={16} />
-									{:else if call.status === 'completed'}
-										<XCircle size={16} />
 									{:else if call.status === 'scheduled'}
 										<Clock size={16} />
 									{:else}
@@ -519,11 +506,9 @@
 
 						<!-- status header with outcome badge -->
 						<div class="details-header">
-							<div class="details-status {getEffectiveStatusColor(selectedCall.status, selectedCall.outcome)}">
-								{#if selectedCall.status === CallStatus.COMPLETED && isPositiveOutcome(selectedCall.outcome)}
+							<div class="details-status {getStatusColor(selectedCall.status)}">
+								{#if isCallCompleted(selectedCall.status)}
 									<CheckCircle size={20} />
-								{:else if selectedCall.status === CallStatus.COMPLETED}
-									<XCircle size={20} />
 								{:else if selectedCall.status === CallStatus.SCHEDULED}
 									<Clock size={20} />
 								{:else if selectedCall.status === CallStatus.IN_PROGRESS}
