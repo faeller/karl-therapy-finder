@@ -29,8 +29,8 @@
 
 			<h3>Kontakt</h3>
 			<p>
-				<strong>E-Mail:</strong> <a href="mailto:karl@mein.online-impressum.de">karl@mein.online-impressum.de</a><br>
-				<a href="https://www.mein.online-impressum.de/karl/#Zweiter_Kontaktweg" target="_blank" rel="noopener noreferrer">Zweiter Kontaktweg</a>
+				<strong>E-Mail:</strong> <a href="mailto:karl@mail.online-impressum.de">karl@mail.online-impressum.de</a><br>
+				<a href="https://www.mein.online-impressum.de/karl/#Zweiter_Kontaktweg" target="_blank" rel="noopener noreferrer" class="contact-link">Zweiter Kontaktweg →</a>
 			</p>
 
 			<h3>Aufsichtsbehörde</h3>
@@ -112,5 +112,20 @@
 	}
 	.info-box h2, .info-box h3 {
 		margin-top: 0;
+	}
+	.contact-link {
+		display: inline-block;
+		margin-top: 0.25rem;
+		margin-bottom: 1rem;
+		padding: 0.2rem 0.5rem;
+		background: var(--color-blue-pen);
+		color: white !important;
+		text-decoration: none !important;
+		border-radius: 3px;
+		font-size: 0.7rem;
+		transition: opacity 0.15s;
+	}
+	.contact-link:hover {
+		opacity: 0.85;
 	}
 </style>

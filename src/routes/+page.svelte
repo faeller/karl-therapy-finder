@@ -8,6 +8,7 @@
 	import { theme } from '$lib/stores/theme';
 	import { Sun, Moon } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
+	import GithubIcon from '$lib/components/ui/GithubIcon.svelte';
 	import { m } from '$lib/paraglide/messages';
 </script>
 
@@ -25,6 +26,15 @@
 				title={m.support_patreon()}
 			>
 				<PatreonIcon size={16} />
+			</a>
+			<a
+				href="https://github.com/faeller/karl-therapy-finder"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="icon-btn"
+				title="GitHub"
+			>
+				<GithubIcon size={16} />
 			</a>
 			<button
 				onclick={() => theme.toggle()}

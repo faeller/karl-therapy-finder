@@ -212,7 +212,6 @@
 						<li>{m.auth_sync_info_campaign()}</li>
 						<li>{m.auth_sync_info_contacts()}</li>
 					</ul>
-					<p class="mt-2 font-bold">{m.auth_sync_info_required()}</p>
 				</div>
 			{/if}
 		</WobblyCard>

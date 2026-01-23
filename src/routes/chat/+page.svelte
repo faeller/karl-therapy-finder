@@ -17,6 +17,7 @@
 	import LangToggle from '$lib/components/ui/LangToggle.svelte';
 	import UserMenu from '$lib/components/ui/UserMenu.svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
+	import GithubIcon from '$lib/components/ui/GithubIcon.svelte';
 	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper } from 'lucide-svelte';
 	import FoundTherapistButton from '$lib/components/ui/FoundTherapistButton.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
@@ -262,7 +263,7 @@
 		if (isGettingLocation) return null;
 
 		if (!navigator.geolocation) {
-			alert('Geolocation wird von diesem Browser nicht unterstützt');
+			alert(m.geo_not_supported());
 			return null;
 		}
 
@@ -278,25 +279,25 @@
 
 			const { latitude, longitude } = position.coords;
 			const response = await fetch(
-				`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=de`
+				`/api/geo/reverse?lat=${latitude}&lon=${longitude}`
 			);
 
-			if (!response.ok) throw new Error('Geocoding fehlgeschlagen');
-			const data: { postcode?: string } = await response.json();
+			if (!response.ok) throw new Error(m.geo_failed());
+			const data: { plz?: string } = await response.json();
 
-			if (data.postcode && /^\d{5}$/.test(data.postcode)) {
-				return data.postcode;
+			if (data.plz && /^\d{5}$/.test(data.plz)) {
+				return data.plz;
 			} else {
-				alert('Keine PLZ gefunden. Bitte gib deine PLZ manuell ein.');
+				alert(m.geo_no_plz());
 				return null;
 			}
 		} catch (error: unknown) {
 			const geoError = error as GeolocationPositionError;
-			let msg = 'Standort konnte nicht ermittelt werden.';
-			if (geoError.code === 1) msg = 'Standort-Zugriff wurde verweigert.';
-			else if (geoError.code === 2) msg = 'Standort nicht verfügbar.';
-			else if (geoError.code === 3) msg = 'Zeitüberschreitung beim Ermitteln des Standorts.';
-			alert(msg + ' Bitte gib deine PLZ manuell ein.');
+			let msg = m.geo_error_default();
+			if (geoError.code === 1) msg = m.geo_error_denied();
+			else if (geoError.code === 2) msg = m.geo_error_unavailable();
+			else if (geoError.code === 3) msg = m.geo_error_timeout();
+			alert(msg + ' ' + m.geo_error_suffix());
 			return null;
 		} finally {
 			isGettingLocation = false;
@@ -419,6 +420,15 @@
 					>
 						<PatreonIcon size={16} />
 					</a>
+					<a
+						href="https://github.com/faeller/karl-therapy-finder"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="hidden min-[225px]:block text-pencil/50 hover:text-pencil"
+						title="GitHub"
+					>
+						<GithubIcon size={16} />
+					</a>
 					<a href="/contacts" class="flex items-center gap-1 text-pencil/50 hover:text-blue-pen" title={m.contacts_title()}>
 						<ClipboardList size={18} strokeWidth={2.5} />
 						<span class="hidden min-[225px]:inline text-xs">{m.contacts_title()}</span>
@@ -481,6 +491,15 @@
 						title={m.support_patreon()}
 					>
 						<PatreonIcon size={16} />
+					</a>
+					<a
+						href="https://github.com/faeller/karl-therapy-finder"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="min-[225px]:hidden text-pencil/50 hover:text-pencil"
+						title="GitHub"
+					>
+						<GithubIcon size={16} />
 					</a>
 				</div>
 			{/if}
@@ -679,7 +698,7 @@
 										style:border-radius={wobbly.button}
 									>
 										<ExternalLink size={16} />
-										Privatpraxen bei {$campaignDraft.plz || 'deiner PLZ'} (Therapie.de)
+										{m.chat_private_therapists({ plz: $campaignDraft.plz || 'PLZ' })}
 									</button>
 									<FoundTherapistButton onclick={() => handleOptionSelect(resultsActionOptions[1])} />
 								</div>
@@ -715,7 +734,7 @@
 								style:border-radius={wobbly.button}
 							>
 								<PartyPopper size={16} class="mr-1" />
-								Mehr Konfetti
+								{m.chat_more_confetti()}
 							</button>
 						</div>
 					{/if}

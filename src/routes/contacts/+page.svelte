@@ -8,6 +8,7 @@
 	import type { ContactAttempt } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
 
+	// store keys as values - translate only for display
 	const waitingTimeOptions = [
 		{ key: 'waiting_1_month', value: '< 1 Monat' },
 		{ key: 'waiting_1_3_months', value: '1-3 Monate' },
@@ -16,10 +17,17 @@
 		{ key: 'waiting_no_spot', value: 'Kein Platz' }
 	];
 
-	const methodOptions: { key: ContactAttempt['method']; label: string }[] = [
-		{ key: 'email', label: 'E-Mail' },
-		{ key: 'phone', label: 'Telefon' }
+	// label is translated for display
+	const methodOptions: { key: ContactAttempt['method']; labelKey: string }[] = [
+		{ key: 'email', labelKey: 'email' },
+		{ key: 'phone', labelKey: 'phone' }
 	];
+
+	function getMethodLabel(labelKey: string): string {
+		if (labelKey === 'email') return m.pdf_method_email();
+		if (labelKey === 'phone') return m.pdf_method_phone();
+		return labelKey;
+	}
 
 	let editingDateId = $state<string | null>(null);
 
@@ -31,8 +39,12 @@
 		contacts.updateStatus(id, 'replied', waitingTime);
 	}
 
-	function updateDate(id: string, dateStr: string) {
-		contacts.updateDate(id, new Date(dateStr).toISOString());
+	function updateDateTime(id: string, dateStr: string, timeStr: string) {
+		const combined = new Date(`${dateStr}T${timeStr}`);
+		contacts.updateDate(id, combined.toISOString());
+	}
+
+	function closeEdit() {
 		editingDateId = null;
 	}
 
@@ -69,6 +81,11 @@
 
 	function toDateInputValue(isoDate: string): string {
 		return isoDate.split('T')[0];
+	}
+
+	function toTimeInputValue(isoDate: string): string {
+		const d = new Date(isoDate);
+		return d.toTimeString().slice(0, 5);
 	}
 
 	function handleDownload() {
@@ -114,7 +131,7 @@
 					<div class="flex flex-wrap gap-2">
 						<WobblyButton onclick={handleView} size="sm" variant="secondary">
 							<Eye size={18} strokeWidth={2.5} class="mr-2 inline" />
-							Ansehen
+							{m.contacts_view_pdf()}
 						</WobblyButton>
 						<WobblyButton onclick={handleDownload} size="sm">
 							<FileDown size={18} strokeWidth={2.5} class="mr-2 inline" />
@@ -145,19 +162,31 @@
 								{/if}
 								<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-pencil/40">
 									{#if editingDateId === contact.id}
-										<input
-											type="date"
-											value={toDateInputValue(contact.contactDate)}
-											onchange={(e) => updateDate(contact.id, e.currentTarget.value)}
-											onblur={() => editingDateId = null}
-											class="rounded border border-pencil/30 bg-paper px-1 py-0.5 text-xs"
-										/>
+										{@const dateVal = toDateInputValue(contact.contactDate)}
+										{@const timeVal = toTimeInputValue(contact.contactDate)}
+										<div class="flex items-center gap-1">
+											<input
+												type="date"
+												value={dateVal}
+												onchange={(e) => updateDateTime(contact.id, e.currentTarget.value, timeVal)}
+												class="rounded border border-pencil/30 bg-paper px-1 py-0.5 text-xs"
+											/>
+											<input
+												type="time"
+												value={timeVal}
+												onchange={(e) => updateDateTime(contact.id, dateVal, e.currentTarget.value)}
+												class="rounded border border-pencil/30 bg-paper px-1 py-0.5 text-xs"
+											/>
+											<button onclick={closeEdit} class="ml-1 text-pencil/60 hover:text-pencil">
+												OK
+											</button>
+										</div>
 									{:else}
 										<button
 											onclick={() => editingDateId = contact.id}
 											class="flex items-center gap-1 hover:text-blue-pen"
 										>
-											{new Date(contact.contactDate).toLocaleDateString('de-DE')}
+											{new Date(contact.contactDate).toLocaleDateString('de-DE')}, {new Date(contact.contactDate).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
 											<Pencil size={10} />
 										</button>
 									{/if}
@@ -166,7 +195,7 @@
 							<button
 								onclick={() => removeContact(contact.id)}
 								class="text-pencil/40 hover:text-red-marker"
-								title="Löschen"
+								title={m.contacts_delete_title()}
 							>
 								<Trash2 size={18} strokeWidth={2.5} />
 							</button>
@@ -174,14 +203,14 @@
 
 						<!-- contact method -->
 						<div class="mt-3">
-							<label class="mb-1 block text-xs text-pencil/60">Kontaktweg:</label>
+							<label class="mb-1 block text-xs text-pencil/60">{m.contacts_method_label()}</label>
 							<div class="flex flex-wrap gap-2">
 								{#each methodOptions as option}
 									<ChipButton
 										selected={contact.method === option.key}
 										onclick={() => updateMethod(contact.id, option.key)}
 									>
-										{option.label}
+										{getMethodLabel(option.labelKey)}
 									</ChipButton>
 								{/each}
 							</div>
@@ -189,7 +218,7 @@
 
 						<!-- status -->
 						<div class="mt-3">
-							<label class="mb-1 block text-xs text-pencil/60">Status:</label>
+							<label class="mb-1 block text-xs text-pencil/60">{m.contacts_status_label()}</label>
 							<div class="flex flex-wrap gap-2">
 								{#each ['pending', 'sent', 'replied', 'no_reply'] as status}
 									<ChipButton
