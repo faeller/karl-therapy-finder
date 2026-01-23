@@ -3,7 +3,8 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
-import { checkCanScheduleCall, scheduleCall } from '$lib/server/callService';
+import { checkCanScheduleCall, scheduleCall, scheduleDebugCall } from '$lib/server/callService';
+import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 
 interface ScheduleCallBody {
 	therapistId: string;
@@ -13,7 +14,10 @@ interface ScheduleCallBody {
 	patientInsurance: string;
 	therapyType?: string;
 	callbackPhone: string;
+	patientEmail?: string;
 	urgency?: 'low' | 'medium' | 'high';
+	isDebug?: boolean;
+	debugTestPhone?: string; // override therapist phone in debug mode
 }
 
 export const POST: RequestHandler = async ({ locals, platform, request }) => {
@@ -35,12 +39,53 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 		error(400, 'Invalid JSON body');
 	}
 
+	// handle debug mode - skip tier checks, override phone with debug test phone
+	const isDebugTherapist = body.therapistId === DEBUG_THERAPIST_ID;
+	const isDebugMode = body.isDebug && body.debugTestPhone;
+
 	// validate required fields
-	if (!body.therapistId || !body.eId || !body.patientName || !body.callbackPhone) {
+	if (isDebugMode) {
+		if (!body.callbackPhone) {
+			error(400, 'Missing callback phone');
+		}
+		if (!body.debugTestPhone) {
+			error(400, 'Missing debug test phone - set it in /debug');
+		}
+	} else if (!body.therapistId || !body.eId || !body.patientName || !body.callbackPhone) {
 		error(400, 'Missing required fields: therapistId, eId, patientName, callbackPhone');
 	}
 
-	// preflight checks
+	// debug mode: use scheduleDebugCall with phone override (calls debug test phone instead of therapist)
+	if (isDebugMode || isDebugTherapist) {
+		try {
+			const result = await scheduleDebugCall(db, {
+				userId: locals.user.id,
+				therapistId: isDebugTherapist ? undefined : body.therapistId, // preserve real id if not debug therapist
+				eId: isDebugTherapist ? undefined : body.eId, // preserve real eId if not debug therapist
+				therapistName: body.therapistName,
+				therapistPhone: body.debugTestPhone || body.callbackPhone, // call the debug test phone
+				patientName: body.patientName,
+				patientInsurance: body.patientInsurance || 'GKV',
+				therapyType: body.therapyType || 'Psychotherapie',
+				callbackPhone: body.callbackPhone,
+				patientEmail: body.patientEmail,
+				urgency: body.urgency
+			});
+
+			return json({
+				success: true,
+				callId: result.callId,
+				scheduledAt: result.scheduledAt.toISOString(),
+				batchId: result.batchId,
+				creditsRemaining: 999
+			});
+		} catch (e) {
+			console.error('[schedule-debug] failed:', e);
+			error(500, e instanceof Error ? e.message : 'Failed to schedule debug call');
+		}
+	}
+
+	// preflight checks for real calls
 	const preflight = await checkCanScheduleCall(
 		db,
 		locals.user.id,
@@ -73,6 +118,7 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 			patientInsurance: body.patientInsurance || 'GKV',
 			therapyType: body.therapyType || 'Psychotherapie',
 			callbackPhone: body.callbackPhone,
+			patientEmail: body.patientEmail,
 			urgency: body.urgency
 		});
 

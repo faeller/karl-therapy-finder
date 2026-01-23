@@ -1,18 +1,8 @@
 // elevenlabs conversational ai integration
 import { env } from '$env/dynamic/private';
+import { type CallOutcome } from '$lib/data/callConstants';
 
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
-
-// call outcome types
-export type CallOutcome =
-	| 'success'
-	| 'callback'
-	| 'no_answer'
-	| 'no_availability'
-	| 'rejected_ai'
-	| 'rejected_privacy'
-	| 'rejected_other'
-	| 'unclear';
 
 export interface AnalyzedCallResult {
 	outcome: CallOutcome;
@@ -24,18 +14,53 @@ export interface AnalyzedCallResult {
 	notes?: string;
 }
 
+// elevenlabs webhook payload - nested under data
 export interface ElevenLabsWebhookPayload {
-	conversation_id: string;
-	status: 'completed' | 'failed' | 'no_answer' | 'busy' | 'voicemail';
-	duration_seconds?: number;
-	transcript?: string;
-	analysis?: {
-		outcome?: string;
-		appointment_offered?: boolean;
-		callback_requested?: boolean;
-		rejection_reason?: string;
+	type: string; // post_call_transcription, call_initiation_failure
+	event_timestamp: number;
+	data: {
+		conversation_id: string;
+		status: string; // done, failed
+		failure_reason?: string; // for call_initiation_failure type
+		transcript?: Array<{
+			role: string;
+			message: string | null;
+			time_in_call_secs?: number;
+		}>;
+		metadata?: {
+			call_duration_secs?: number;
+			termination_reason?: string;
+			charging?: {
+				call_charge?: number;
+				llm_charge?: number;
+				llm_price?: number;
+			};
+			batch_call?: {
+				batch_call_id?: string;
+				batch_call_recipient_id?: string;
+			};
+			[key: string]: unknown;
+		};
+		analysis?: {
+			call_successful?: string;
+			transcript_summary?: string;
+			data_collection_results?: Record<string, {
+				value: string | null;
+				rationale?: string;
+			}>;
+			[key: string]: unknown;
+		};
+		// conversation_initiation_client_data is a sibling of metadata, not inside it
+		conversation_initiation_client_data?: {
+			dynamic_variables?: {
+				karl_call_id?: string;
+				patient_name?: string;
+				callback_phone?: string;
+				patient_email?: string;
+				[key: string]: string | undefined;
+			};
+		};
 	};
-	metadata?: Record<string, unknown>;
 }
 
 export interface TriggerCallParams {
@@ -52,21 +77,63 @@ export interface TriggerCallResult {
 	scheduledTimeUnix?: number;
 }
 
+// normalize phone number to E.164 format (strip spaces, dashes, etc)
+function normalizePhoneNumber(phone: string): string {
+	// remove everything except digits and leading +
+	const cleaned = phone.replace(/[^\d+]/g, '');
+	// ensure it starts with +
+	if (!cleaned.startsWith('+')) {
+		// assume german number if no country code
+		return '+49' + cleaned.replace(/^0/, '');
+	}
+	return cleaned;
+}
+
 // schedule an outbound call via elevenlabs batch calling api
 export async function triggerOutboundCall(params: TriggerCallParams): Promise<TriggerCallResult> {
+	const normalizedPhone = normalizePhoneNumber(params.phoneNumber);
+	console.log('[elevenlabs] triggerOutboundCall called:', {
+		agentId: params.agentId,
+		phoneNumber: params.phoneNumber,
+		normalizedPhone,
+		scheduledAt: params.scheduledAt?.toISOString(),
+		callName: params.callName
+	});
+
 	const apiKey = env.ELEVENLABS_API_KEY;
 	const phoneNumberId = env.ELEVENLABS_PHONE_NUMBER_ID;
 
 	if (!apiKey) {
+		console.error('[elevenlabs] ELEVENLABS_API_KEY not configured');
 		throw new Error('ELEVENLABS_API_KEY not configured');
 	}
 	if (!phoneNumberId) {
+		console.error('[elevenlabs] ELEVENLABS_PHONE_NUMBER_ID not configured');
 		throw new Error('ELEVENLABS_PHONE_NUMBER_ID not configured');
 	}
+
+	console.log('[elevenlabs] env vars ok, phoneNumberId:', phoneNumberId);
 
 	const scheduledTimeUnix = params.scheduledAt
 		? Math.floor(params.scheduledAt.getTime() / 1000)
 		: null;
+
+	const requestBody = {
+		call_name: params.callName || `karl_${Date.now()}`,
+		agent_id: params.agentId,
+		agent_phone_number_id: phoneNumberId,
+		scheduled_time_unix: scheduledTimeUnix,
+		recipients: [
+			{
+				phone_number: normalizedPhone,
+				conversation_initiation_client_data: {
+					dynamic_variables: params.dynamicVariables
+				}
+			}
+		]
+	};
+
+	console.log('[elevenlabs] sending request:', JSON.stringify(requestBody, null, 2));
 
 	try {
 		const response = await fetch(`${ELEVENLABS_API_BASE}/convai/batch-calling/submit`, {
@@ -75,33 +142,25 @@ export async function triggerOutboundCall(params: TriggerCallParams): Promise<Tr
 				'Content-Type': 'application/json',
 				'xi-api-key': apiKey
 			},
-			body: JSON.stringify({
-				call_name: params.callName || `karl_${Date.now()}`,
-				agent_id: params.agentId,
-				agent_phone_number_id: phoneNumberId,
-				scheduled_time_unix: scheduledTimeUnix,
-				recipients: [
-					{
-						phone_number: params.phoneNumber,
-						conversation_initiation_client_data: {
-							dynamic_variables: params.dynamicVariables
-						}
-					}
-				]
-			})
+			body: JSON.stringify(requestBody)
 		});
 
+		const responseText = await response.text();
+		console.log('[elevenlabs] response status:', response.status);
+		console.log('[elevenlabs] response body:', responseText);
+
 		if (!response.ok) {
-			const text = await response.text();
-			console.error('[elevenlabs] batch call submit failed:', response.status, text);
-			throw new Error(`ElevenLabs API error: ${response.status}`);
+			console.error('[elevenlabs] batch call submit failed:', response.status, responseText);
+			throw new Error(`ElevenLabs API error: ${response.status} - ${responseText}`);
 		}
 
-		const data = await response.json() as {
+		const data = JSON.parse(responseText) as {
 			id: string;
 			status: string;
 			scheduled_time_unix?: number;
 		};
+
+		console.log('[elevenlabs] call scheduled successfully:', data);
 
 		return {
 			batchId: data.id,
@@ -109,7 +168,7 @@ export async function triggerOutboundCall(params: TriggerCallParams): Promise<Tr
 			scheduledTimeUnix: data.scheduled_time_unix
 		};
 	} catch (e) {
-		console.error('[elevenlabs] batch call submit failed:', e);
+		console.error('[elevenlabs] batch call submit error:', e);
 		throw e;
 	}
 }
@@ -135,8 +194,7 @@ export async function getConversation(conversationId: string) {
 // verify webhook signature from elevenlabs
 export async function verifyWebhookSignature(
 	payload: string,
-	signature: string | null,
-	timestamp: string | null
+	signatureHeader: string | null
 ): Promise<boolean> {
 	const webhookSecret = env.ELEVENLABS_WEBHOOK_SECRET;
 	if (!webhookSecret) {
@@ -144,18 +202,22 @@ export async function verifyWebhookSignature(
 		return true; // allow in dev without secret
 	}
 
-	if (!signature || !timestamp) {
+	if (!signatureHeader) {
 		return false;
 	}
 
-	// elevenlabs uses hmac-sha256
-	// signature format: v1=<hash>
-	const signatureParts = signature.split('=');
-	if (signatureParts.length !== 2 || signatureParts[0] !== 'v1') {
+	// elevenlabs signature format: t=<timestamp>,v0=<hash>
+	const parts = signatureHeader.split(',');
+	const timestampPart = parts.find(p => p.startsWith('t='));
+	const signaturePart = parts.find(p => p.startsWith('v0='));
+
+	if (!timestampPart || !signaturePart) {
+		console.error('[elevenlabs] invalid signature format:', signatureHeader);
 		return false;
 	}
 
-	const expectedSignature = signatureParts[1];
+	const timestamp = timestampPart.slice(2);
+	const expectedSignature = signaturePart.slice(3);
 	const signedPayload = `${timestamp}.${payload}`;
 
 	// compute expected signature
@@ -209,7 +271,8 @@ export function buildPracticeCallVariables(
 	patientInsurance: string,
 	therapyType: string,
 	callbackPhone: string,
-	urgency: 'low' | 'medium' | 'high' = 'medium'
+	urgency: 'low' | 'medium' | 'high' = 'medium',
+	patientEmail?: string
 ): Record<string, string> {
 	const now = new Date();
 	const hours = now.getHours();
@@ -222,6 +285,7 @@ export function buildPracticeCallVariables(
 		patient_insurance: patientInsurance,
 		therapy_type: therapyType || 'Psychotherapie',
 		callback_phone: callbackPhone,
+		patient_email: patientEmail || '',
 		urgency: urgency === 'high' ? 'dringend' : urgency === 'low' ? 'nicht dringend' : 'mittel',
 		greeting,
 		current_date: now.toLocaleDateString('de-DE'),
@@ -250,4 +314,58 @@ export function get116117CallerAgentId(): string {
 export function estimateCallCost(durationSeconds: number): number {
 	const minutes = durationSeconds / 60;
 	return minutes * 0.10;
+}
+
+// conversation cost details from api
+export interface ConversationCost {
+	totalCredits: number;
+	callCredits: number;
+	llmCredits: number;
+	llmPriceUsd: number;
+	totalPriceUsd: number; // credits converted to USD
+	durationSecs: number;
+}
+
+// credits to usd conversion - default: creator tier average of included ($22/200k=$0.11) + overage ($0.15) = $0.13/1000
+function getCreditsToUsd(): number {
+	const envRate = env.ELEVENLABS_CREDITS_PER_USD;
+	if (envRate) return parseFloat(envRate) / 1000;
+	return 0.13 / 1000; // default: $0.13/1000 credits
+}
+
+// fetch actual cost from elevenlabs api
+export async function getConversationCost(conversationId: string): Promise<ConversationCost | null> {
+	const apiKey = env.ELEVENLABS_API_KEY;
+	if (!apiKey) {
+		console.warn('[elevenlabs] no api key, cannot fetch conversation cost');
+		return null;
+	}
+
+	try {
+		const res = await fetch(`${ELEVENLABS_API_BASE}/convai/conversations/${conversationId}`, {
+			headers: { 'xi-api-key': apiKey }
+		});
+
+		if (!res.ok) {
+			console.error('[elevenlabs] failed to fetch conversation:', res.status);
+			return null;
+		}
+
+		const data = await res.json() as { metadata?: { cost?: number; call_duration_secs?: number; charging?: { call_charge?: number; llm_charge?: number; llm_price?: number } } };
+		const metadata = data.metadata;
+		const charging = metadata?.charging;
+		const totalCredits = metadata?.cost || 0;
+
+		return {
+			totalCredits,
+			callCredits: charging?.call_charge || 0,
+			llmCredits: charging?.llm_charge || 0,
+			llmPriceUsd: charging?.llm_price || 0,
+			totalPriceUsd: totalCredits * getCreditsToUsd(),
+			durationSecs: metadata?.call_duration_secs || 0
+		};
+	} catch (e) {
+		console.error('[elevenlabs] error fetching conversation cost:', e);
+		return null;
+	}
 }

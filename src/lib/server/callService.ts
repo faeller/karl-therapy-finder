@@ -10,10 +10,12 @@ import {
 	buildPracticeCallVariables,
 	getPracticeCallerAgentId,
 	estimateCallCost,
+	getConversationCost,
 	type ElevenLabsWebhookPayload,
-	type CallOutcome
+	type AnalyzedCallResult
 } from './elevenlabs';
-import { parseOpeningHours, analyzeTranscript, calculateNextCallSlot, calculateRetrySlot, type OpeningHours } from './aiService';
+import { type CallOutcome } from '$lib/data/callConstants';
+import { parseOpeningHours, analyzeTranscript, calculateNextCallSlot, calculateRetrySlot, type OpeningHours, type RetryFailureType } from './aiService';
 import { env } from '$env/dynamic/private';
 import { load } from 'cheerio';
 
@@ -133,8 +135,8 @@ export async function getTherapistDetails(
 		};
 	}
 
-	// fetch from tk ärztefuehrer
-	const tkUrl = `https://www.tk-aerztefuehrer.de/TK/Suche_SN/index.js?a=DL&e_id=${eId}`;
+	// fetch from tk ärztefuehrer (DD = detail page with opening hours)
+	const tkUrl = `https://www.tk-aerztefuehrer.de/TK/Suche_SN/index.js?a=DD&e_id=${eId}`;
 	const response = await fetch(tkUrl, {
 		headers: {
 			'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/135.0.0.0',
@@ -157,10 +159,10 @@ export async function getTherapistDetails(
 	const phoneMatch = phoneEl.text().match(/Telefon:\s*([\d\s\/\-\+]+)/);
 	const phone = phoneMatch ? phoneMatch[1].trim() : '';
 
-	// use haiku to parse opening hours
+	// parse opening hours (cheerio first, ai fallback)
 	const { hours, cost } = await parseOpeningHours(html);
 
-	// update phone from haiku result if available
+	// use phone from parser if available
 	const finalPhone = hours.phone || phone;
 
 	// cache the result
@@ -193,18 +195,20 @@ export async function getTherapistDetails(
 		});
 	}
 
-	// track cost
-	await db.insert(table.callCostEvents).values({
-		id: nanoid(),
-		userId,
-		eventType: 'haiku_parse_hours',
-		provider: 'anthropic',
-		model: cost.model,
-		inputTokens: cost.inputTokens,
-		outputTokens: cost.outputTokens,
-		costUsd: cost.costUsd.toFixed(6),
-		createdAt: now
-	});
+	// only track cost if ai was used (cost > 0)
+	if (cost.costUsd > 0) {
+		await db.insert(table.callCostEvents).values({
+			id: nanoid(),
+			userId,
+			eventType: 'haiku_parse_hours',
+			provider: 'anthropic',
+			model: cost.model,
+			inputTokens: cost.inputTokens,
+			outputTokens: cost.outputTokens,
+			costUsd: cost.costUsd.toFixed(6),
+			createdAt: now
+		});
+	}
 
 	return {
 		details: {
@@ -232,6 +236,7 @@ export interface ScheduleCallParams {
 	patientInsurance: string;
 	therapyType: string;
 	callbackPhone: string;
+	patientEmail?: string;
 	urgency?: 'low' | 'medium' | 'high';
 }
 
@@ -277,14 +282,18 @@ export async function scheduleCall(
 		updatedAt: now
 	});
 
-	// build dynamic variables
-	const variables = buildPracticeCallVariables(
-		params.patientName,
-		params.patientInsurance,
-		params.therapyType,
-		params.callbackPhone,
-		params.urgency
-	);
+	// build dynamic variables (include callId for webhook matching)
+	const variables = {
+		...buildPracticeCallVariables(
+			params.patientName,
+			params.patientInsurance,
+			params.therapyType,
+			params.callbackPhone,
+			params.urgency,
+			params.patientEmail
+		),
+		karl_call_id: callId
+	};
 
 	// submit batch call with scheduled time
 	const agentId = getPracticeCallerAgentId();
@@ -313,68 +322,305 @@ export async function scheduleCall(
 }
 
 // ============================================================================
+// DEBUG CALL (for testing without real therapist data)
+// ============================================================================
+
+export interface ScheduleDebugCallParams {
+	userId: string;
+	therapistId?: string; // real therapist id if testing real therapist, else defaults to debug
+	eId?: string; // real eId if testing real therapist, else defaults to debug
+	therapistName: string;
+	therapistPhone: string;
+	patientName: string;
+	patientInsurance: string;
+	therapyType: string;
+	callbackPhone: string;
+	patientEmail?: string;
+	urgency?: 'low' | 'medium' | 'high';
+}
+
+export async function scheduleDebugCall(
+	db: ReturnType<typeof getDb>,
+	params: ScheduleDebugCallParams
+): Promise<ScheduleCallResult> {
+	console.log('[scheduleDebugCall] starting with params:', {
+		userId: params.userId,
+		therapistPhone: params.therapistPhone,
+		callbackPhone: params.callbackPhone
+	});
+
+	const now = new Date();
+	// schedule immediately for debug calls
+	const scheduledAt = now;
+
+	const callId = nanoid();
+	console.log('[scheduleDebugCall] created callId:', callId, 'scheduledAt:', scheduledAt.toISOString());
+
+	// create call record - use provided ids or fall back to debug defaults
+	await db.insert(table.scheduledCalls).values({
+		id: callId,
+		userId: params.userId,
+		therapistId: params.therapistId || 'debug-test-therapist',
+		therapistName: params.therapistName,
+		therapistPhone: params.therapistPhone,
+		eId: params.eId || 'debug',
+		scheduledAt,
+		attemptNumber: 1,
+		maxAttempts: 1,
+		status: 'scheduled',
+		createdAt: now,
+		updatedAt: now
+	});
+	console.log('[scheduleDebugCall] db record created');
+
+	let batchId = `debug_${callId}`;
+
+	// try to trigger real elevenlabs call if configured
+	try {
+		console.log('[scheduleDebugCall] building call variables...');
+		const variables = {
+			...buildPracticeCallVariables(
+				params.patientName,
+				params.patientInsurance,
+				params.therapyType,
+				params.callbackPhone,
+				params.urgency,
+				params.patientEmail
+			),
+			karl_call_id: callId
+		};
+		console.log('[scheduleDebugCall] variables:', variables);
+
+		console.log('[scheduleDebugCall] getting agent id...');
+		const agentId = getPracticeCallerAgentId();
+		console.log('[scheduleDebugCall] agentId:', agentId);
+
+		console.log('[scheduleDebugCall] triggering elevenlabs call...');
+		const result = await triggerOutboundCall({
+			agentId,
+			phoneNumber: params.therapistPhone,
+			dynamicVariables: variables,
+			scheduledAt,
+			callName: `karl_debug_${callId}`
+		});
+
+		batchId = result.batchId;
+		console.log('[scheduleDebugCall] elevenlabs call scheduled, batchId:', batchId);
+	} catch (e) {
+		console.error('[scheduleDebugCall] elevenlabs call failed:', e);
+	}
+
+	// update with batch id
+	await db
+		.update(table.scheduledCalls)
+		.set({
+			elevenlabsConvId: batchId,
+			updatedAt: new Date()
+		})
+		.where(eq(table.scheduledCalls.id, callId));
+
+	return {
+		callId,
+		scheduledAt,
+		batchId
+	};
+}
+
+// ============================================================================
 // WEBHOOK HANDLING
 // ============================================================================
 
 export async function handleCallWebhook(
 	db: ReturnType<typeof getDb>,
 	payload: ElevenLabsWebhookPayload
-): Promise<void> {
+): Promise<string | null> {
 	const now = new Date();
+	const data = payload.data;
 
-	// find the call by conversation id
-	const [call] = await db
-		.select()
-		.from(table.scheduledCalls)
-		.where(eq(table.scheduledCalls.elevenlabsConvId, payload.conversation_id))
-		.limit(1);
+	// try to find the call by:
+	// 1. karl_call_id from dynamic_variables (scheduled calls via batch api)
+	// 2. conversation_id matching elevenlabs_conv_id (fallback)
+	// note: conversation_initiation_client_data is sibling of metadata, not inside it
+	const karlCallId = data.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
+	const conversationId = data.conversation_id;
+
+	console.log('[webhook] conversation_id:', conversationId, 'karl_call_id:', karlCallId);
+
+	let call: typeof table.scheduledCalls.$inferSelect | undefined;
+
+	// try karl_call_id first (widget calls)
+	if (karlCallId) {
+		const [found] = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(eq(table.scheduledCalls.id, karlCallId))
+			.limit(1);
+		call = found;
+	}
+
+	// fallback: try matching by conversation_id = elevenlabs_conv_id (batch calls)
+	if (!call && conversationId) {
+		const [found] = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(eq(table.scheduledCalls.elevenlabsConvId, conversationId))
+			.limit(1);
+		call = found;
+	}
 
 	if (!call) {
-		console.error('[webhook] call not found for conversation:', payload.conversation_id);
-		return;
+		console.log('[webhook] no matching call found for conversation_id:', conversationId, 'karl_call_id:', karlCallId);
+		return null;
 	}
 
-	// determine if we need to analyze transcript
-	let analysis: Awaited<ReturnType<typeof analyzeTranscript>>['result'] | null = null;
-	let analysisCost = 0;
+	console.log('[webhook] matched call:', call.id, 'type:', payload.type);
 
-	if (payload.status === 'completed' && payload.transcript) {
-		const result = await analyzeTranscript(payload.transcript);
-		analysis = result.result;
-		analysisCost = result.cost.costUsd;
-
-		// track analysis cost
-		await db.insert(table.callCostEvents).values({
-			id: nanoid(),
-			callId: call.id,
-			userId: call.userId,
-			eventType: 'haiku_analyze_transcript',
-			provider: 'anthropic',
-			model: result.cost.model,
-			inputTokens: result.cost.inputTokens,
-			outputTokens: result.cost.outputTokens,
-			costUsd: result.cost.costUsd.toFixed(6),
-			createdAt: now
-		});
+	// update conversation_id if not already set
+	if (!call.elevenlabsConvId || call.elevenlabsConvId !== conversationId) {
+		await db.update(table.scheduledCalls)
+			.set({ elevenlabsConvId: conversationId })
+			.where(eq(table.scheduledCalls.id, call.id));
 	}
 
-	// track elevenlabs call cost
-	if (payload.duration_seconds) {
-		const elCost = estimateCallCost(payload.duration_seconds);
+	// handle call_initiation_failure (couldn't connect - invalid number, sip error, etc)
+	if (payload.type === 'call_initiation_failure') {
+		const failureReason = data.failure_reason || 'unknown';
+		const sipCode = (data.metadata as Record<string, unknown>)?.body
+			? ((data.metadata as Record<string, unknown>).body as Record<string, unknown>)?.sip_status_code
+			: undefined;
+
+		// determine if retryable, failure type, and user message based on sip code
+		let userMessage = 'Der Anruf konnte nicht verbunden werden.';
+		let shouldRetry = false;
+		let failureType: RetryFailureType = 'other';
+
+		if (sipCode === 404) {
+			userMessage = 'Die Telefonnummer scheint nicht zu existieren. Bitte überprüfe die Nummer.';
+		} else if (sipCode === 403) {
+			userMessage = 'Der Anruf wurde von der Gegenseite blockiert.';
+		} else if (sipCode === 486 || sipCode === 600) {
+			userMessage = 'Die Leitung war besetzt.';
+			shouldRetry = true;
+			failureType = 'busy';
+		} else if (sipCode === 408 || sipCode === 480 || sipCode === 487) {
+			userMessage = 'Keine Antwort - die Praxis war nicht erreichbar.';
+			shouldRetry = true;
+			failureType = 'no_answer';
+		} else {
+			userMessage += ' Unsere Entwickler schauen sich das Problem an.';
+		}
+
+		const attemptNum = call.attemptNumber || 1;
+		const maxAttempts = call.maxAttempts || MAX_ATTEMPTS;
+		const canRetry = shouldRetry && attemptNum < maxAttempts;
+
+		if (canRetry) {
+			userMessage += ` (Versuch ${attemptNum}/${maxAttempts} - wird automatisch erneut versucht)`;
+			// schedule retry with failure type for smart timing
+			await scheduleRetry(db, call, failureType);
+			console.log('[webhook] call_initiation_failure - scheduling retry, attempt:', attemptNum, 'type:', failureType);
+		} else if (shouldRetry) {
+			userMessage += ` (Alle ${maxAttempts} Versuche fehlgeschlagen)`;
+		}
+
+		// only mark as failed if no retry scheduled
+		if (!canRetry) {
+			await db.update(table.scheduledCalls)
+				.set({
+					status: 'failed',
+					outcome: 'connection_failed',
+					notes: userMessage,
+					completedAt: now,
+					updatedAt: now
+				})
+				.where(eq(table.scheduledCalls.id, call.id));
+		} else {
+			// update notes but keep status as scheduled for retry
+			await db.update(table.scheduledCalls)
+				.set({
+					notes: userMessage,
+					updatedAt: now
+				})
+				.where(eq(table.scheduledCalls.id, call.id));
+		}
+
+		console.log('[webhook] call_initiation_failure processed, sip_code:', sipCode, 'retry:', canRetry);
+		return call.id;
+	}
+
+	// extract transcript as text
+	const transcriptText = data.transcript
+		?.filter(t => t.message)
+		.map(t => `${t.role}: ${t.message}`)
+		.join('\n') || null;
+
+	// extract analysis from elevenlabs (they provide it in data.analysis)
+	const elAnalysis = data.analysis;
+	const dataResults = elAnalysis?.data_collection_results || {};
+
+	// map elevenlabs analysis to our format
+	const appointmentDate = dataResults.appointment_date?.value;
+	const appointmentTime = dataResults.appointment_time?.value;
+	const hasAppointment = appointmentDate && appointmentDate !== 'not_scheduled' && appointmentTime && appointmentTime !== 'not_specified';
+
+	const analysis: AnalyzedCallResult | null = elAnalysis ? {
+		outcome: mapElevenLabsOutcome(elAnalysis.call_successful, dataResults.outcome_reason?.value),
+		confidence: elAnalysis.call_successful === 'success' ? 0.9 : 0.7,
+		notes: elAnalysis.transcript_summary,
+		...(hasAppointment && {
+			appointment: {
+				date: appointmentDate as string,
+				time: appointmentTime as string
+			}
+		}),
+		callbackInfo: dataResults.follow_up_needed?.value === 'yes' ? 'follow-up needed' : undefined,
+		rejectionReason: (() => {
+			const reason = dataResults.outcome_reason?.value;
+			if (!reason || reason === 'appointment_scheduled') return undefined;
+			if (reason === 'denied talking to ai') return 'ai_rejected';
+			return reason;
+		})()
+	} : null;
+
+	// fetch actual cost from elevenlabs api
+	const costInfo = await getConversationCost(data.conversation_id);
+	const durationSeconds = costInfo?.durationSecs || data.metadata?.call_duration_secs;
+
+	if (costInfo) {
+		// store actual cost from api (credits to usd via ELEVENLABS_CREDITS_PER_USD or default $0.13/1000)
 		await db.insert(table.callCostEvents).values({
 			id: nanoid(),
 			callId: call.id,
 			userId: call.userId,
 			eventType: 'elevenlabs_call',
 			provider: 'elevenlabs',
-			durationSeconds: payload.duration_seconds,
+			durationSeconds: costInfo.durationSecs,
+			costUsd: costInfo.totalPriceUsd.toFixed(6),
+			metadata: JSON.stringify({
+				totalCredits: costInfo.totalCredits,
+				callCredits: costInfo.callCredits,
+				llmCredits: costInfo.llmCredits,
+				llmPriceUsd: costInfo.llmPriceUsd
+			}),
+			createdAt: now
+		});
+	} else if (durationSeconds) {
+		// fallback to estimated cost
+		const elCost = estimateCallCost(durationSeconds);
+		await db.insert(table.callCostEvents).values({
+			id: nanoid(),
+			callId: call.id,
+			userId: call.userId,
+			eventType: 'elevenlabs_call',
+			provider: 'elevenlabs',
+			durationSeconds,
 			costUsd: elCost.toFixed(6),
 			createdAt: now
 		});
 	}
 
 	// determine outcome
-	const outcome = analysis?.outcome || mapWebhookStatusToOutcome(payload.status);
+	const outcome = analysis?.outcome || mapWebhookStatusToOutcome(data.status);
 
 	// update call record
 	await db
@@ -382,14 +628,14 @@ export async function handleCallWebhook(
 		.set({
 			status: 'completed',
 			outcome,
-			transcript: payload.transcript || null,
-			analysis: analysis ? JSON.stringify(analysis) : null,
+			transcript: transcriptText,
+			analysis: elAnalysis ? JSON.stringify(elAnalysis) : null,
 			appointmentDate: analysis?.appointment?.date || null,
 			appointmentTime: analysis?.appointment?.time || null,
 			callbackInfo: analysis?.callbackInfo || null,
 			rejectionReason: analysis?.rejectionReason || null,
 			notes: analysis?.notes || null,
-			durationSeconds: payload.duration_seconds || null,
+			durationSeconds: durationSeconds || null,
 			updatedAt: now,
 			completedAt: now
 		})
@@ -397,10 +643,21 @@ export async function handleCallWebhook(
 
 	// handle different outcomes
 	await handleCallOutcome(db, call, outcome, analysis);
+
+	return call.id;
+}
+
+function mapElevenLabsOutcome(callSuccessful: string | undefined, outcomeReason: string | null | undefined): CallOutcome {
+	if (callSuccessful === 'success') return 'success';
+	if (outcomeReason === 'denied talking to ai') return 'rejected_ai';
+	if (outcomeReason === 'no availability') return 'no_availability';
+	if (callSuccessful === 'failure') return 'unclear';
+	return 'unclear';
 }
 
 function mapWebhookStatusToOutcome(status: string): CallOutcome {
 	switch (status) {
+		case 'done':
 		case 'completed':
 			return 'unclear'; // need transcript analysis
 		case 'no_answer':
@@ -441,7 +698,7 @@ async function handleCallOutcome(
 		case 'no_answer':
 			// schedule retry if attempts remaining
 			if ((call.attemptNumber || 1) < (call.maxAttempts || MAX_ATTEMPTS)) {
-				await scheduleRetry(db, call);
+				await scheduleRetry(db, call, 'no_answer');
 			}
 			break;
 
@@ -475,7 +732,8 @@ async function handleCallOutcome(
 
 async function scheduleRetry(
 	db: ReturnType<typeof getDb>,
-	call: table.ScheduledCall
+	call: table.ScheduledCall,
+	failureType: RetryFailureType = 'other'
 ): Promise<void> {
 	// get opening hours
 	const [cached] = await db
@@ -489,7 +747,7 @@ async function scheduleRetry(
 	}
 
 	const hours = JSON.parse(cached.openingHours) as OpeningHours;
-	const newSlot = calculateRetrySlot(hours, call.scheduledAt, call.attemptNumber || 1);
+	const newSlot = calculateRetrySlot(hours, call.scheduledAt, call.attemptNumber || 1, failureType);
 
 	if (!newSlot) {
 		return; // no available slots
