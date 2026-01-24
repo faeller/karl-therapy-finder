@@ -4,7 +4,7 @@
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
-	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2 } from 'lucide-svelte';
+	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
@@ -144,7 +144,7 @@
 							{formatPledgeTier(data.user.pledgeTier)}
 							{#if data.user.pledgeAmountCents}
 								<span class="text-pencil/50">
-									(${formatPledgeAmount(data.user.pledgeAmountCents)}/mo)
+									(€{formatPledgeAmount(data.user.pledgeAmountCents)}/mo)
 								</span>
 							{/if}
 						{:else}
@@ -167,6 +167,31 @@
 				</a>
 			{/if}
 		</WobblyCard>
+
+		<!-- call credits -->
+		{#if data.credits.tierMinutes > 0}
+			<WobblyCard class="mt-4">
+				<div class="flex items-center gap-3">
+					<Phone size={24} class="text-blue-pen" />
+					<div class="flex-1">
+						<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
+						<p class="text-pencil/70">
+							{m.account_credits_remaining({ remaining: data.credits.remaining, total: data.credits.tierMinutes })}
+						</p>
+					</div>
+				</div>
+				<!-- progress bar -->
+				<div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-erased">
+					<div
+						class="h-full bg-blue-pen transition-all"
+						style:width="{Math.min(100, (data.credits.remaining / data.credits.tierMinutes) * 100)}%"
+					></div>
+				</div>
+				<p class="mt-2 text-xs text-pencil/50">
+					{m.account_credits_refresh()}
+				</p>
+			</WobblyCard>
+		{/if}
 
 		<!-- sync settings -->
 		<WobblyCard class="mt-4">

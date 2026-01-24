@@ -6,12 +6,34 @@ import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
 import { eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
+import { getCredits } from '$lib/server/creditService';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, platform }) => {
 	if (!locals.user) {
 		redirect(302, '/auth/patreon');
 	}
-	return { user: locals.user };
+
+	// fetch call credits (auto-refreshes if new month)
+	let credits = { total: 0, used: 0, remaining: 0, tierMinutes: 0 };
+
+	const d1 = await getD1(platform);
+	if (d1) {
+		const db = getDb(d1);
+		const userCredits = await getCredits(
+			db,
+			locals.user.id,
+			locals.user.pledgeAmountCents,
+			locals.user.pledgeTier
+		);
+		credits = {
+			total: userCredits.total,
+			used: userCredits.used,
+			remaining: userCredits.remaining,
+			tierMinutes: userCredits.tierMinutes
+		};
+	}
+
+	return { user: locals.user, credits };
 };
 
 export const actions: Actions = {

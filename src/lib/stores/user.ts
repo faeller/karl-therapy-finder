@@ -32,11 +32,17 @@ export const user = createUserStore();
 export function formatPledgeTier(tier: string | null): string {
 	if (!tier) return 'Free';
 	const labels: Record<string, string> = {
+		tropfen: 'Tropfen',
+		quelle: 'Quelle',
+		fluss: 'Fluss',
+		welle: 'Welle',
+		ozean: 'Ozean',
+		// legacy tiers
 		backer: 'Backer',
 		supporter: 'Supporter',
 		premium: 'Premium'
 	};
-	return labels[tier] ?? tier;
+	return labels[tier] ?? tier.charAt(0).toUpperCase() + tier.slice(1);
 }
 
 // helper to format pledge amount
