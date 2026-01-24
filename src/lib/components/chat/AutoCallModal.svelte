@@ -322,6 +322,8 @@
 	}
 
 	async function handleCancel(callId: string) {
+		if (!confirm(m.autocall_cancel_confirm())) return;
+
 		try {
 			const response = await fetch('/api/calls/cancel', {
 				method: 'POST',
@@ -716,11 +718,21 @@
 						{/if}
 
 						<!-- attempt history (if retried) -->
-						{#if selectedCall.attemptHistory?.length}
+						{#if selectedCall.attemptHistory?.length || (selectedCall.attemptNumber && selectedCall.attemptNumber > 1)}
+							{@const allAttempts = [
+								...(selectedCall.attemptHistory || []),
+								{
+									attempt: selectedCall.attemptNumber || 1,
+									scheduledAt: selectedCall.scheduledAt,
+									completedAt: selectedCall.completedAt,
+									outcome: selectedCall.outcome,
+									notes: selectedCall.notes
+								}
+							]}
 							<details class="attempt-history-details" open>
-								<summary><History size={14} class="shrink-0" /> {m.autocall_history_previous({ count: selectedCall.attemptHistory.length })}</summary>
+								<summary><History size={14} class="shrink-0" /> {m.autocall_history_previous({ count: allAttempts.length })}</summary>
 								<div class="timeline-list compact">
-									{#each selectedCall.attemptHistory as attempt}
+									{#each allAttempts as attempt}
 										<div class="timeline-item">
 											<div class="timeline-marker {attempt.outcome ? getStatusColor(attempt.outcome) : 'neutral'}">
 												<span class="attempt-num">{attempt.attempt}</span>
