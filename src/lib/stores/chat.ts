@@ -9,6 +9,7 @@ import { applyOption, applyOptions, resetPreferences } from '$lib/data/optionMap
 import { createKarlMessage, createUserMessage, simulateTyping } from './messageFactory';
 import { searchTherapists, mergeTherapists, SearchError } from '$lib/services/therapistService';
 import { stateConfigs, noResultsConfig, getFieldForState } from './chatStates';
+import { track } from '$lib/utils/analytics';
 
 // derived stores from dataSession
 const state = derived(dataSession, ($data) => $data.chatState);
@@ -63,6 +64,11 @@ async function transitionTo(newState: ChatState) {
 	setState(newState);
 	const config = stateConfigs[newState];
 	const draft = get(campaignDraft);
+
+	// track onboarding complete when entering terminservice or searching
+	if (newState === 'terminservice' || newState === 'searching') {
+		track('onboarding_complete');
+	}
 
 	// special cases requiring dynamic logic
 	if (newState === 'location') {
@@ -160,6 +166,11 @@ async function handleOption(option: ChatOption) {
 	const currentState = dataSession.getData().chatState;
 	const field = getFieldForState(currentState);
 
+	// track key events
+	if (currentState === 'greeting') track('chat_started');
+	if (currentState === 'terminservice') track('terminservice_complete');
+	if (option.id === OptionId.foundTherapist) track('found_therapist');
+
 	if (!option.isAction) {
 		addUserMessage(option.labelDe, field, `option_${option.id}`);
 	}
@@ -185,6 +196,7 @@ async function handleInput(text: string) {
 	if (currentState === 'location') {
 		const plz = extractPlz(text);
 		if (plz) {
+			track('plz_entered');
 			campaignDraft.update((d) => ({ ...d, plz }));
 			return transitionTo('insurance_type');
 		}
