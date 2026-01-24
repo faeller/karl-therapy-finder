@@ -1,10 +1,15 @@
-// reverse geocode proxy - snaps coords to 2km grid for privacy
+// reverse geocode via photon (osm-based, eu-hosted, privacy-friendly)
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-// snap to ~500m grid (all users in same cell get same coords sent externally)
-function snap(coord: number): number {
-	return Math.round(coord * 200) / 200;
+interface PhotonFeature {
+	properties?: {
+		postcode?: string;
+	};
+}
+
+interface PhotonResponse {
+	features?: PhotonFeature[];
 }
 
 export const GET: RequestHandler = async ({ url }) => {
@@ -15,20 +20,18 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json({ error: 'invalid coords' }, { status: 400 });
 	}
 
-	const snappedLat = snap(lat);
-	const snappedLon = snap(lon);
-
 	try {
 		const res = await fetch(
-			`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${snappedLat}&longitude=${snappedLon}&localityLanguage=de`
+			`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&lang=de`
 		);
 
 		if (!res.ok) {
 			return json({ error: 'geo lookup failed' }, { status: 502 });
 		}
 
-		const data: { postcode?: string } = await res.json();
-		return json({ plz: data.postcode || null });
+		const data: PhotonResponse = await res.json();
+		const plz = data.features?.[0]?.properties?.postcode || null;
+		return json({ plz });
 	} catch {
 		return json({ error: 'geo lookup failed' }, { status: 502 });
 	}
