@@ -8,7 +8,7 @@ import type { AnalyzedCallResult } from './elevenlabs';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-const ANTHROPIC_MODEL = 'claude-haiku-4-5-20250121';
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 const OPENROUTER_MODEL = 'anthropic/claude-haiku-4.5';
 
 interface AnthropicResponse {
@@ -32,7 +32,7 @@ export interface CostTracking {
 
 // cost estimates (per token)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
-	'claude-haiku-4-5-20250121': { input: 0.0000008, output: 0.000004 },
+	'claude-haiku-4-5-20251001': { input: 0.0000008, output: 0.000004 },
 	'anthropic/claude-haiku-4.5': { input: 0.0000008, output: 0.000004 }
 };
 
@@ -41,26 +41,50 @@ function estimateCost(model: string, inputTokens: number, outputTokens: number):
 	return inputTokens * costs.input + outputTokens * costs.output;
 }
 
+interface JsonSchema {
+	type: string;
+	properties?: Record<string, unknown>;
+	required?: string[];
+	additionalProperties?: boolean;
+}
+
 async function callAnthropic(
 	systemPrompt: string,
-	userMessage: string
+	userMessage: string,
+	outputSchema?: JsonSchema
 ): Promise<{ response: string; cost: CostTracking }> {
 	const apiKey = env.ANTHROPIC_API_KEY;
 	if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		'x-api-key': apiKey,
+		'anthropic-version': '2023-06-01'
+	};
+
+	// add beta header for structured outputs
+	if (outputSchema) {
+		headers['anthropic-beta'] = 'structured-outputs-2025-11-13';
+	}
+
+	const body: Record<string, unknown> = {
+		model: ANTHROPIC_MODEL,
+		max_tokens: 1024,
+		system: systemPrompt,
+		messages: [{ role: 'user', content: userMessage }]
+	};
+
+	if (outputSchema) {
+		body.output_format = {
+			type: 'json_schema',
+			schema: outputSchema
+		};
+	}
+
 	const response = await fetch(ANTHROPIC_API_URL, {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'x-api-key': apiKey,
-			'anthropic-version': '2023-06-01'
-		},
-		body: JSON.stringify({
-			model: ANTHROPIC_MODEL,
-			max_tokens: 1024,
-			system: systemPrompt,
-			messages: [{ role: 'user', content: userMessage }]
-		})
+		headers,
+		body: JSON.stringify(body)
 	});
 
 	if (!response.ok) {
@@ -152,8 +176,18 @@ Prüfe ob die Daten plausibel und legitim wirken:
 - Name: Echter Name? Keine Beleidigungen, Spam, Testdaten (asdf, test123)?
 - Telefonnummer: Gültiges deutsches Format? Keine offensichtlichen Fake-Nummern (0000, 123456)?
 
-Antworte NUR mit JSON:
-{"valid": true/false, "reason": "kurze Begründung falls invalid", "confidence": 0.0-1.0}`;
+Sei großzügig bei ungewöhnlichen aber echten Namen (internationale Namen, kurze Namen wie "Jo", etc).`;
+
+const VALIDATION_SCHEMA: JsonSchema = {
+	type: 'object',
+	properties: {
+		valid: { type: 'boolean' },
+		reason: { type: 'string' },
+		confidence: { type: 'number' }
+	},
+	required: ['valid', 'confidence'],
+	additionalProperties: false
+};
 
 export async function validateCallRequest(
 	patientName: string,
@@ -183,9 +217,28 @@ export async function validateCallRequest(
 		};
 	}
 
-	// llm check for subtler abuse
-	const { response, cost } = await callLLM(
-		VALIDATION_SYSTEM_PROMPT,
+	// llm check with structured output (anthropic only)
+	const provider = env.AI_PROVIDER || 'anthropic';
+	if (provider === 'anthropic') {
+		const { response, cost } = await callAnthropic(
+			VALIDATION_SYSTEM_PROMPT,
+			`Name: ${nameClean}\nTelefon: ${phoneClean}`,
+			VALIDATION_SCHEMA
+		);
+		try {
+			const parsed = JSON.parse(response) as ValidationResult;
+			return { result: parsed, cost };
+		} catch {
+			return {
+				result: { valid: true, reason: 'parse error, allowing', confidence: 0.5 },
+				cost
+			};
+		}
+	}
+
+	// fallback for openrouter (no structured outputs)
+	const { response, cost } = await callOpenRouter(
+		VALIDATION_SYSTEM_PROMPT + '\n\nAntworte NUR mit rohem JSON, kein Markdown, keine Code-Blöcke: {"valid": true/false, "reason": "...", "confidence": 0.0-1.0}',
 		`Name: ${nameClean}\nTelefon: ${phoneClean}`
 	);
 
@@ -195,7 +248,6 @@ export async function validateCallRequest(
 		const parsed = JSON.parse(jsonMatch[0]) as ValidationResult;
 		return { result: parsed, cost };
 	} catch {
-		// if parsing fails, allow (fail open for legit users)
 		return {
 			result: { valid: true, reason: 'parse error, allowing', confidence: 0.5 },
 			cost
