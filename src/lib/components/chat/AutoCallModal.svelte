@@ -584,7 +584,7 @@
 						<!-- appointment highlight (if successful) -->
 						{#if selectedCall.appointmentDate}
 							<div class="appointment-card">
-								<Calendar size={24} />
+								<Calendar size={24} class="shrink-0" />
 								<div>
 									<span class="appointment-label">{m.autocall_appointment_title()}</span>
 									<span class="appointment-value">{selectedCall.appointmentDate} {selectedCall.appointmentTime || ''}</span>
@@ -595,7 +595,7 @@
 						<!-- callback info highlight -->
 						{#if selectedCall.callbackInfo}
 							<div class="callback-card">
-								<Phone size={20} />
+								<Phone size={20} class="shrink-0" />
 								<div>
 									<span class="callback-label">{m.autocall_callback_title()}</span>
 									<span class="callback-value">{selectedCall.callbackInfo}</span>
@@ -606,7 +606,7 @@
 						<!-- rejection warning -->
 						{#if selectedCall.rejectionReason}
 							<div class="rejection-card">
-								<AlertCircle size={20} />
+								<AlertCircle size={20} class="shrink-0" />
 								<div>
 									<span class="rejection-label">{m.autocall_rejection_title()}</span>
 									<span class="rejection-value">{selectedCall.rejectionReason}</span>
@@ -617,14 +617,14 @@
 						<!-- summary -->
 						{#if selectedCall.notes}
 							<div class="summary-card">
-								<MessageSquare size={18} />
+								<MessageSquare size={18} class="shrink-0" />
 								<p>{selectedCall.notes}</p>
 							</div>
 						{/if}
 
 						<!-- call timing details -->
 						<div class="timing-section">
-							<h4><Clock size={14} /> {m.autocall_timing_title()}</h4>
+							<h4><Clock size={14} class="shrink-0" /> {m.autocall_timing_title()}</h4>
 							<div class="timing-grid">
 								{#if selectedCall.scheduledAt}
 									<div class="timing-item">
@@ -656,7 +656,7 @@
 						<!-- transcript -->
 						{#if selectedCall.transcript}
 							<div class="transcript-section">
-								<h4><MessageSquare size={14} /> {m.autocall_transcript_title()}</h4>
+								<h4><MessageSquare size={14} class="shrink-0" /> {m.autocall_transcript_title()}</h4>
 								<div class="transcript-container">
 									{#each selectedCall.transcript.split('\n') as line}
 										{@const isAgent = line.startsWith('agent:')}
@@ -677,7 +677,7 @@
 						<!-- elevenlabs analysis (structured) -->
 						{#if analysis}
 							<div class="analysis-section">
-								<h4><Info size={14} /> {m.autocall_analysis_title()}</h4>
+								<h4><Info size={14} class="shrink-0" /> {m.autocall_analysis_title()}</h4>
 
 								{#if analysis.call_successful}
 									<div class="analysis-row">
@@ -715,9 +715,42 @@
 							</div>
 						{/if}
 
+						<!-- attempt history (if retried) -->
+						{#if selectedCall.attemptHistory?.length}
+							<details class="attempt-history-details" open>
+								<summary><History size={14} class="shrink-0" /> Vorherige Versuche ({selectedCall.attemptHistory.length})</summary>
+								<div class="timeline-list compact">
+									{#each selectedCall.attemptHistory as attempt}
+										<div class="timeline-item">
+											<div class="timeline-marker {attempt.outcome ? getStatusColor(attempt.outcome) : 'neutral'}">
+												<span class="attempt-num">{attempt.attempt}</span>
+											</div>
+											<div class="timeline-content">
+												<div class="timeline-header">
+													<span class="timeline-date">
+														{#if attempt.scheduledAt}
+															{formatDateTime(attempt.scheduledAt)}
+														{/if}
+													</span>
+													{#if attempt.outcome}
+														<span class="timeline-outcome {getOutcomeColor(attempt.outcome)}">
+															{getOutcomeLabelI18n(attempt.outcome)}
+														</span>
+													{/if}
+												</div>
+												{#if attempt.notes}
+													<p class="timeline-notes">{attempt.notes}</p>
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</details>
+						{/if}
+
 						<!-- technical details (collapsible) -->
 						<details class="tech-details">
-							<summary><Hash size={14} /> {m.autocall_tech_title()}</summary>
+							<summary><Hash size={14} class="shrink-0" /> {m.autocall_tech_title()}</summary>
 							<div class="tech-grid">
 								<div class="tech-item">
 									<span class="tech-label">{m.autocall_tech_call_id()}</span>
@@ -763,7 +796,7 @@
 						<!-- next scheduled call -->
 						<div class="next-call-card">
 							<div class="next-call-header">
-								<Clock size={20} class="text-blue-pen" />
+								<Clock size={20} class="text-blue-pen shrink-0" />
 								<span>Nächster Versuch</span>
 							</div>
 							<div class="next-call-time">
@@ -780,7 +813,7 @@
 						<!-- previous attempts timeline -->
 						{#if selectedCall.attemptHistory?.length}
 							<div class="attempts-timeline">
-								<h4><History size={16} /> Bisherige Versuche</h4>
+								<h4><History size={16} class="shrink-0" /> Bisherige Versuche</h4>
 								<div class="timeline-list">
 									{#each selectedCall.attemptHistory as attempt, i}
 										<div class="timeline-item">
@@ -1041,7 +1074,7 @@
 					<p class="state-title">{m.autocall_success_title()}</p>
 					<p class="state-detail">{m.autocall_success_time({ time: scheduledTime || '' })}</p>
 					<p class="state-hint">{m.autocall_success_hint()}</p>
-					<button class="done-btn" style:border-radius={wobbly.button} onclick={handleClose}>
+					<button class="done-btn" style:border-radius={wobbly.button} onclick={() => { fetchPreflight(); step = 'history'; }}>
 						{m.autocall_success_done()}
 					</button>
 				</div>
@@ -2194,5 +2227,31 @@
 		justify-content: center;
 		padding-top: 0.5rem;
 		border-top: 1px dashed var(--color-erased);
+	}
+
+	.attempt-history-details {
+		margin-top: 1rem;
+		border: 1px solid var(--color-erased);
+		border-radius: 8px;
+		padding: 0.75rem;
+	}
+
+	.attempt-history-details summary {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.timeline-list.compact {
+		margin-top: 0.75rem;
+		gap: 0.5rem;
+	}
+
+	.timeline-list.compact .timeline-item::before {
+		top: 24px;
+		bottom: -8px;
 	}
 </style>

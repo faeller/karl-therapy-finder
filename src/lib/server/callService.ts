@@ -592,8 +592,8 @@ export async function handleCallWebhook(
 
 		if (canRetry) {
 			userMessage += ` (Versuch ${attemptNum}/${maxAttempts} - wird automatisch erneut versucht)`;
-			// schedule retry with failure type for smart timing
-			await scheduleRetry(db, call, failureType);
+			// schedule retry with failure type for smart timing, pass current notes for history
+			await scheduleRetry(db, call, failureType, userMessage);
 			console.log('[webhook] call_initiation_failure - scheduling retry, attempt:', attemptNum, 'type:', failureType);
 		} else if (shouldRetry) {
 			userMessage += ` (Alle ${maxAttempts} Versuche fehlgeschlagen)`;
@@ -717,8 +717,8 @@ export async function handleCallWebhook(
 		})
 		.where(eq(table.scheduledCalls.id, call.id));
 
-	// handle different outcomes
-	await handleCallOutcome(db, call, outcome, analysis);
+	// handle different outcomes (pass notes for history recording)
+	await handleCallOutcome(db, call, outcome, analysis, analysis?.notes || null);
 
 	return call.id;
 }
@@ -750,7 +750,8 @@ async function handleCallOutcome(
 	db: ReturnType<typeof getDb>,
 	call: table.ScheduledCall,
 	outcome: CallOutcome,
-	analysis: Awaited<ReturnType<typeof analyzeTranscript>>['result'] | null
+	analysis: Awaited<ReturnType<typeof analyzeTranscript>>['result'] | null,
+	currentNotes?: string | null
 ): Promise<void> {
 	const now = new Date();
 
@@ -774,7 +775,7 @@ async function handleCallOutcome(
 		case 'no_answer':
 			// schedule retry if attempts remaining
 			if ((call.attemptNumber || 1) < (call.maxAttempts || MAX_ATTEMPTS)) {
-				await scheduleRetry(db, call, 'no_answer');
+				await scheduleRetry(db, call, 'no_answer', currentNotes || undefined);
 			}
 			break;
 
@@ -809,7 +810,8 @@ async function handleCallOutcome(
 async function scheduleRetry(
 	db: ReturnType<typeof getDb>,
 	call: table.ScheduledCall,
-	failureType: RetryFailureType = 'other'
+	failureType: RetryFailureType = 'other',
+	currentNotes?: string
 ): Promise<void> {
 	// parse stored call metadata
 	const metadata = call.callMetadata ? JSON.parse(call.callMetadata) : null;
@@ -857,7 +859,7 @@ async function scheduleRetry(
 		scheduledAt: call.scheduledAt?.toISOString(),
 		completedAt: call.completedAt?.toISOString() || now.toISOString(),
 		outcome: call.outcome,
-		notes: call.notes
+		notes: currentNotes || call.notes
 	};
 	const existingHistory = call.attemptHistory ? JSON.parse(call.attemptHistory) : [];
 	const attemptHistory = [...existingHistory, currentAttempt];
