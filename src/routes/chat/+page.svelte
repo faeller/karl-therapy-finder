@@ -382,7 +382,7 @@
 			<div class="flex items-center justify-between gap-2">
 				<a href="/" class="flex items-center gap-2 min-w-0">
 					<KarlAvatar size="sm" />
-					<h1 class="font-heading text-lg font-bold truncate hidden min-[340px]:block">{m.app_name()}</h1>
+					<h1 class="font-heading text-lg font-bold truncate hidden min-[360px]:block">{m.app_name()}</h1>
 				</a>
 				<div class="flex items-center gap-3 sm:gap-4 shrink-0">
 					<!-- desktop icons -->
