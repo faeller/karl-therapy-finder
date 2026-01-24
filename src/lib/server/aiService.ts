@@ -1,26 +1,26 @@
-// ai service - uses openrouter for llm calls
+// ai service - supports anthropic or openrouter via AI_PROVIDER env
 // handles opening hours parsing, transcript analysis
 import { env } from '$env/dynamic/private';
 import { load } from 'cheerio';
 import type { CallOutcome } from '$lib/data/callConstants';
 import type { AnalyzedCallResult } from './elevenlabs';
 
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'anthropic/claude-haiku-4.5';
+
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20250121';
+const OPENROUTER_MODEL = 'anthropic/claude-haiku-4.5';
+
+interface AnthropicResponse {
+	id: string;
+	content: Array<{ type: string; text: string }>;
+	usage: { input_tokens: number; output_tokens: number };
+}
 
 interface OpenRouterResponse {
 	id: string;
-	choices: Array<{
-		message: {
-			role: string;
-			content: string;
-		};
-	}>;
-	usage: {
-		prompt_tokens: number;
-		completion_tokens: number;
-		total_tokens: number;
-	};
+	choices: Array<{ message: { role: string; content: string } }>;
+	usage: { prompt_tokens: number; completion_tokens: number };
 }
 
 export interface CostTracking {
@@ -30,29 +30,63 @@ export interface CostTracking {
 	costUsd: number;
 }
 
-// rough cost estimates for common models via openrouter (per token)
+// cost estimates (per token)
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
-	'anthropic/claude-haiku-4.5': { input: 0.0000008, output: 0.000004 },
-	'anthropic/claude-3.5-haiku': { input: 0.0000008, output: 0.000004 },
-	'anthropic/claude-3.5-sonnet': { input: 0.000003, output: 0.000015 },
-	'openai/gpt-4o-mini': { input: 0.00000015, output: 0.0000006 },
-	'google/gemini-flash-1.5': { input: 0.000000075, output: 0.0000003 }
+	'claude-haiku-4-5-20250121': { input: 0.0000008, output: 0.000004 },
+	'anthropic/claude-haiku-4.5': { input: 0.0000008, output: 0.000004 }
 };
 
 function estimateCost(model: string, inputTokens: number, outputTokens: number): number {
-	const costs = MODEL_COSTS[model] ?? MODEL_COSTS['anthropic/claude-haiku-4.5'];
+	const costs = MODEL_COSTS[model] ?? MODEL_COSTS['claude-haiku-4-5-20250121'];
 	return inputTokens * costs.input + outputTokens * costs.output;
+}
+
+async function callAnthropic(
+	systemPrompt: string,
+	userMessage: string
+): Promise<{ response: string; cost: CostTracking }> {
+	const apiKey = env.ANTHROPIC_API_KEY;
+	if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+
+	const response = await fetch(ANTHROPIC_API_URL, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'x-api-key': apiKey,
+			'anthropic-version': '2023-06-01'
+		},
+		body: JSON.stringify({
+			model: ANTHROPIC_MODEL,
+			max_tokens: 1024,
+			system: systemPrompt,
+			messages: [{ role: 'user', content: userMessage }]
+		})
+	});
+
+	if (!response.ok) {
+		const text = await response.text();
+		console.error('[anthropic] api error:', response.status, text);
+		throw new Error(`Anthropic API error: ${response.status}`);
+	}
+
+	const data = (await response.json()) as AnthropicResponse;
+	return {
+		response: data.content[0]?.text || '',
+		cost: {
+			inputTokens: data.usage?.input_tokens ?? 0,
+			outputTokens: data.usage?.output_tokens ?? 0,
+			model: ANTHROPIC_MODEL,
+			costUsd: estimateCost(ANTHROPIC_MODEL, data.usage?.input_tokens ?? 0, data.usage?.output_tokens ?? 0)
+		}
+	};
 }
 
 async function callOpenRouter(
 	systemPrompt: string,
-	userMessage: string,
-	model: string = DEFAULT_MODEL
+	userMessage: string
 ): Promise<{ response: string; cost: CostTracking }> {
 	const apiKey = env.OPENROUTER_API_KEY;
-	if (!apiKey) {
-		throw new Error('OPENROUTER_API_KEY not configured');
-	}
+	if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured');
 
 	const response = await fetch(OPENROUTER_API_URL, {
 		method: 'POST',
@@ -63,7 +97,7 @@ async function callOpenRouter(
 			'X-Title': 'KARL'
 		},
 		body: JSON.stringify({
-			model,
+			model: OPENROUTER_MODEL,
 			messages: [
 				{ role: 'system', content: systemPrompt },
 				{ role: 'user', content: userMessage }
@@ -80,17 +114,26 @@ async function callOpenRouter(
 	}
 
 	const data = (await response.json()) as OpenRouterResponse;
-	const text = data.choices[0]?.message?.content || '';
-
 	return {
-		response: text,
+		response: data.choices[0]?.message?.content || '',
 		cost: {
 			inputTokens: data.usage?.prompt_tokens ?? 0,
 			outputTokens: data.usage?.completion_tokens ?? 0,
-			model,
-			costUsd: estimateCost(model, data.usage?.prompt_tokens ?? 0, data.usage?.completion_tokens ?? 0)
+			model: OPENROUTER_MODEL,
+			costUsd: estimateCost(OPENROUTER_MODEL, data.usage?.prompt_tokens ?? 0, data.usage?.completion_tokens ?? 0)
 		}
 	};
+}
+
+// unified caller based on AI_PROVIDER env
+async function callLLM(
+	systemPrompt: string,
+	userMessage: string
+): Promise<{ response: string; cost: CostTracking }> {
+	const provider = env.AI_PROVIDER || 'anthropic';
+	return provider === 'openrouter'
+		? callOpenRouter(systemPrompt, userMessage)
+		: callAnthropic(systemPrompt, userMessage);
 }
 
 // ============================================================================
@@ -172,8 +215,7 @@ Antworte NUR mit validem JSON, keine Erklärungen.`;
 
 // parse opening hours - tries regex first, falls back to ai if needed
 export async function parseOpeningHours(
-	html: string,
-	model: string = DEFAULT_MODEL
+	html: string
 ): Promise<{ hours: OpeningHours; cost: CostTracking }> {
 	// try regex parser first (free)
 	const regexResult = parseOpeningHoursFromHtml(html);
@@ -189,10 +231,9 @@ export async function parseOpeningHours(
 	// fallback to ai for edge cases
 	const truncatedHtml = html.slice(0, 8000);
 
-	const { response, cost } = await callOpenRouter(
+	const { response, cost } = await callLLM(
 		OPENING_HOURS_SYSTEM_PROMPT,
-		`Extrahiere die Öffnungszeiten aus diesem HTML:\n\n${truncatedHtml}`,
-		model
+		`Extrahiere die Öffnungszeiten aus diesem HTML:\n\n${truncatedHtml}`
 	);
 
 	try {
@@ -239,13 +280,11 @@ Antworte NUR mit validem JSON:
 }`;
 
 export async function analyzeTranscript(
-	transcript: string,
-	model: string = DEFAULT_MODEL
+	transcript: string
 ): Promise<{ result: AnalyzedCallResult; cost: CostTracking }> {
-	const { response, cost } = await callOpenRouter(
+	const { response, cost } = await callLLM(
 		TRANSCRIPT_ANALYSIS_SYSTEM_PROMPT,
-		`Analysiere dieses Gesprächstranskript:\n\n${transcript}`,
-		model
+		`Analysiere dieses Gesprächstranskript:\n\n${transcript}`
 	);
 
 	try {
