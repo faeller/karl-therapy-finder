@@ -57,7 +57,7 @@
 
 	let { therapist, open, onClose }: Props = $props();
 
-	type Step = 'loading' | 'confirm' | 'form' | 'scheduling' | 'success' | 'error' | 'history' | 'details';
+	type Step = 'loading' | 'confirm' | 'form' | 'form2' | 'scheduling' | 'success' | 'error' | 'history' | 'details';
 	let step = $state<Step>('loading');
 	let error = $state<string | null>(null);
 	let scheduledTime = $state<string | null>(null);
@@ -145,6 +145,7 @@
 	let email = $state('');
 	let pronouns = $state('auto');
 	let joinWaitlist = $state(true);
+	let healthDataConsent = $state(false);
 	let consent = $state(false);
 	let formLoaded = $state(false);
 
@@ -223,14 +224,25 @@
 		}
 	}
 
-	const canSubmit = $derived(
+	const canProceedToStep2 = $derived(
 		fullName.trim().length >= 2 &&
-		callbackPhone.trim().length >= 6 &&
+		callbackPhone.trim().length >= 6
+	);
+
+	const canSubmit = $derived(
+		canProceedToStep2 &&
+		healthDataConsent &&
 		consent
 	);
 
 	function proceedToForm() {
 		step = 'form';
+	}
+
+	function proceedToStep2() {
+		if (!canProceedToStep2) return;
+		saveForm();
+		step = 'form2';
 	}
 
 	async function handleSubmit() {
@@ -419,6 +431,8 @@
 				</div>
 
 			{:else if step === 'history'}
+				{@const activeCalls = (preflightData?.existingCalls || []).filter(c => c.status !== 'cancelled')}
+				{@const cancelledCalls = (preflightData?.existingCalls || []).filter(c => c.status === 'cancelled')}
 				<div class="history-section">
 					<div class="history-header">
 						<History size={18} />
@@ -426,7 +440,7 @@
 					</div>
 
 					<div class="calls-list">
-						{#each preflightData?.existingCalls || [] as call}
+						{#each activeCalls as call}
 							<div class="call-item">
 								<div class="call-status {getStatusColor(call.status)}">
 									{#if isCallCompleted(call.status)}
@@ -474,6 +488,30 @@
 							</div>
 						{/each}
 					</div>
+
+					{#if cancelledCalls.length > 0}
+						<details class="cancelled-calls">
+							<summary>
+								<ChevronLeft size={14} class="chevron" />
+								{cancelledCalls.length} stornierte Anrufe
+							</summary>
+							<div class="calls-list">
+								{#each cancelledCalls as call}
+									<div class="call-item cancelled">
+										<div class="call-status {getStatusColor(call.status)}">
+											<XCircle size={16} />
+											<span>{getStatusLabelI18n(call.status)}</span>
+										</div>
+										<div class="call-details">
+											{#if call.scheduledAt}
+												<span class="call-time">{formatDateTime(call.scheduledAt)}</span>
+											{/if}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</details>
+					{/if}
 
 					{#if preflightData?.nextSlot && preflightData.canSchedule}
 						<button class="new-call-btn" style:border-radius={wobbly.button} onclick={() => step = 'confirm'}>
@@ -735,19 +773,19 @@
 					</div>
 
 					<div class="confirm-actions">
+						{#if preflightData?.existingCalls.length}
+							<button class="confirm-btn secondary" style:border-radius={wobbly.button} onclick={() => step = 'history'}>
+								{m.autocall_back()}
+							</button>
+						{/if}
 						<button class="confirm-btn primary" style:border-radius={wobbly.button} onclick={proceedToForm}>
 							{m.autocall_confirm_yes()}
 						</button>
-						{#if preflightData?.existingCalls.length}
-							<button class="confirm-btn secondary" style:border-radius={wobbly.button} onclick={() => step = 'history'}>
-								{m.autocall_confirm_history()}
-							</button>
-						{/if}
 					</div>
 				</div>
 
 			{:else if step === 'form'}
-				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="form">
+				<div class="form">
 					<div class="form-header">
 						<p class="form-time">
 							{m.autocall_form_time({ time: preflightData?.nextSlot ? formatDateTime(preflightData.nextSlot.date) : '' })}
@@ -755,6 +793,7 @@
 								<span class="debug-badge">{m.autocall_form_debug()}</span>
 							{/if}
 						</p>
+						<p class="step-indicator">Schritt 1 von 2</p>
 					</div>
 
 					<div class="field">
@@ -786,7 +825,7 @@
 					</div>
 
 					<div class="field">
-						<label for="email">{m.autocall_form_email()} *</label>
+						<label for="email">{m.autocall_form_email()}</label>
 						<input
 							id="email"
 							type="email"
@@ -794,9 +833,36 @@
 							placeholder="max@beispiel.de"
 							class="input"
 							style:border-radius={wobbly.sm}
-							required
 						/>
 						<p class="hint">{m.autocall_form_email_hint()}</p>
+					</div>
+
+					<div class="form-actions">
+						<button class="back-btn" type="button" style:border-radius={wobbly.button} onclick={() => step = 'confirm'}>
+							{m.autocall_back()}
+						</button>
+						<button
+							type="button"
+							class="submit-btn"
+							style:border-radius={wobbly.button}
+							disabled={!canProceedToStep2}
+							onclick={proceedToStep2}
+						>
+							Weiter
+						</button>
+					</div>
+				</div>
+
+			{:else if step === 'form2'}
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="form">
+					<div class="form-header">
+						<p class="form-time">
+							{m.autocall_form_time({ time: preflightData?.nextSlot ? formatDateTime(preflightData.nextSlot.date) : '' })}
+							{#if preflightData?.nextSlot?.isImmediate}
+								<span class="debug-badge">{m.autocall_form_debug()}</span>
+							{/if}
+						</p>
+						<p class="step-indicator">Schritt 2 von 2</p>
 					</div>
 
 					<div class="field">
@@ -817,7 +883,7 @@
 						</p>
 					</div>
 
-					<div class="option-field">
+					<div class="checkbox-field">
 						<input
 							id="joinWaitlist"
 							type="checkbox"
@@ -829,20 +895,34 @@
 						</label>
 					</div>
 
-					<div class="consent-field">
-						<input
-							id="consent"
-							type="checkbox"
-							bind:checked={consent}
-							class="checkbox"
-						/>
-						<label for="consent">
-							{m.autocall_form_consent()}
-						</label>
+					<div class="consent-section">
+						<div class="checkbox-field">
+							<input
+								id="healthDataConsent"
+								type="checkbox"
+								bind:checked={healthDataConsent}
+								class="checkbox"
+							/>
+							<label for="healthDataConsent">
+								Ich willige in die temporäre Verarbeitung meiner Gesundheitsdaten (Therapiebedarf) gemäß Art. 9 DSGVO ein. <a href="/dsgvo" target="_blank" class="hint-link">Mehr erfahren</a>
+							</label>
+						</div>
+
+						<div class="checkbox-field">
+							<input
+								id="consent"
+								type="checkbox"
+								bind:checked={consent}
+								class="checkbox"
+							/>
+							<label for="consent">
+								{m.autocall_form_consent()} <a href="/privacy" target="_blank" class="hint-link">Datenschutzerklärung</a>
+							</label>
+						</div>
 					</div>
 
 					<div class="form-actions">
-						<button class="back-btn" type="button" style:border-radius={wobbly.button} onclick={() => step = 'confirm'}>
+						<button class="back-btn" type="button" style:border-radius={wobbly.button} onclick={() => step = 'form'}>
 							{m.autocall_back()}
 						</button>
 						<button
@@ -1533,6 +1613,50 @@
 		padding: 0.75rem;
 	}
 
+	.cancelled-calls {
+		margin-top: 0.75rem;
+	}
+
+	.cancelled-calls summary {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		cursor: pointer;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		background: var(--color-erased);
+		border: 1px solid var(--color-pencil);
+		opacity: 0.7;
+	}
+
+	.cancelled-calls summary:hover {
+		opacity: 1;
+	}
+
+	.cancelled-calls summary :global(.chevron) {
+		transition: transform 150ms;
+		transform: rotate(-90deg);
+	}
+
+	.cancelled-calls[open] summary :global(.chevron) {
+		transform: rotate(-180deg);
+	}
+
+	.cancelled-calls[open] summary {
+		margin-bottom: 0.5rem;
+	}
+
+	.cancelled-calls .calls-list {
+		gap: 0.375rem;
+	}
+
+	.call-item.cancelled {
+		padding: 0.5rem;
+		opacity: 0.6;
+	}
+
 	/* confirm section */
 	.confirm-section {
 		display: flex;
@@ -1730,23 +1854,18 @@
 		text-decoration: underline;
 	}
 
-	.option-field {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+	.step-indicator {
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		margin-top: 0.25rem;
 	}
 
-	.option-field label {
-		font-size: 0.875rem;
-	}
-
-	.consent-field {
+	.checkbox-field {
 		display: flex;
 		align-items: flex-start;
 		gap: 0.5rem;
-		padding: 0.75rem;
-		background: var(--color-erased);
-		border-radius: 0.5rem;
+		padding: 0.5rem 0;
 	}
 
 	.checkbox {
@@ -1756,9 +1875,16 @@
 		flex-shrink: 0;
 	}
 
-	.consent-field label {
+	.checkbox-field label {
 		font-size: 0.8125rem;
 		line-height: 1.4;
+	}
+
+	.consent-section {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px dashed var(--color-pencil);
+		opacity: 0.9;
 	}
 
 	.form-actions {

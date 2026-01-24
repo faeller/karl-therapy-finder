@@ -195,11 +195,19 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.75rem;
+		margin-bottom: 1rem;
 	}
 
 	.input-group {
 		display: flex;
+		flex-direction: column;
 		gap: 0.75rem;
+	}
+
+	@media (min-width: 400px) {
+		.input-group {
+			flex-direction: row;
+		}
 	}
 
 	.input {
