@@ -119,20 +119,28 @@
 		editingMessageIndex !== null ? $messages[editingMessageIndex]?.contentKey : undefined
 	);
 
+	// track if initial load is done (to skip auto-scroll on page open)
+	let initialLoadDone = false;
+
 	onMount(() => {
 		chat.start();
 		// restore pending re-search modal
 		if (localStorage.getItem(RESEARCH_PROMPT_KEY)) {
 			showReSearchModal = true;
 		}
+		// mark initial load complete after messages are restored
+		setTimeout(() => {
+			initialLoadDone = true;
+		}, 150);
 	});
 
-	// auto-scroll on new messages
+	// auto-scroll on new messages (skip on initial page load)
 	let prevMessageCount = 0;
 	$effect(() => {
 		const count = $messages.length;
 		if (count && messagesContainer && count !== prevMessageCount) {
 			prevMessageCount = count;
+			if (!initialLoadDone) return;
 			setTimeout(() => {
 				if (isInSuccess) {
 					// scroll to success section
@@ -374,7 +382,7 @@
 			<div class="flex items-center justify-between gap-2">
 				<a href="/" class="flex items-center gap-2 min-w-0">
 					<KarlAvatar size="sm" />
-					<h1 class="font-heading text-lg font-bold truncate">{m.app_name()}</h1>
+					<h1 class="font-heading text-lg font-bold truncate hidden min-[340px]:block">{m.app_name()}</h1>
 				</a>
 				<div class="flex items-center gap-3 sm:gap-4 shrink-0">
 					<!-- desktop icons -->
