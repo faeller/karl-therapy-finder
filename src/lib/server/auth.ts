@@ -38,7 +38,8 @@ export async function validateSessionToken(db: Database, token: string) {
 				avatarUrl: table.user.avatarUrl,
 				pledgeTier: table.user.pledgeTier,
 				pledgeAmountCents: table.user.pledgeAmountCents,
-				syncEnabled: table.user.syncEnabled
+				syncEnabled: table.user.syncEnabled,
+				isAdmin: table.user.isAdmin
 			},
 			session: table.session
 		})
@@ -133,6 +134,7 @@ export async function upsertPatreonUser(db: Database, data: PatreonUserData): Pr
 		pledgeTier: data.pledgeTier,
 		pledgeAmountCents: data.pledgeAmountCents,
 		syncEnabled: false,
+		isAdmin: false,
 		createdAt: now,
 		updatedAt: now
 	});
