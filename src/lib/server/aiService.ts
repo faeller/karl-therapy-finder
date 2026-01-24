@@ -137,6 +137,73 @@ async function callLLM(
 }
 
 // ============================================================================
+// CALL REQUEST VALIDATION (anti-abuse)
+// ============================================================================
+
+export interface ValidationResult {
+	valid: boolean;
+	reason?: string;
+	confidence: number;
+}
+
+const VALIDATION_SYSTEM_PROMPT = `Du prüfst Anfragen für automatisierte Anrufe bei Therapiepraxen auf Missbrauch.
+
+Prüfe ob die Daten plausibel und legitim wirken:
+- Name: Echter Name? Keine Beleidigungen, Spam, Testdaten (asdf, test123)?
+- Telefonnummer: Gültiges deutsches Format? Keine offensichtlichen Fake-Nummern (0000, 123456)?
+
+Antworte NUR mit JSON:
+{"valid": true/false, "reason": "kurze Begründung falls invalid", "confidence": 0.0-1.0}`;
+
+export async function validateCallRequest(
+	patientName: string,
+	callbackPhone: string
+): Promise<{ result: ValidationResult; cost: CostTracking }> {
+	// quick regex checks first (free)
+	const nameClean = patientName.trim();
+	const phoneClean = callbackPhone.replace(/\s/g, '');
+
+	// obvious spam patterns
+	if (nameClean.length < 2 || nameClean.length > 100) {
+		return {
+			result: { valid: false, reason: 'name length invalid', confidence: 1 },
+			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		};
+	}
+	if (/^[0-9]+$/.test(nameClean) || /^(.)\1+$/.test(nameClean)) {
+		return {
+			result: { valid: false, reason: 'name looks like spam', confidence: 1 },
+			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		};
+	}
+	if (!/^[\d+\-/() ]{6,20}$/.test(phoneClean)) {
+		return {
+			result: { valid: false, reason: 'phone format invalid', confidence: 1 },
+			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		};
+	}
+
+	// llm check for subtler abuse
+	const { response, cost } = await callLLM(
+		VALIDATION_SYSTEM_PROMPT,
+		`Name: ${nameClean}\nTelefon: ${phoneClean}`
+	);
+
+	try {
+		const jsonMatch = response.match(/\{[\s\S]*\}/);
+		if (!jsonMatch) throw new Error('no json');
+		const parsed = JSON.parse(jsonMatch[0]) as ValidationResult;
+		return { result: parsed, cost };
+	} catch {
+		// if parsing fails, allow (fail open for legit users)
+		return {
+			result: { valid: true, reason: 'parse error, allowing', confidence: 0.5 },
+			cost
+		};
+	}
+}
+
+// ============================================================================
 // OPENING HOURS PARSING
 // ============================================================================
 

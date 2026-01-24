@@ -4,6 +4,7 @@ import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
 import { checkCanScheduleCall, scheduleCall, scheduleDebugCall } from '$lib/server/callService';
+import { validateCallRequest } from '$lib/server/aiService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 
 interface ScheduleCallBody {
@@ -89,6 +90,13 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 			console.error('[schedule-debug] failed:', e);
 			error(500, e instanceof Error ? e.message : 'Failed to schedule debug call');
 		}
+	}
+
+	// anti-abuse validation
+	const validation = await validateCallRequest(body.patientName, body.callbackPhone);
+	if (!validation.result.valid) {
+		console.warn('[schedule] validation failed:', validation.result.reason, body.patientName);
+		error(400, validation.result.reason || 'Invalid request data');
 	}
 
 	// preflight checks for real calls
