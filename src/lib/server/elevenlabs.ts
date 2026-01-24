@@ -298,7 +298,7 @@ export function buildPracticeCallVariables(
 		callback_phone: callbackPhone,
 		patient_email: patientEmail || '',
 		urgency: urgency === 'high' ? 'dringend' : urgency === 'low' ? 'nicht dringend' : 'mittel',
-		pronouns: pronounsMap[pronouns] || 'automatisch',
+		patient_pronouns: pronounsMap[pronouns] || 'automatisch',
 		join_waitlist: joinWaitlist ? 'ja' : 'nein',
 		greeting,
 		current_date: now.toLocaleDateString('de-DE'),

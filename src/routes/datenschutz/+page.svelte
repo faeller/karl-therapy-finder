@@ -118,7 +118,6 @@
 				<li>Ihr Versicherungsstatus</li>
 				<li>Die gewünschte Therapieform</li>
 			</ul>
-			<p>Die Praxis erhält keine Informationen darüber, dass ein KI-System anruft, es sei denn, sie fragt direkt danach. In diesem Fall gibt KARL wahrheitsgemäß Auskunft.</p>
 
 			<br>
 			<h2>4. Hosting und Infrastruktur</h2>
