@@ -31,7 +31,8 @@ function mapCall(c: typeof table.scheduledCalls.$inferSelect) {
 		elevenlabsConvId: c.elevenlabsConvId,
 		attemptNumber: c.attemptNumber,
 		maxAttempts: c.maxAttempts,
-		therapistPhone: c.therapistPhone
+		therapistPhone: c.therapistPhone,
+		attemptHistory: c.attemptHistory ? JSON.parse(c.attemptHistory) : null
 	};
 }
 

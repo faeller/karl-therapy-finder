@@ -851,6 +851,17 @@ async function scheduleRetry(
 
 	const newAttempt = (call.attemptNumber || 1) + 1;
 
+	// record current attempt in history before retry
+	const currentAttempt = {
+		attempt: call.attemptNumber || 1,
+		scheduledAt: call.scheduledAt?.toISOString(),
+		completedAt: call.completedAt?.toISOString() || now.toISOString(),
+		outcome: call.outcome,
+		notes: call.notes
+	};
+	const existingHistory = call.attemptHistory ? JSON.parse(call.attemptHistory) : [];
+	const attemptHistory = [...existingHistory, currentAttempt];
+
 	// update call for retry
 	await db
 		.update(table.scheduledCalls)
@@ -858,6 +869,12 @@ async function scheduleRetry(
 			scheduledAt,
 			attemptNumber: newAttempt,
 			status: 'scheduled',
+			outcome: null, // clear outcome for new attempt
+			notes: null,
+			transcript: null,
+			analysis: null,
+			completedAt: null,
+			attemptHistory: JSON.stringify(attemptHistory),
 			updatedAt: now
 		})
 		.where(eq(table.scheduledCalls.id, call.id));

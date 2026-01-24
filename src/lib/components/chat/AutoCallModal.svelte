@@ -57,7 +57,7 @@
 
 	let { therapist, open, onClose }: Props = $props();
 
-	type Step = 'loading' | 'confirm' | 'form' | 'form2' | 'scheduling' | 'success' | 'error' | 'history' | 'details';
+	type Step = 'loading' | 'confirm' | 'form' | 'form2' | 'scheduling' | 'success' | 'error' | 'history' | 'details' | 'timeline';
 	let step = $state<Step>('loading');
 	let error = $state<string | null>(null);
 	let scheduledTime = $state<string | null>(null);
@@ -96,6 +96,14 @@
 	}
 
 	// preflight data
+	interface AttemptRecord {
+		attempt: number;
+		scheduledAt?: string;
+		completedAt?: string;
+		outcome?: string;
+		notes?: string;
+	}
+
 	interface CallRecord {
 		id: string;
 		status: string;
@@ -116,6 +124,7 @@
 		attemptNumber?: number;
 		maxAttempts?: number;
 		therapistPhone?: string;
+		attemptHistory?: AttemptRecord[];
 	}
 
 	interface PreflightData {
@@ -337,6 +346,11 @@
 		step = 'details';
 	}
 
+	function showTimeline(callId: string) {
+		selectedCallId = callId;
+		step = 'timeline';
+	}
+
 	const selectedCall = $derived(
 		preflightData?.existingCalls.find(c => c.id === selectedCallId)
 	);
@@ -476,6 +490,12 @@
 										<button class="action-link cancel-link" onclick={() => handleCancel(call.id)}>
 											<Trash2 size={14} />
 											{m.autocall_cancel()}
+										</button>
+									{/if}
+									{#if call.status === 'scheduled' && (call.attemptHistory?.length || (call.attemptNumber && call.attemptNumber > 1))}
+										<button class="action-link info-link" onclick={() => showTimeline(call.id)}>
+											<History size={14} />
+											Verlauf
 										</button>
 									{/if}
 									{#if call.status === 'completed' || call.status === 'failed'}
@@ -729,6 +749,79 @@
 								{/if}
 							</div>
 						</details>
+					</div>
+				{/if}
+
+			{:else if step === 'timeline'}
+				{#if selectedCall}
+					<div class="timeline-section">
+						<button class="back-link" onclick={() => step = 'history'}>
+							<ChevronLeft size={16} />
+							{m.autocall_back()}
+						</button>
+
+						<!-- next scheduled call -->
+						<div class="next-call-card">
+							<div class="next-call-header">
+								<Clock size={20} class="text-blue-pen" />
+								<span>Nächster Versuch</span>
+							</div>
+							<div class="next-call-time">
+								{#if selectedCall.scheduledAt}
+									<span class="next-date">{formatDate(selectedCall.scheduledAt)}</span>
+									<span class="next-time">{formatTime(selectedCall.scheduledAt)} Uhr</span>
+								{/if}
+							</div>
+							<div class="next-call-attempt">
+								Versuch {selectedCall.attemptNumber || 1} von {selectedCall.maxAttempts || 3}
+							</div>
+						</div>
+
+						<!-- previous attempts timeline -->
+						{#if selectedCall.attemptHistory?.length}
+							<div class="attempts-timeline">
+								<h4><History size={16} /> Bisherige Versuche</h4>
+								<div class="timeline-list">
+									{#each selectedCall.attemptHistory as attempt, i}
+										<div class="timeline-item">
+											<div class="timeline-marker {attempt.outcome ? getStatusColor(attempt.outcome) : 'neutral'}">
+												<span class="attempt-num">{attempt.attempt}</span>
+											</div>
+											<div class="timeline-content">
+												<div class="timeline-header">
+													<span class="timeline-date">
+														{#if attempt.scheduledAt}
+															{formatDateTime(attempt.scheduledAt)}
+														{/if}
+													</span>
+													{#if attempt.outcome}
+														<span class="timeline-outcome {getOutcomeColor(attempt.outcome)}">
+															{getOutcomeLabelI18n(attempt.outcome)}
+														</span>
+													{/if}
+												</div>
+												{#if attempt.notes}
+													<p class="timeline-notes">{attempt.notes}</p>
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else if selectedCall.attemptNumber && selectedCall.attemptNumber > 1}
+							<div class="no-history-hint">
+								<p>Keine detaillierte Verlaufshistorie verfügbar.</p>
+								<p class="hint-small">Dies ist Versuch {selectedCall.attemptNumber}.</p>
+							</div>
+						{/if}
+
+						<!-- actions -->
+						<div class="timeline-actions">
+							<button class="action-link cancel-link" onclick={() => handleCancel(selectedCall.id)}>
+								<Trash2 size={14} />
+								{m.autocall_cancel()}
+							</button>
+						</div>
 					</div>
 				{/if}
 
@@ -1940,5 +2033,166 @@
 
 	.done-btn:hover, .retry-btn:hover {
 		background: var(--color-erased);
+	}
+
+	/* timeline view */
+	.timeline-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.next-call-card {
+		background: var(--color-postit);
+		border: 2px solid var(--color-pencil);
+		border-radius: 8px;
+		padding: 1rem;
+		text-align: center;
+	}
+
+	.next-call-header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+
+	.next-call-time {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.next-date {
+		font-size: 0.875rem;
+		opacity: 0.7;
+	}
+
+	.next-time {
+		font-size: 1.5rem;
+		font-weight: 700;
+		font-family: var(--font-heading);
+	}
+
+	.next-call-attempt {
+		margin-top: 0.5rem;
+		font-size: 0.8rem;
+		opacity: 0.6;
+	}
+
+	.attempts-timeline h4 {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.timeline-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding-left: 0.25rem;
+	}
+
+	.timeline-item {
+		display: flex;
+		gap: 0.75rem;
+		position: relative;
+	}
+
+	.timeline-item:not(:last-child)::before {
+		content: '';
+		position: absolute;
+		left: 12px;
+		top: 28px;
+		bottom: -12px;
+		width: 2px;
+		background: var(--color-erased);
+	}
+
+	.timeline-marker {
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		border: 2px solid var(--color-pencil);
+		background: var(--color-paper);
+	}
+
+	.timeline-marker.status-red {
+		border-color: var(--color-red-marker);
+		background: rgba(239, 68, 68, 0.1);
+	}
+
+	.timeline-marker.status-yellow {
+		border-color: #f59e0b;
+		background: rgba(245, 158, 11, 0.1);
+	}
+
+	.attempt-num {
+		font-size: 0.7rem;
+		font-weight: 600;
+	}
+
+	.timeline-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.timeline-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.timeline-date {
+		font-size: 0.8rem;
+		opacity: 0.7;
+	}
+
+	.timeline-outcome {
+		font-size: 0.7rem;
+		padding: 0.125rem 0.375rem;
+		border-radius: 4px;
+		font-weight: 500;
+	}
+
+	.timeline-notes {
+		font-size: 0.8rem;
+		margin-top: 0.25rem;
+		opacity: 0.8;
+		line-height: 1.3;
+	}
+
+	.no-history-hint {
+		text-align: center;
+		padding: 1rem;
+		background: var(--color-erased);
+		border-radius: 8px;
+	}
+
+	.no-history-hint p {
+		margin: 0;
+		font-size: 0.875rem;
+	}
+
+	.hint-small {
+		font-size: 0.75rem !important;
+		opacity: 0.6;
+		margin-top: 0.25rem !important;
+	}
+
+	.timeline-actions {
+		display: flex;
+		justify-content: center;
+		padding-top: 0.5rem;
+		border-top: 1px dashed var(--color-erased);
 	}
 </style>
