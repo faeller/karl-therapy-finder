@@ -64,9 +64,13 @@ interface PatreonIdentityResponse {
 		type: string;
 		id: string;
 		attributes: {
+			// member attributes
 			currently_entitled_amount_cents?: number;
 			patron_status?: string;
 			campaign_lifetime_support_cents?: number;
+			// tier attributes
+			title?: string;
+			amount_cents?: number;
 		};
 		relationships?: {
 			currently_entitled_tiers?: {
@@ -105,7 +109,25 @@ export async function getPatreonIdentity(accessToken: string): Promise<PatreonUs
 	);
 
 	const pledgeAmountCents = membership?.attributes.currently_entitled_amount_cents ?? null;
-	const pledgeTier = determinePledgeTier(pledgeAmountCents);
+
+	// get tier name from Patreon (handles grandfathered prices correctly)
+	let pledgeTier: string | null = null;
+	const tierIds = membership?.relationships?.currently_entitled_tiers?.data ?? [];
+	if (tierIds.length > 0) {
+		// find the tier object in included
+		const tierObj = data.included?.find(
+			(item) => item.type === 'tier' && tierIds.some((t) => t.id === item.id)
+		);
+		if (tierObj?.attributes.title) {
+			// normalize tier name (lowercase, handle variations)
+			pledgeTier = normalizeTierName(tierObj.attributes.title);
+		}
+	}
+
+	// fallback to amount-based detection if tier name not found
+	if (!pledgeTier && pledgeAmountCents) {
+		pledgeTier = determinePledgeTierByAmount(pledgeAmountCents);
+	}
 
 	return {
 		patreonId: data.data.id,
@@ -117,9 +139,63 @@ export async function getPatreonIdentity(accessToken: string): Promise<PatreonUs
 	};
 }
 
-function determinePledgeTier(amountCents: number | null): string | null {
-	if (amountCents === null || amountCents === 0) return null;
-	if (amountCents >= 1000) return 'premium'; // $10+
-	if (amountCents >= 500) return 'supporter'; // $5+
-	return 'backer'; // any amount
+// normalize patreon tier title to our internal tier name
+function normalizeTierName(title: string): string | null {
+	const normalized = title.toLowerCase().trim();
+	// exact matches
+	if (TIER_NAMES.includes(normalized)) return normalized;
+	// partial matches (in case of "Tropfen Tier" or similar)
+	for (const tier of TIER_NAMES) {
+		if (normalized.includes(tier)) return tier;
+	}
+	return null;
+}
+
+const TIER_NAMES = ['tropfen', 'quelle', 'fluss', 'welle', 'ozean'];
+
+// fallback: determine tier by amount (strict matching, no grandfathering)
+// only used if tier title not available from patreon
+function determinePledgeTierByAmount(amountCents: number): string | null {
+	if (amountCents === 0) return null;
+	for (const threshold of TIER_THRESHOLDS) {
+		if (amountCents >= threshold) {
+			return TIER_CONFIG[threshold].name;
+		}
+	}
+	// custom amount below minimum tier = no tier benefits
+	return null;
+}
+
+// tier config: amount in cents → tier name and minutes
+// prices are in EUR: €4, €6, €12, €20, €40
+export const TIER_CONFIG: Record<number, { name: string; minutes: number }> = {
+	4000: { name: 'ozean', minutes: 150 },
+	2000: { name: 'welle', minutes: 75 },
+	1200: { name: 'fluss', minutes: 35 },
+	600: { name: 'quelle', minutes: 12 },
+	400: { name: 'tropfen', minutes: 5 }
+};
+
+// sorted thresholds for tier lookup (highest first)
+const TIER_THRESHOLDS = Object.keys(TIER_CONFIG)
+	.map(Number)
+	.sort((a, b) => b - a);
+
+export function getMinutesForTier(tierName: string | null): number {
+	if (!tierName) return 0;
+	const entry = Object.values(TIER_CONFIG).find((t) => t.name === tierName);
+	return entry?.minutes ?? 0;
+}
+
+export function getMinutesForAmount(amountCents: number | null): number {
+	if (amountCents === null || amountCents === 0) return 0;
+
+	for (const threshold of TIER_THRESHOLDS) {
+		if (amountCents >= threshold) {
+			return TIER_CONFIG[threshold].minutes;
+		}
+	}
+
+	// custom amount below minimum tier = no minutes (use tier name for grandfathering)
+	return 0;
 }
