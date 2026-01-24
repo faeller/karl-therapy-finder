@@ -131,6 +131,15 @@
 			</div>
 			<p>Mit Cloudflare besteht ein Auftragsverarbeitungsvertrag. Die Datenverarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an sicherem, zuverlässigem Hosting).</p>
 
+			<h3>Photon (Adresssuche)</h3>
+			<p>Für die Adress-Autovervollständigung beim manuellen Hinzufügen von Kontakten nutzen wir Photon, einen Geocoding-Dienst von Komoot. Dabei wird Ihre Suchanfrage (eingegebene Adresse) an die Server von Komoot übermittelt.</p>
+			<div class="info-box">
+				<p><strong>komoot GmbH</strong><br>
+				Friedrich-Wilhelm-Boelcke-Straße 2, 14473 Potsdam<br>
+				<a href="https://www.komoot.com/privacy" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a></p>
+			</div>
+			<p><strong>Rechtsgrundlage:</strong> Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO) an der Bereitstellung einer benutzerfreundlichen Adresseingabe.</p>
+
 			<br>
 			<h2>5. Cookies und lokale Speicherung</h2>
 			<p>Diese Website verwendet:</p>

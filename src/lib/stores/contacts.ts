@@ -9,6 +9,7 @@ const QUALIFYING_WAIT_TIMES = ['3-6 Monate', '> 6 Monate'] as const;
 
 interface ContactsStore extends Readable<ContactAttempt[]> {
 	add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => void;
+	addWithDate: (contact: Omit<ContactAttempt, 'id'>) => void;
 	updateStatus: (id: string, status: ContactAttempt['status'], waitingTime?: string) => void;
 	updateDate: (id: string, contactDate: string) => void;
 	updateMethod: (id: string, method: ContactAttempt['method']) => void;
@@ -30,6 +31,15 @@ function createContactsStore(): ContactsStore {
 					...contact,
 					id: nanoid(),
 					contactDate: new Date().toISOString()
+				} as ContactAttempt
+			]);
+		},
+		addWithDate: (contact: Omit<ContactAttempt, 'id'>) => {
+			dataSession.updateContacts((contacts) => [
+				...contacts,
+				{
+					...contact,
+					id: nanoid()
 				} as ContactAttempt
 			]);
 		},
