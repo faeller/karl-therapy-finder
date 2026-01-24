@@ -495,7 +495,7 @@
 									{#if call.status === 'scheduled' && (call.attemptHistory?.length || (call.attemptNumber && call.attemptNumber > 1))}
 										<button class="action-link info-link" onclick={() => showTimeline(call.id)}>
 											<History size={14} />
-											Verlauf
+											{m.autocall_timeline_title()}
 										</button>
 									{/if}
 									{#if call.status === 'completed' || call.status === 'failed'}
@@ -513,7 +513,7 @@
 						<details class="cancelled-calls">
 							<summary>
 								<ChevronLeft size={14} class="chevron" />
-								{cancelledCalls.length} stornierte Anrufe
+								{m.autocall_history_cancelled({ count: cancelledCalls.length })}
 							</summary>
 							<div class="calls-list">
 								{#each cancelledCalls as call}
@@ -718,7 +718,7 @@
 						<!-- attempt history (if retried) -->
 						{#if selectedCall.attemptHistory?.length}
 							<details class="attempt-history-details" open>
-								<summary><History size={14} class="shrink-0" /> Vorherige Versuche ({selectedCall.attemptHistory.length})</summary>
+								<summary><History size={14} class="shrink-0" /> {m.autocall_history_previous({ count: selectedCall.attemptHistory.length })}</summary>
 								<div class="timeline-list compact">
 									{#each selectedCall.attemptHistory as attempt}
 										<div class="timeline-item">
@@ -797,7 +797,7 @@
 						<div class="next-call-card">
 							<div class="next-call-header">
 								<Clock size={20} class="text-blue-pen shrink-0" />
-								<span>Nächster Versuch</span>
+								<span>{m.autocall_timeline_next()}</span>
 							</div>
 							<div class="next-call-time">
 								{#if selectedCall.scheduledAt}
@@ -806,14 +806,14 @@
 								{/if}
 							</div>
 							<div class="next-call-attempt">
-								Versuch {selectedCall.attemptNumber || 1} von {selectedCall.maxAttempts || 3}
+								{m.autocall_timeline_attempt_of({ current: selectedCall.attemptNumber || 1, max: selectedCall.maxAttempts || 3 })}
 							</div>
 						</div>
 
 						<!-- previous attempts timeline -->
 						{#if selectedCall.attemptHistory?.length}
 							<div class="attempts-timeline">
-								<h4><History size={16} class="shrink-0" /> Bisherige Versuche</h4>
+								<h4><History size={16} class="shrink-0" /> {m.autocall_timeline_previous()}</h4>
 								<div class="timeline-list">
 									{#each selectedCall.attemptHistory as attempt, i}
 										<div class="timeline-item">
@@ -843,8 +843,8 @@
 							</div>
 						{:else if selectedCall.attemptNumber && selectedCall.attemptNumber > 1}
 							<div class="no-history-hint">
-								<p>Keine detaillierte Verlaufshistorie verfügbar.</p>
-								<p class="hint-small">Dies ist Versuch {selectedCall.attemptNumber}.</p>
+								<p>{m.autocall_timeline_no_history()}</p>
+								<p class="hint-small">{m.autocall_timeline_this_is_attempt({ attempt: selectedCall.attemptNumber })}</p>
 							</div>
 						{/if}
 
