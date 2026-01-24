@@ -147,3 +147,58 @@ export async function updateSyncEnabled(db: Database, userId: string, enabled: b
 		.set({ syncEnabled: enabled, updatedAt: new Date() })
 		.where(eq(table.user.id, userId));
 }
+
+// allocate or refill call credits based on tier
+// called on login - checks if new month, refills if so
+export async function allocateCallCredits(
+	db: Database,
+	userId: string,
+	minutes: number
+): Promise<{ allocated: number; isNewMonth: boolean }> {
+	if (minutes <= 0) {
+		return { allocated: 0, isNewMonth: false };
+	}
+
+	const now = new Date();
+	const [existing] = await db
+		.select()
+		.from(table.userCallCredits)
+		.where(eq(table.userCallCredits.userId, userId))
+		.limit(1);
+
+	if (!existing) {
+		// first time - create credits record
+		await db.insert(table.userCallCredits).values({
+			userId,
+			creditsTotal: minutes,
+			creditsUsed: 0,
+			creditsRefunded: 0,
+			lastRefillAt: now
+		});
+		return { allocated: minutes, isNewMonth: true };
+	}
+
+	// check if we're in a new month since last refill
+	const lastRefill = existing.lastRefillAt;
+	const isNewMonth =
+		!lastRefill ||
+		lastRefill.getFullYear() < now.getFullYear() ||
+		lastRefill.getMonth() < now.getMonth();
+
+	if (isNewMonth) {
+		// refill: reset to tier amount
+		await db
+			.update(table.userCallCredits)
+			.set({
+				creditsTotal: minutes,
+				creditsUsed: 0,
+				creditsRefunded: 0,
+				lastRefillAt: now
+			})
+			.where(eq(table.userCallCredits.userId, userId));
+		return { allocated: minutes, isNewMonth: true };
+	}
+
+	// same month, no refill needed
+	return { allocated: 0, isNewMonth: false };
+}

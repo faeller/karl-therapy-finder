@@ -10,6 +10,7 @@ import {
 } from '$lib/server/auth';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
+import { getCredits } from '$lib/server/creditService';
 
 export const GET: RequestHandler = async ({ url, cookies, platform }) => {
 	const code = url.searchParams.get('code');
@@ -33,6 +34,9 @@ export const GET: RequestHandler = async ({ url, cookies, platform }) => {
 		const tokens = await exchangeCodeForTokens(code, redirectUri);
 		const patreonUser = await getPatreonIdentity(tokens.access_token);
 		const userId = await upsertPatreonUser(db, patreonUser);
+
+		// ensure credits are initialized/refreshed (getCredits handles new month logic)
+		await getCredits(db, userId, patreonUser.pledgeAmountCents, patreonUser.pledgeTier);
 
 		const sessionToken = generateSessionToken();
 		const session = await createSession(db, sessionToken, userId);
