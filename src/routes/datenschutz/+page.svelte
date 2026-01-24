@@ -17,65 +17,185 @@
 		<WobblyCard class="prose prose-pencil max-w-none">
 			<h1>Datenschutzerklärung</h1>
 
+			<div class="info-box">
+				<h3>Open Source</h3>
+				<p>KARL ist freie, quelloffene Software (FOSS). Der Code ist öffentlich einsehbar auf <a href="https://github.com/faeller/karl-therapy-finder" target="_blank" rel="noopener noreferrer">GitHub</a>. Sie können selbst nachvollziehen, wie Ihre Daten verarbeitet werden.</p>
+			</div>
+
+			<br>
 			<h2>1. Datenschutz auf einen Blick</h2>
 
 			<h3>Allgemeine Hinweise</h3>
-			<p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p>
+			<p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. KARL unterscheidet zwischen zwei Nutzungsarten: ohne Anmeldung (nur lokale Speicherung) und mit Anmeldung (Cloud-Synchronisation).</p>
 
-			<h3>Datenerfassung auf dieser Website</h3>
-			<p><strong>Wer ist verantwortlich für die Datenerfassung?</strong></p>
+			<h3>Wer ist verantwortlich?</h3>
 			<p>Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Kontaktdaten finden Sie im <a href="/impressum">Impressum</a>.</p>
 
-			<p><strong>Wie erfassen wir Ihre Daten?</strong></p>
-			<p>Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen (z.B. PLZ-Eingabe für die Therapiesuche). Andere Daten werden automatisch beim Besuch der Website durch unsere IT-Systeme erfasst (technische Daten wie Internetbrowser, Betriebssystem oder Uhrzeit des Seitenaufrufs).</p>
-
-			<p><strong>Wofür nutzen wir Ihre Daten?</strong></p>
-			<p>Ein Teil der Daten wird erhoben, um eine fehlerfreie Bereitstellung der Website zu gewährleisten. Die von Ihnen eingegebenen Suchkriterien werden <strong>ausschließlich lokal in Ihrem Browser gespeichert</strong> und nicht an unsere Server übertragen.</p>
-
 			<div class="info-box">
-				<h3>Lokale Datenspeicherung</h3>
-				<p>KARL speichert alle Ihre Daten (Suchkriterien, Kontaktversuche, Chat-Verlauf) ausschließlich in Ihrem Browser (localStorage). Diese Daten verlassen Ihr Gerät nicht und werden nicht an unsere Server übertragen.</p>
+				<h3>Zwei Nutzungsarten</h3>
+				<p><strong>Ohne Anmeldung:</strong> Alle Daten (Suchkriterien, Kontaktversuche, Chat-Verlauf) werden ausschließlich lokal in Ihrem Browser gespeichert und verlassen Ihr Gerät nicht.</p>
+				<br>
+				<p><strong>Mit Anmeldung:</strong> Wenn Sie sich über Patreon anmelden, werden Ihre Kontaktversuche zusätzlich in unserer Datenbank gespeichert, um eine geräteübergreifende Synchronisation zu ermöglichen.</p>
 			</div>
 
-			<h2>2. Hosting</h2>
-			<p>Diese Website wird bei Cloudflare gehostet:</p>
+			<br>
+			<h2>2. Benutzerkonten und Anmeldung</h2>
+
+			<h3>Patreon OAuth</h3>
+			<p>Wenn Sie sich über Patreon anmelden, erhalten wir folgende Daten von Patreon:</p>
+			<ul>
+				<li>Patreon-Benutzer-ID</li>
+				<li>Benutzername</li>
+				<li>E-Mail-Adresse</li>
+				<li>Profilbild-URL</li>
+				<li>Pledge-Status und -Betrag (falls Unterstützer)</li>
+			</ul>
+			<p><strong>Rechtsgrundlage:</strong> Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO). Die Anmeldung ist erforderlich, um die Synchronisationsfunktion und ggf. Unterstützer-Vorteile bereitzustellen.</p>
+			<p><strong>Speicherdauer:</strong> Bis zur Löschung Ihres Kontos oder bis Sie die Löschung beantragen.</p>
+
+			<h3>Cloud-Synchronisation</h3>
+			<p>Angemeldete Nutzer können ihre Kontaktversuche geräteübergreifend synchronisieren. Dabei werden folgende Daten in unserer Datenbank gespeichert:</p>
+			<ul>
+				<li>Therapist-ID und Name der kontaktierten Praxis</li>
+				<li>Kontaktmethode (E-Mail, Telefon, Auto-Anruf)</li>
+				<li>Status des Kontaktversuchs</li>
+				<li>Zeitstempel</li>
+			</ul>
+			<p><strong>Rechtsgrundlage:</strong> Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Sie können die Synchronisation in den Kontoeinstellungen aktivieren oder deaktivieren.</p>
+
+			<br>
+			<h2>3. Automatische Anrufe (Auto-Call)</h2>
+
+			<div class="info-box warning">
+				<h3>Besondere Kategorie: Gesundheitsdaten</h3>
+				<p>Die Auto-Call-Funktion verarbeitet Gesundheitsdaten im Sinne von Art. 9 DSGVO. Die Nutzung erfordert Ihre ausdrückliche Einwilligung. Ausführliche Informationen finden Sie auf unserer <a href="/dsgvo">DSGVO-Seite zu Gesundheitsdaten</a>.</p>
+			</div>
+
+			<h3>Welche Daten werden verarbeitet?</h3>
+			<p>Wenn Sie einen automatischen Anruf beauftragen, verarbeiten wir:</p>
+			<ul>
+				<li><strong>Kontaktdaten:</strong> Ihr Name, Telefonnummer für Rückrufe, E-Mail-Adresse</li>
+				<li><strong>Gesundheitsdaten:</strong> Die Tatsache, dass Sie einen Therapieplatz suchen, gewünschte Therapieform, Versicherungsart</li>
+				<li><strong>Anrufdaten:</strong> Zeitpunkt, Dauer, Transkript des Gesprächs, Ergebnis (Termin, Warteliste, etc.)</li>
+				<li><strong>Präferenzen:</strong> Anrede/Pronomen, Wunsch auf Warteliste aufgenommen zu werden</li>
+			</ul>
+
+			<h3>Wie funktioniert der Anruf?</h3>
+			<p>KARL nutzt KI-gestützte Sprachsynthese, um automatisch bei Therapiepraxen anzurufen. Der Anruf wird von unserem Auftragsverarbeiter ElevenLabs durchgeführt:</p>
+			<div class="info-box">
+				<p><strong>ElevenLabs, Inc.</strong><br>
+				1 Waverley Pl, Ste 101, New York, NY 10003, USA<br>
+				<a href="https://elevenlabs.io/privacy-policy" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> · <a href="https://elevenlabs.io/dpa" target="_blank" rel="noopener noreferrer">Auftragsverarbeitungsvertrag (DPA)</a></p>
+			</div>
+			<p>Mit ElevenLabs besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO. ElevenLabs verarbeitet die Daten ausschließlich nach unserer Weisung zur Durchführung des Anrufs.</p>
+
+			<h3>Datenübermittlung in die USA</h3>
+			<p>ElevenLabs speichert Daten standardmäßig in den USA. Dies stellt eine Übermittlung in ein Drittland dar. Die Übermittlung erfolgt auf Grundlage von:</p>
+			<ul>
+				<li>Standardvertragsklauseln (SCCs) gemäß Art. 46 Abs. 2 lit. c DSGVO</li>
+				<li>Zusätzliche technische Maßnahmen (Ende-zu-Ende-Verschlüsselung, SOC2-Zertifizierung)</li>
+			</ul>
+			<p>ElevenLabs bietet für Enterprise-Kunden optional EU-Datenresidenz an. Derzeit nutzt KARL diese Option nicht, sodass Anrufdaten in den USA verarbeitet werden. Bei Nutzung der Auto-Call-Funktion willigen Sie in diese Drittlandübermittlung ein.</p>
+
+			<h3>Rechtsgrundlagen</h3>
+			<ul>
+				<li><strong>Gesundheitsdaten:</strong> Ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO)</li>
+				<li><strong>Sonstige Daten:</strong> Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), zur Durchführung des beauftragten Anrufs</li>
+			</ul>
+
+			<h3>Speicherdauer</h3>
+			<ul>
+				<li><strong>Anrufdaten:</strong> 30 Tage nach Abschluss des Anrufs</li>
+				<li><strong>Transkripte:</strong> 30 Tage, danach automatische Löschung</li>
+				<li><strong>Kontaktdaten:</strong> Bis zur Löschung durch Sie oder auf Anfrage</li>
+			</ul>
+
+			<h3>Weitergabe an Dritte</h3>
+			<p>Während des Anrufs werden folgende Informationen an die Therapiepraxis weitergegeben:</p>
+			<ul>
+				<li>Ihr Name</li>
+				<li>Ihre Rückrufnummer</li>
+				<li>Ihr Versicherungsstatus</li>
+				<li>Die gewünschte Therapieform</li>
+			</ul>
+			<p>Die Praxis erhält keine Informationen darüber, dass ein KI-System anruft, es sei denn, sie fragt direkt danach. In diesem Fall gibt KARL wahrheitsgemäß Auskunft.</p>
+
+			<br>
+			<h2>4. Hosting und Infrastruktur</h2>
+
+			<h3>Cloudflare</h3>
+			<p>Diese Website wird bei Cloudflare gehostet. Cloudflare verarbeitet technische Daten (IP-Adresse, Browsertyp, etc.) zur Bereitstellung und Absicherung der Website.</p>
 			<div class="info-box">
 				<p><strong>Cloudflare Germany GmbH</strong><br>
 				Rosental 7, c/o Mindspace, 80331 München<br>
-				<a href="https://www.cloudflare.com/" target="_blank" rel="noopener noreferrer">https://www.cloudflare.com/</a></p>
+				<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a></p>
+			</div>
+			<p>Mit Cloudflare besteht ein Auftragsverarbeitungsvertrag. Die Datenverarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an sicherem, zuverlässigem Hosting).</p>
+
+			<br>
+			<h2>5. Cookies und lokale Speicherung</h2>
+			<p>Diese Website verwendet:</p>
+			<ul>
+				<li><strong>localStorage:</strong> Speicherung Ihrer Einstellungen, Suchkriterien und Chat-Verlauf (nur lokal)</li>
+				<li><strong>Session-Cookie:</strong> Nur für angemeldete Nutzer zur Authentifizierung</li>
+			</ul>
+			<p>Es werden keine Tracking-Cookies verwendet.</p>
+
+			<h3>Anonyme Nutzungsstatistiken</h3>
+			<p>Wir verwenden <a href="https://umami.is/" target="_blank" rel="noopener noreferrer">Umami</a>, eine datenschutzfreundliche, cookielose Analyse-Software. Umami speichert keine personenbezogenen Daten, setzt keine Cookies und ermöglicht kein Tracking über Websites hinweg. Es werden nur aggregierte, anonyme Statistiken erfasst (z.B. Seitenaufrufe, verwendete Gerätetypen).</p>
+			<p><strong>Rechtsgrundlage:</strong> Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO) an der Verbesserung unseres Angebots. Da keine personenbezogenen Daten verarbeitet werden, ist keine Einwilligung erforderlich.</p>
+
+			<br>
+			<h2>6. Ihre Rechte</h2>
+			<p>Sie haben jederzeit folgende Rechte:</p>
+			<ul>
+				<li><strong>Auskunft</strong> (Art. 15 DSGVO): Welche Daten wir über Sie gespeichert haben</li>
+				<li><strong>Berichtigung</strong> (Art. 16 DSGVO): Korrektur unrichtiger Daten</li>
+				<li><strong>Löschung</strong> (Art. 17 DSGVO): Löschung Ihrer Daten ("Recht auf Vergessenwerden")</li>
+				<li><strong>Einschränkung</strong> (Art. 18 DSGVO): Einschränkung der Verarbeitung</li>
+				<li><strong>Datenübertragbarkeit</strong> (Art. 20 DSGVO): Export Ihrer Daten in maschinenlesbarem Format</li>
+				<li><strong>Widerspruch</strong> (Art. 21 DSGVO): Widerspruch gegen bestimmte Verarbeitungen</li>
+				<li><strong>Widerruf der Einwilligung</strong>: Jederzeit mit Wirkung für die Zukunft</li>
+			</ul>
+			<p>Zur Ausübung Ihrer Rechte kontaktieren Sie uns unter der im Impressum angegebenen E-Mail-Adresse.</p>
+
+			<h3>Beschwerderecht</h3>
+			<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Die für uns zuständige Behörde ist:</p>
+			<div class="info-box">
+				<p><strong>Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)</strong><br>
+				Promenade 18, 91522 Ansbach<br>
+				<a href="https://www.lda.bayern.de/" target="_blank" rel="noopener noreferrer">https://www.lda.bayern.de/</a></p>
 			</div>
 
-			<h2>3. Ihre Rechte</h2>
-			<p>Sie haben jederzeit das Recht auf:</p>
+			<br>
+			<h2>7. Anonymisierte Daten</h2>
+			<p>Wir behalten uns vor, vollständig anonymisierte Daten zu Statistikzwecken und zur Verbesserung unserer Dienste zu speichern. Diese Daten enthalten keinerlei Informationen, die Rückschlüsse auf einzelne Personen zulassen. Beispiele:</p>
 			<ul>
-				<li>Auskunft über Ihre gespeicherten personenbezogenen Daten</li>
-				<li>Berichtigung oder Löschung dieser Daten</li>
-				<li>Einschränkung der Verarbeitung</li>
-				<li>Widerspruch gegen die Verarbeitung</li>
-				<li>Datenübertragbarkeit</li>
-				<li>Beschwerde bei einer Aufsichtsbehörde</li>
+				<li>Aggregierte Nutzungsstatistiken (z.B. Anzahl durchgeführter Suchen)</li>
+				<li>Erfolgsquoten bei Anrufen (ohne Personenbezug)</li>
+				<li>Technische Performance-Daten</li>
 			</ul>
+			<p>Da anonymisierte Daten keine personenbezogenen Daten im Sinne der DSGVO sind, ist für deren Verarbeitung keine Rechtsgrundlage erforderlich.</p>
 
-			<h2>4. Cookies und lokale Speicherung</h2>
-			<p>Diese Website verwendet localStorage zur Speicherung Ihrer Einstellungen und Suchkriterien. Diese Daten werden nur lokal in Ihrem Browser gespeichert.</p>
-			<p>Cookies werden nur für technisch notwendige Funktionen verwendet (z.B. Theme-Einstellung, Sprachauswahl).</p>
-
-			<h2>5. Externe Datenquellen</h2>
-			<p>Die Therapeuten-Daten werden über die TK Ärzteführer-Schnittstelle abgerufen. Bei jeder Suche wird eine Anfrage an diesen Dienst gestellt, wobei nur die eingegebene PLZ und Ihre Suchkriterien übertragen werden.</p>
-
-			<h2>6. SSL-Verschlüsselung</h2>
+			<br>
+			<h2>8. SSL-Verschlüsselung</h2>
 			<p>Diese Seite nutzt aus Sicherheitsgründen eine SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie an "https://" in der Adresszeile.</p>
 
-			<h2>7. Verantwortliche Stelle</h2>
+			<br>
+			<h2>9. Verantwortliche Stelle</h2>
 			<div class="info-box">
 				<p><strong>KARL - Kontakt Automatisierung Richtung Leben - Merle Fäller</strong><br>
 				c/o Online-Impressum.de #32385<br>
 				Europaring 90<br>
 				53757 Sankt Augustin<br><br>
-				E-Mail: <a href="mailto:karl@mein.online-impressum.de">karl@mein.online-impressum.de</a></p>
+				E-Mail: <a href="mailto:karl@mail.online-impressum.de">karl@mail.online-impressum.de</a></p>
 			</div>
 
-			<p class="text-sm text-pencil/50 mt-8">Stand: 2025</p>
+			<br>
+			<h2>10. Änderungen dieser Datenschutzerklärung</h2>
+			<p>Wir behalten uns vor, diese Datenschutzerklärung anzupassen, um sie an geänderte Rechtslagen oder bei Änderungen des Dienstes anzupassen. Die aktuelle Version finden Sie stets auf dieser Seite.</p>
+
+			<p class="text-sm text-pencil/50 mt-8">Stand: Januar 2025</p>
 		</WobblyCard>
 	</div>
 </div>
@@ -90,5 +210,13 @@
 	}
 	.info-box h3 {
 		margin-top: 0;
+	}
+	.info-box.warning {
+		background-color: #fef3c7;
+		border-color: #f59e0b;
+	}
+	:global(:root.dark) .info-box.warning {
+		background-color: #451a03;
+		border-color: #d97706;
 	}
 </style>

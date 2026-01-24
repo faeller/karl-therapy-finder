@@ -250,3 +250,20 @@ h1, h2, h3, h4, h5, h6 {
 	background-color: var(--color-red-marker);
 	border-color: var(--color-red-marker);
 }
+
+/* prose styles for legal pages */
+.prose a {
+	color: var(--color-blue-pen);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	font-weight: 500;
+	transition: color 100ms;
+}
+
+.prose a:hover {
+	color: var(--color-red-marker);
+}
+
+.prose h3 {
+	padding-top: 0.5rem;
+}

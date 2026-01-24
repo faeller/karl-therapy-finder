@@ -57,47 +57,67 @@
 			<h3>Urheberrecht</h3>
 			<p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.</p>
 
+			<br>
 			<h2>Allgemeine Geschäftsbedingungen</h2>
 
 			<h3>1. Geltungsbereich</h3>
-			<p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für die Nutzung der Website KARL und der damit verbundenen Dienstleistungen. KARL ist ein kostenloser Service zur Unterstützung bei der Suche nach Therapieplätzen in Deutschland.</p>
+			<p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für die Nutzung der Website KARL und der damit verbundenen Dienstleistungen.</p>
 
 			<h3>2. Leistungsbeschreibung</h3>
 			<p>KARL bietet folgende Dienstleistungen:</p>
 			<ul>
-				<li><strong>Therapiesuche</strong>: Durchsuchbare Datenbank von Therapiepraxen in Deutschland</li>
-				<li><strong>Kontaktmanagement</strong>: Tools zur Verwaltung von Kontaktversuchen zu Therapiepraxen</li>
-				<li><strong>Datenmanagement</strong>: Export-Funktionen für Benutzerdaten (Kontaktprotokoll)</li>
+				<li><strong>Therapiesuche</strong> mit einer durchsuchbaren Datenbank von Therapiepraxen in Deutschland</li>
+				<li><strong>Kontaktmanagement</strong> mit Tools zur Verwaltung von Kontaktversuchen zu Therapiepraxen</li>
+				<li><strong>Automatische Anrufe (Auto-Call)</strong> mit KI-gestützten Anrufen bei Therapiepraxen im Namen des Nutzers</li>
+				<li><strong>Cloud-Synchronisation</strong> für geräteübergreifende Datenspeicherung für angemeldete Nutzer</li>
 			</ul>
 
-			<h3>3. Nutzungsbedingungen</h3>
-			<h4>3.1 Bestimmungsgemäße Nutzung</h4>
+			<h3>3. Benutzerkonten</h3>
+			<p>KARL kann ohne Anmeldung genutzt werden. Für erweiterte Funktionen (Cloud-Sync, Auto-Call) ist eine Anmeldung über Patreon erforderlich.</p>
+			<p>Bei Anmeldung über Patreon gelten zusätzlich die <a href="https://www.patreon.com/policy/legal" target="_blank" rel="noopener noreferrer">Nutzungsbedingungen von Patreon</a>.</p>
+
+			<h3>4. Automatische Anrufe (Auto-Call)</h3>
+			<p>Mit der Nutzung der Auto-Call-Funktion bestätigt der Nutzer:</p>
+			<ul>
+				<li>Die angegebenen Daten (Name, Telefonnummer, etc.) sind korrekt und gehören dem Nutzer</li>
+				<li>Die Einwilligung zur Verarbeitung von Gesundheitsdaten wurde erteilt</li>
+				<li>Die Nutzung erfolgt ausschließlich für den eigenen Therapieplatz-Bedarf</li>
+			</ul>
+			<p>KARL garantiert nicht, dass ein Anruf erfolgreich ist oder zu einem Therapieplatz führt.</p>
+
+			<h3>5. Nutzungsbedingungen</h3>
+			<h4>5.1 Bestimmungsgemäße Nutzung</h4>
 			<p>Der Service dient ausschließlich der Suche nach Therapieplätzen für den persönlichen Bedarf. Eine kommerzielle Nutzung ist nicht gestattet.</p>
 
-			<h4>3.2 Verbotene Aktivitäten</h4>
+			<h4>5.2 Verbotene Aktivitäten</h4>
 			<ul>
 				<li>Automatisierte Abfragen oder Scraping der Website</li>
+				<li>Nutzung der Auto-Call-Funktion für Dritte ohne deren Einwilligung</li>
+				<li>Angabe falscher oder fremder Kontaktdaten</li>
 				<li>Übermäßige oder missbräuchliche Nutzung</li>
 				<li>Manipulation oder Störung der Website-Funktionalität</li>
 			</ul>
 
-			<h3>4. Haftungsausschluss</h3>
-			<h4>4.1 Richtigkeit der Daten</h4>
+			<h3>6. Haftungsausschluss</h3>
+			<h4>6.1 Richtigkeit der Daten</h4>
 			<p>Wir bemühen uns, aktuelle und korrekte Informationen über Therapiepraxen bereitzustellen. Eine Gewähr für die Vollständigkeit, Richtigkeit oder Aktualität der Daten können wir jedoch nicht übernehmen.</p>
 
-			<h4>4.2 Therapievermittlung</h4>
-			<p>KARL ist lediglich ein Suchservice. Wir vermitteln keine Therapieplätze und übernehmen keine Verantwortung für die Qualität oder Verfügbarkeit der aufgelisteten Therapiepraxen.</p>
+			<h4>6.2 Therapievermittlung</h4>
+			<p>KARL ist ein Hilfsmittel zur Kontaktaufnahme. Wir vermitteln keine Therapieplätze und übernehmen keine Verantwortung für die Qualität oder Verfügbarkeit der aufgelisteten Therapiepraxen.</p>
 
-			<h4>4.3 Technische Verfügbarkeit</h4>
-			<p>Eine ständige Verfügbarkeit der Website können wir nicht garantieren.</p>
+			<h4>6.3 Auto-Call Ergebnisse</h4>
+			<p>Für das Ergebnis automatischer Anrufe (vereinbarte Termine, Missverständnisse, etc.) übernehmen wir keine Haftung. Der Nutzer ist selbst dafür verantwortlich, vereinbarte Termine wahrzunehmen oder abzusagen.</p>
 
-			<h3>5. Datenschutz</h3>
-			<p>Die Verarbeitung personenbezogener Daten erfolgt gemäß unserer <a href="/datenschutz">Datenschutzerklärung</a>.</p>
+			<h4>6.4 Technische Verfügbarkeit</h4>
+			<p>Eine ständige Verfügbarkeit der Website und aller Funktionen können wir nicht garantieren.</p>
 
-			<h3>6. Schlussbestimmungen</h3>
-			<p>Es gilt deutsches Recht. Gerichtsstand ist Sankt Augustin, Deutschland.</p>
+			<h3>7. Datenschutz</h3>
+			<p>Die Verarbeitung personenbezogener Daten erfolgt gemäß unserer <a href="/datenschutz">Datenschutzerklärung</a>. Informationen zur Verarbeitung von Gesundheitsdaten finden Sie auf unserer <a href="/dsgvo">DSGVO-Seite</a>.</p>
 
-			<p class="text-sm text-pencil/50 mt-8">Stand: 2025</p>
+			<h3>8. Schlussbestimmungen</h3>
+			<p>Es gilt deutsches Recht. Sollten einzelne Bestimmungen dieser AGB unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
+
+			<p class="text-sm text-pencil/50 mt-8">Stand: Januar 2025</p>
 		</WobblyCard>
 	</div>
 </div>
