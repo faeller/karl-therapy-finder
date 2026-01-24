@@ -10,6 +10,7 @@
 	import { get } from 'svelte/store';
 	import { CallStatus, CallOutcome, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
 	import { m } from '$lib/paraglide/messages';
+	import { track } from '$lib/utils/analytics';
 
 	// i18n status labels
 	function getStatusLabelI18n(status: string, attemptNumber?: number): string {
@@ -169,6 +170,17 @@
 	const isDebugTherapist = $derived(therapist.id === DEBUG_THERAPIST_ID);
 	const isDebugMode = $derived($debug.enabled);
 
+	// phone validation: must start with 0 or +, 8-20 chars
+	function isValidPhone(phone: string): boolean {
+		const clean = phone.replace(/\s/g, '');
+		return /^(0|\+)[\d\-/()]{7,19}$/.test(clean);
+	}
+	const phoneError = $derived(
+		callbackPhone.trim().length > 0 && !isValidPhone(callbackPhone)
+			? 'Telefonnummer muss mit 0 oder + beginnen'
+			: ''
+	);
+
 	// single effect for modal open: load form data, prefill debug phone, fetch preflight
 	$effect(() => {
 		if (!open) return;
@@ -235,7 +247,7 @@
 
 	const canProceedToStep2 = $derived(
 		fullName.trim().length >= 2 &&
-		callbackPhone.trim().length >= 6
+		isValidPhone(callbackPhone)
 	);
 
 	const canSubmit = $derived(
@@ -298,7 +310,7 @@
 			const data = await response.json() as { scheduledAt: string };
 			scheduledTime = formatDateTime(data.scheduledAt);
 
-			// add to contacts
+			// add to contacts (store handles uniqueness by therapistId)
 			contacts.add({
 				therapistId: therapist.id,
 				therapistName: therapist.name,
@@ -312,6 +324,12 @@
 			step = 'success';
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.autocall_error_unknown();
+			// track validation rejections
+			if (error.includes('validiert werden')) {
+				// extract reason between the two \n\n blocks
+				const reasonMatch = error.match(/validiert werden:\n\n(.+?)\.\n\n/s);
+				track('validation_rejected', { reason: reasonMatch?.[1] || 'unknown' });
+			}
 			step = 'error';
 		}
 	}
@@ -956,10 +974,15 @@
 							bind:value={callbackPhone}
 							placeholder="+49 170 1234567"
 							class="input"
+							class:input-error={phoneError}
 							style:border-radius={wobbly.sm}
 							required
 						/>
-						<p class="hint">{m.autocall_form_phone_hint()}</p>
+						{#if phoneError}
+							<p class="field-error">{phoneError}</p>
+						{:else}
+							<p class="hint">{m.autocall_form_phone_hint()}</p>
+						{/if}
 					</div>
 
 					<div class="field">
@@ -1096,6 +1119,9 @@
 					<AlertCircle size={48} class="text-red-marker" />
 					<p class="state-title">{m.autocall_error_title()}</p>
 					<p class="state-detail">{error}</p>
+					<p class="error-links">
+						<a href="mailto:karl@mail.online-impressum.de">E-Mail</a> · <a href="https://github.com/faeller/karl-therapy-finder/issues" target="_blank" rel="noopener">GitHub Issue</a>
+					</p>
 					<button class="retry-btn" style:border-radius={wobbly.button} onclick={fetchPreflight}>
 						{m.autocall_error_retry()}
 					</button>
@@ -1172,7 +1198,7 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding: 2rem 1rem;
+		padding: 0.5rem 1rem 2rem;
 		gap: 0.75rem;
 	}
 
@@ -1184,6 +1210,16 @@
 
 	.state-detail {
 		font-size: 0.9375rem;
+		white-space: pre-line;
+	}
+
+	.error-links {
+		font-size: 0.875rem;
+	}
+
+	.error-links a {
+		color: var(--color-blue-pen);
+		text-decoration: underline;
 	}
 
 	.state-hint {
@@ -1985,6 +2021,15 @@
 		font-size: 0.75rem;
 		color: var(--color-pencil);
 		opacity: 0.6;
+	}
+
+	.field-error {
+		font-size: 0.75rem;
+		color: var(--color-red-marker);
+	}
+
+	.input-error {
+		border-color: var(--color-red-marker);
 	}
 
 	.hint-link {

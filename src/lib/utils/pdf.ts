@@ -9,6 +9,12 @@ function getMethodText(contact: ContactAttempt): string {
 }
 
 export async function generatePdf(contacts: ContactAttempt[]) {
+	// filter out pending contacts and those with < 3 months wait (don't qualify for kostenerstattung)
+	const completedContacts = contacts.filter((c) =>
+		c.status !== 'pending' &&
+		c.waitingTime !== '< 3 Monate'
+	);
+
 	// dynamic import to avoid SSR issues
 	const { jsPDF } = await import('jspdf');
 
@@ -62,7 +68,7 @@ export async function generatePdf(contacts: ContactAttempt[]) {
 	doc.setFont('helvetica', 'normal');
 	doc.setFontSize(8);
 
-	contacts.forEach((contact, index) => {
+	completedContacts.forEach((contact, index) => {
 		// check if we need a new page
 		if (y > 270) {
 			doc.addPage();

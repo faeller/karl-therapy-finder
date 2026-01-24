@@ -179,3 +179,15 @@ export const webhookLogs = sqliteTable('webhook_logs', {
 });
 
 export type WebhookLog = typeof webhookLogs.$inferSelect;
+
+// validation overrides - whitelist for users flagged by validation but are legit
+export const validationOverrides = sqliteTable('validation_overrides', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id),
+	reason: text('reason'), // why they were whitelisted
+	approvedBy: text('approved_by'), // admin who approved
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export type ValidationOverride = typeof validationOverrides.$inferSelect;

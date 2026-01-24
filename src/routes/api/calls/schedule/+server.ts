@@ -6,6 +6,8 @@ import { getD1 } from '$lib/server/d1';
 import { checkCanScheduleCall, scheduleCall, scheduleDebugCall } from '$lib/server/callService';
 import { validateCallRequest } from '$lib/server/aiService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
+import { eq } from 'drizzle-orm';
+import * as table from '$lib/server/db/schema';
 
 interface ScheduleCallBody {
 	therapistId: string;
@@ -62,6 +64,26 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 		error(400, 'Missing required fields: therapistId, eId, patientName, callbackPhone');
 	}
 
+	// anti-abuse validation (runs for all modes including debug)
+	const override = await db
+		.select()
+		.from(table.validationOverrides)
+		.where(eq(table.validationOverrides.userId, locals.user.id))
+		.limit(1);
+
+	if (override.length === 0) {
+		const validation = await validateCallRequest(body.patientName, body.callbackPhone, body.patientEmail);
+		if (!validation.result.valid) {
+			console.warn('[schedule] validation failed:', validation.result.reason, body.patientName);
+			error(
+				400,
+				'Es tut uns super leid, unser Projekt ist noch sehr jung und wir versuchen Praxen vor Missbrauch zu schützen. ' +
+					`Erklärung:\n\n${validation.result.reason}.\n\n` +
+					'Falls dies ein Fehler ist, kontaktiere uns.\nWir helfen dir gerne weiter!\n\nProbiere sonst gerne andere Daten.\nWir meinen es nicht böse.'
+			);
+		}
+	}
+
 	// debug mode: use scheduleDebugCall with phone override (calls debug test phone instead of therapist)
 	if (isDebugMode || isDebugTherapist) {
 		try {
@@ -90,13 +112,6 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 			console.error('[schedule-debug] failed:', e);
 			error(500, e instanceof Error ? e.message : 'Failed to schedule debug call');
 		}
-	}
-
-	// anti-abuse validation
-	const validation = await validateCallRequest(body.patientName, body.callbackPhone);
-	if (!validation.result.valid) {
-		console.warn('[schedule] validation failed:', validation.result.reason, body.patientName);
-		error(400, validation.result.reason || 'Invalid request data');
 	}
 
 	// preflight checks for real calls

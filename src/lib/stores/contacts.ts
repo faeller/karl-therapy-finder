@@ -25,14 +25,20 @@ function createContactsStore(): ContactsStore {
 	return {
 		subscribe: derived$.subscribe,
 		add: (contact: Omit<ContactAttempt, 'id' | 'contactDate'>) => {
-			dataSession.updateContacts((contacts) => [
-				...contacts,
-				{
-					...contact,
-					id: nanoid(),
-					contactDate: new Date().toISOString()
-				} as ContactAttempt
-			]);
+			dataSession.updateContacts((contacts) => {
+				// skip if therapist already in contacts
+				if (contact.therapistId && contacts.some((c) => c.therapistId === contact.therapistId)) {
+					return contacts;
+				}
+				return [
+					...contacts,
+					{
+						...contact,
+						id: nanoid(),
+						contactDate: new Date().toISOString()
+					} as ContactAttempt
+				];
+			});
 		},
 		addWithDate: (contact: Omit<ContactAttempt, 'id'>) => {
 			dataSession.updateContacts((contacts) => [

@@ -49,7 +49,7 @@
 	"autocall_form_consent": "I confirm that KARL may call the practice on my behalf.",
 	"autocall_form_debug": "Debug: immediately",
 	"autocall_form_email": "Email",
-	"autocall_form_email_hint": "for appointment confirmation",
+	"autocall_form_email_hint": "for our communication, might be shared with the practice",
 	"autocall_form_name": "Full name",
 	"autocall_form_name_hint": "will be shared with the practice",
 	"autocall_form_phone": "Callback number",
