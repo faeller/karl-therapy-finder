@@ -179,20 +179,20 @@
 				class="action-btn"
 				style:border-radius={wobbly.button}
 			>
-				<Mail size={18} strokeWidth={2.5} />
+				<Mail size={18} strokeWidth={2.5} class="shrink-0" />
 				{m.email_write()}
 			</a>
 		{/if}
 
-		<div class="flex gap-2">
+		<div class="call-buttons">
 			{#if therapist.phone && (!pendingContact || pendingContact.method !== 'phone')}
 				<a
 					href="tel:{therapist.phone}"
 					onclick={handlePhoneClick}
-					class="action-btn secondary flex-1"
+					class="action-btn secondary"
 					style:border-radius={wobbly.button}
 				>
-					<Phone size={16} strokeWidth={2.5} />
+					<Phone size={16} strokeWidth={2.5} class="shrink-0" />
 					{m.therapist_call()}
 				</a>
 			{/if}
@@ -200,25 +200,25 @@
 			{#if hasScheduledCall}
 				<button
 					onclick={openAutoCallModal}
-					class="action-btn scheduled flex-1"
+					class="action-btn scheduled"
 					style:border-radius={wobbly.button}
 				>
-					<PhoneCall size={16} strokeWidth={2.5} />
+					<PhoneCall size={16} strokeWidth={2.5} class="shrink-0" />
 					Anruf geplant
 				</button>
 			{:else if canUseAutoCall && hasPhone}
 				<button
 					onclick={openAutoCallModal}
-					class="action-btn auto-call flex-1"
+					class="action-btn auto-call"
 					style:border-radius={wobbly.button}
 				>
-					<PhoneCall size={16} strokeWidth={2.5} />
+					<PhoneCall size={16} strokeWidth={2.5} class="shrink-0" />
 					{m.therapist_call_for_me()}
 				</button>
 			{:else}
 				<button
 					disabled
-					class="action-btn coming-soon flex-1"
+					class="action-btn coming-soon"
 					style:border-radius={wobbly.button}
 					title={!hasPhone ? 'Keine Telefonnummer' : m.therapist_call_for_me_soon()}
 				>
@@ -333,6 +333,22 @@
 		font-size: 0.8rem;
 		color: var(--color-pencil);
 		opacity: 0.8;
+	}
+
+	.call-buttons {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	@media (min-width: 320px) {
+		.call-buttons {
+			flex-direction: row;
+		}
+
+		.call-buttons > * {
+			flex: 1;
+		}
 	}
 
 	.confirm-prompt {
