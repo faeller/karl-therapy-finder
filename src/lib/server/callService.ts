@@ -20,7 +20,7 @@ import { parseOpeningHours, analyzeTranscript, calculateNextCallSlot, calculateR
 import { env } from '$env/dynamic/private';
 import { load } from 'cheerio';
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 12;
 const THERAPIST_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 // ============================================================================
@@ -39,13 +39,13 @@ export async function checkCanScheduleCall(
 	eId: string,
 	userPledgeTier: string | null
 ): Promise<PreflightResult> {
-	// check tier - require supporter or premium
-	const allowedTiers = ['supporter', 'premium'];
+	// check tier - any paying tier can schedule calls
+	const allowedTiers = ['tropfen', 'quelle', 'fluss', 'welle', 'ozean'];
 	if (!userPledgeTier || !allowedTiers.includes(userPledgeTier)) {
 		return { canProceed: false, reason: 'tier_required' };
 	}
 
-	// check credits
+	// check credits - need at least 1 minute to schedule
 	const [credits] = await db
 		.select()
 		.from(table.userCallCredits)
@@ -53,7 +53,7 @@ export async function checkCanScheduleCall(
 		.limit(1);
 
 	const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
-	if (available <= 0) {
+	if (available < 1) {
 		return { canProceed: false, reason: 'no_credits', creditsRemaining: 0 };
 	}
 
@@ -755,20 +755,25 @@ async function handleCallOutcome(
 ): Promise<void> {
 	const now = new Date();
 
+	// deduct minutes for calls that connected (has duration)
+	if (call.durationSeconds && call.durationSeconds > 0) {
+		const minutesUsed = Math.ceil(call.durationSeconds / 60); // round up to nearest minute
+		const [userCredits] = await db
+			.select()
+			.from(table.userCallCredits)
+			.where(eq(table.userCallCredits.userId, call.userId))
+			.limit(1);
+		if (userCredits) {
+			await db
+				.update(table.userCallCredits)
+				.set({ creditsUsed: (userCredits.creditsUsed ?? 0) + minutesUsed })
+				.where(eq(table.userCallCredits.userId, call.userId));
+			console.log(`[credits] deducted ${minutesUsed} min (${call.durationSeconds}s) from user ${call.userId}`);
+		}
+	}
+
 	switch (outcome) {
 		case 'success':
-			// deduct credit - fetch current then increment
-			const [userCredits] = await db
-				.select()
-				.from(table.userCallCredits)
-				.where(eq(table.userCallCredits.userId, call.userId))
-				.limit(1);
-			if (userCredits) {
-				await db
-					.update(table.userCallCredits)
-					.set({ creditsUsed: (userCredits.creditsUsed ?? 0) + 1 })
-					.where(eq(table.userCallCredits.userId, call.userId));
-			}
 			// todo: send notification
 			break;
 

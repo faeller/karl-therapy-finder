@@ -404,16 +404,73 @@ export function calculateNextCallSlot(
 // failure types for retry scheduling
 export type RetryFailureType = 'busy' | 'no_answer' | 'other';
 
-// calculate retry slot - retry in 8-20 min (random), up to 3 times per slot
+// find the slot a date falls into and return its duration in minutes
+function findCurrentSlotDuration(hours: OpeningHours, date: Date): number | null {
+	const dayMap: Record<string, number> = {
+		sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6
+	};
+	const dayOfWeek = date.getDay();
+	const dayName = Object.entries(dayMap).find(([, num]) => num === dayOfWeek)?.[0];
+	if (!dayName) return null;
+
+	const timeMinutes = date.getHours() * 60 + date.getMinutes();
+	const allSlots = [
+		...(hours.sprechstunde || []),
+		...hours.regular
+	];
+
+	for (const slot of allSlots) {
+		if (slot.day !== dayName) continue;
+		const [startH, startM] = slot.start.split(':').map(Number);
+		const [endH, endM] = slot.end.split(':').map(Number);
+		const slotStart = startH * 60 + startM;
+		const slotEnd = endH * 60 + endM;
+
+		if (timeMinutes >= slotStart - 30 && timeMinutes <= slotEnd) {
+			return slotEnd - slotStart;
+		}
+	}
+	return null;
+}
+
+// calculate retry slot
+// - delay adapts to slot length (short slot = quick retries, long slot = spread out)
+// - max 5 attempts per day, then jump to next day
 export function calculateRetrySlot(
 	hours: OpeningHours,
 	previousAttemptDate: Date,
-	_attemptNumber: number,
+	attemptNumber: number,
 	_failureType: RetryFailureType = 'other'
 ): TimeSlot | null {
 	const now = new Date();
-	// random delay 8-20 minutes
-	const delayMinutes = 8 + Math.random() * 12;
+
+	// every 5 attempts, jump to next day (unless we're already on a new day)
+	if (attemptNumber > 1 && attemptNumber % 5 === 1) {
+		const prevDay = previousAttemptDate.toDateString();
+		const today = now.toDateString();
+		// only force day jump if previous attempt was today
+		if (prevDay === today) {
+			const tomorrow = new Date(now);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			tomorrow.setHours(0, 0, 0, 0);
+			return calculateNextCallSlot(hours, tomorrow);
+		}
+		// already on a new day, just use normal delay
+	}
+
+	// calculate delay based on slot duration
+	const slotDuration = findCurrentSlotDuration(hours, previousAttemptDate);
+	let delayMinutes: number;
+
+	if (slotDuration && slotDuration > 60) {
+		// adaptive delay: slot duration / 6, with ±30% randomness
+		const baseDelay = slotDuration / 6;
+		delayMinutes = baseDelay * (0.7 + Math.random() * 0.6);
+	} else {
+		// fallback for short/unknown slots: 8-20 min
+		delayMinutes = 8 + Math.random() * 12;
+	}
+
 	const fromDate = new Date(Math.max(now.getTime(), previousAttemptDate.getTime() + delayMinutes * 60 * 1000));
 	return calculateNextCallSlot(hours, fromDate);
 }
