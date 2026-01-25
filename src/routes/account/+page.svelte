@@ -205,6 +205,8 @@
 			{@const tierMins = Math.floor(data.credits.tierSeconds / 60)}
 			{@const totalMins = Math.floor(data.credits.totalSeconds / 60)}
 			{@const maxSeconds = data.credits.tierSeconds > 0 ? data.credits.tierSeconds : data.credits.totalSeconds}
+			{@const reservedMins = Math.floor(data.credits.projectedSeconds / 60)}
+			{@const reservedSecs = data.credits.projectedSeconds % 60}
 			<WobblyCard class="mt-4">
 				<div class="flex items-center gap-3">
 					<Phone size={24} class="text-blue-pen" />
@@ -212,7 +214,13 @@
 						<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
 						{#if hasCredits}
 							<p class="text-pencil/70">
-								{availableMins}:{availableSecs.toString().padStart(2, '0')} / {tierMins > 0 ? tierMins : totalMins}:00 min
+								{availableMins}:{availableSecs.toString().padStart(2, '0')}
+								{#if data.credits.projectedSeconds > 0}
+									<span class="reserved-time" title="Reservierte Zeit für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen.">
+										({reservedMins}:{reservedSecs.toString().padStart(2, '0')} res.)
+									</span>
+								{/if}
+								/ {tierMins > 0 ? tierMins : totalMins}:00 min
 							</p>
 						{:else}
 							<p class="text-pencil/70">
@@ -511,6 +519,13 @@
 	.logout-link:hover {
 		opacity: 1;
 		color: var(--color-red-marker);
+	}
+
+	.reserved-time {
+		color: var(--color-pencil);
+		opacity: 0.5;
+		font-size: 0.875rem;
+		cursor: help;
 	}
 </style>
 
