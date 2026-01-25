@@ -4,7 +4,8 @@
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
-	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar, HelpCircle } from 'lucide-svelte';
+	import CallCreditsDisplay from '$lib/components/ui/CallCreditsDisplay.svelte';
+	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
@@ -200,55 +201,20 @@
 		<!-- call credits -->
 		{#if true}
 			{@const hasCredits = data.credits.tierSeconds > 0 || data.credits.availableSeconds > 0}
-			{@const availableMins = Math.floor(data.credits.availableSeconds / 60)}
-			{@const availableSecs = data.credits.availableSeconds % 60}
-			{@const tierMins = Math.floor(data.credits.tierSeconds / 60)}
-			{@const totalMins = Math.floor(data.credits.totalSeconds / 60)}
-			{@const maxSeconds = data.credits.tierSeconds > 0 ? data.credits.tierSeconds : data.credits.totalSeconds}
-			{@const reservedMins = Math.floor(data.credits.projectedSeconds / 60)}
-			{@const reservedSecs = data.credits.projectedSeconds % 60}
 			<WobblyCard class="mt-4">
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3 mb-3">
 					<Phone size={24} class="text-blue-pen" />
-					<div class="flex-1">
-						<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
-						{#if hasCredits}
-							<p class="text-pencil/70">
-								{availableMins}:{availableSecs.toString().padStart(2, '0')} / {tierMins > 0 ? tierMins : totalMins}:00 min
-							</p>
-						{:else}
-							<p class="text-pencil/70">
-								0:00 min
-							</p>
-						{/if}
-					</div>
+					<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
 				</div>
-					<!-- progress bar -->
-				<div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-erased">
-					{#if hasCredits && maxSeconds > 0}
-						{@const freeSeconds = data.credits.availableSeconds - data.credits.projectedSeconds}
-						{@const freePercent = Math.min(100, (freeSeconds / maxSeconds) * 100)}
-						{@const reservedPercent = Math.min(100, (data.credits.projectedSeconds / maxSeconds) * 100)}
-						{@const freeMins = Math.floor(freeSeconds / 60)}
-						{@const freeSecs = freeSeconds % 60}
-						<div class="h-full flex">
-							<!-- free time in blue -->
-							<div
-								class="bg-blue-pen transition-all"
-								style:width="{freePercent}%"
-								title="Verfügbar: {freeMins}:{freeSecs.toString().padStart(2, '0')} min"
-							></div>
-							<!-- reserved time in grey -->
-							{#if data.credits.projectedSeconds > 0}
-								<div
-									class="bg-pencil/30 transition-all"
-									style:width="{reservedPercent}%"
-									title="Reserviert: {reservedMins}:{reservedSecs.toString().padStart(2, '0')} min für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}"
-								></div>
-							{/if}
-						</div>
-					{/if}
-				</div>
+
+				<CallCreditsDisplay
+					availableSeconds={data.credits.availableSeconds}
+					projectedSeconds={data.credits.projectedSeconds}
+					tierSeconds={data.credits.tierSeconds}
+					totalSeconds={data.credits.totalSeconds}
+					pendingCalls={data.credits.pendingCalls}
+				/>
+
 				<div class="mt-2 flex justify-between text-xs text-pencil/50">
 					{#if data.credits.tierSeconds > 0}
 						<span>{m.account_credits_refresh()}</span>
@@ -256,15 +222,6 @@
 						<span>{m.auth_become_patron()}</span>
 					{:else}
 						<span></span>
-					{/if}
-					{#if data.credits.pendingCalls > 0}
-						<span
-							class="flex items-center gap-1 cursor-help"
-							title="Reservierte Zeit für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
-						>
-							{data.credits.pendingCalls} geplant ({reservedMins}:{reservedSecs.toString().padStart(2, '0')} min reserviert)
-							<HelpCircle size={14} class="text-pencil/40" />
-						</span>
 					{/if}
 				</div>
 
