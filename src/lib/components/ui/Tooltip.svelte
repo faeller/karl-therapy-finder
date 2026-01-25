@@ -21,16 +21,18 @@
 </span>
 
 {#if showTooltip}
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-	<div class="tooltip-overlay" onclick={() => showTooltip = false}>
+	<svelte:body>
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
-			<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
-				<X size={16} />
-			</button>
-			<p class="tooltip-text">{text}</p>
+		<div class="tooltip-overlay" onclick={() => showTooltip = false}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
+				<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
+					<X size={16} />
+				</button>
+				<p class="tooltip-text">{text}</p>
+			</div>
 		</div>
-	</div>
+	</svelte:body>
 {/if}
 
 <style>
@@ -57,8 +59,9 @@
 		width: 100%;
 		padding: 1rem;
 		background: var(--color-paper);
-		border: 2px solid var(--color-pencil);
+		border: 3px solid var(--color-pencil);
 		border-radius: 0.5rem;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	}
 
 	.close-btn {
