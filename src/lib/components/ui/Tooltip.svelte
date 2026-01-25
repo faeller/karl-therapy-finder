@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { X } from 'lucide-svelte';
+
 	interface Props {
 		text: string;
 		children: import('svelte').Snippet;
@@ -19,8 +21,15 @@
 </span>
 
 {#if showTooltip}
-	<div class="tooltip-popup">
-		{text}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div class="tooltip-overlay" onclick={() => showTooltip = false}>
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
+			<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
+				<X size={16} />
+			</button>
+			<p class="tooltip-text">{text}</p>
+		</div>
 	</div>
 {/if}
 
@@ -31,14 +40,50 @@
 		align-items: center;
 	}
 
-	.tooltip-popup {
-		margin-top: 0.5rem;
-		padding: 0.5rem;
-		font-size: 0.75rem;
-		line-height: 1.4;
+	.tooltip-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+		padding: 1rem;
+	}
+
+	.tooltip-modal {
+		position: relative;
+		max-width: 24rem;
+		width: 100%;
+		padding: 1rem;
+		background: var(--color-paper);
+		border: 2px solid var(--color-pencil);
+		border-radius: 0.5rem;
+	}
+
+	.close-btn {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		padding: 0.25rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
 		color: var(--color-pencil);
-		background: var(--color-erased);
-		border-radius: 0.25rem;
-		opacity: 0.8;
+		opacity: 0.5;
+		transition: opacity 100ms;
+	}
+
+	.close-btn:hover {
+		opacity: 1;
+	}
+
+	.tooltip-text {
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		line-height: 1.5;
+		color: var(--color-pencil);
+		margin: 0;
+		padding-right: 1.5rem;
 	}
 </style>
