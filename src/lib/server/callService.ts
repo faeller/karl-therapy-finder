@@ -744,7 +744,7 @@ async function handleCallOutcome(
 
 	// deduct seconds for calls that connected (capped at available to prevent debt)
 	if (actualDurationSeconds && actualDurationSeconds > 0) {
-		const { deducted, remaining, giftedSeconds } = await deductSeconds(db, call.userId, actualDurationSeconds);
+		const { deducted, remaining, giftedSeconds } = await deductSeconds(db, call.userId, actualDurationSeconds, call.id);
 
 		// if we gifted seconds (ate overage), record it in the analysis json
 		if (giftedSeconds > 0) {

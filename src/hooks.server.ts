@@ -39,12 +39,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	// debug page access: require isAdmin AND http basic auth (dev mode always allowed)
-	// TODO: re-enable basic auth check before production
 	if (event.url.pathname.startsWith('/debug') && !import.meta.env.DEV) {
 		const isAdmin = event.locals.user?.isAdmin === true;
-		// const hasBasicAuth = checkDebugBasicAuth(event.request);
+		const hasBasicAuth = checkDebugBasicAuth(event.request);
 
-		if (!isAdmin) {
+		if (!isAdmin || !hasBasicAuth) {
 			return new Response('Unauthorized', {
 				status: 401,
 				headers: { 'WWW-Authenticate': 'Basic realm="KARL Debug"' }

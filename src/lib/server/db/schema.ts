@@ -126,10 +126,29 @@ export const userCallCredits = sqliteTable('user_call_credits', {
 	creditsTotal: integer('credits_total').default(0),
 	creditsUsed: integer('credits_used').default(0),
 	creditsRefunded: integer('credits_refunded').default(0),
-	lastRefillAt: integer('last_refill_at', { mode: 'timestamp' })
+	version: integer('version').default(0), // optimistic locking
+	lastRefillAt: integer('last_refill_at', { mode: 'timestamp' }),
+	subscriptionStartedAt: integer('subscription_started_at', { mode: 'timestamp' }) // audit trail only
 });
 
 export type UserCallCredits = typeof userCallCredits.$inferSelect;
+
+// credit audit log - append-only log of all credit operations for reconciliation
+export const creditAuditLog = sqliteTable('credit_audit_log', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	eventType: text('event_type').notNull(), // allocate, reserve, deduct, refund, freeze, unfreeze
+	seconds: integer('seconds').notNull(), // amount changed (positive or negative)
+	callId: text('call_id').references(() => scheduledCalls.id), // null for allocate/refund events
+	metadata: text('metadata'), // json with operation details
+	balanceBefore: integer('balance_before'), // seconds available before this operation
+	balanceAfter: integer('balance_after'), // seconds available after this operation
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export type CreditAuditLog = typeof creditAuditLog.$inferSelect;
 
 // call cost events - tracks all costs (elevenlabs, anthropic, etc.)
 export const callCostEvents = sqliteTable('call_cost_events', {

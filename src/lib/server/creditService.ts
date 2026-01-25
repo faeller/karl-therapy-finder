@@ -1,5 +1,6 @@
 // credit service - handles call seconds allocation and consumption
 import { eq, and, or } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import type { Database } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { getSecondsForTier, getSecondsForAmount } from './patreon';
@@ -11,6 +12,107 @@ export const DEFAULT_PROJECTED_SECONDS = 180;
 
 // minimum seconds required for "last call" (when projected would block)
 export const MINIMUM_LAST_CALL_SECONDS = 21;
+
+// optimistic locking helper - wraps credit updates with version check and retry
+const MAX_RETRIES = 3;
+
+async function withOptimisticLock<T>(
+	db: Database,
+	userId: string,
+	updateFn: (credits: typeof table.userCallCredits.$inferSelect | undefined) => Promise<{
+		updates: Partial<typeof table.userCallCredits.$inferInsert>;
+		result: T;
+	}>,
+	retryCount = 0
+): Promise<T> {
+	// read current state
+	const [credits] = await db
+		.select()
+		.from(table.userCallCredits)
+		.where(eq(table.userCallCredits.userId, userId))
+		.limit(1);
+
+	const currentVersion = credits?.version ?? 0;
+
+	// execute business logic
+	const { updates, result } = await updateFn(credits);
+
+	// optimistic lock: update with version check
+	const dbResult = await db
+		.update(table.userCallCredits)
+		.set({
+			...updates,
+			version: currentVersion + 1
+		})
+		.where(
+			and(
+				eq(table.userCallCredits.userId, userId),
+				eq(table.userCallCredits.version, currentVersion)
+			)
+		);
+
+	// check if we won the race
+	if (dbResult.changes === 0) {
+		// version changed = concurrent modification
+		if (retryCount >= MAX_RETRIES) {
+			throw new Error(`optimistic lock failed after ${MAX_RETRIES} retries`);
+		}
+
+		// exponential backoff
+		const backoffMs = 10 * Math.pow(5, retryCount);
+		await new Promise(resolve => setTimeout(resolve, backoffMs));
+
+		console.log(`[credits] retry ${retryCount + 1}/${MAX_RETRIES} for user ${userId}`);
+		return withOptimisticLock(db, userId, updateFn, retryCount + 1);
+	}
+
+	// success
+	if (retryCount > 0) {
+		console.log(`[credits] succeeded after ${retryCount} retries for user ${userId}`);
+	}
+
+	return result;
+}
+
+// audit log helper - append-only record of credit operations
+async function logCreditEvent(
+	db: Database,
+	userId: string,
+	eventType: 'allocate' | 'reserve' | 'deduct' | 'refund' | 'freeze' | 'unfreeze',
+	seconds: number,
+	callId?: string,
+	metadata?: Record<string, unknown>
+): Promise<void> {
+	// get current balance for audit trail
+	const [credits] = await db
+		.select()
+		.from(table.userCallCredits)
+		.where(eq(table.userCallCredits.userId, userId))
+		.limit(1);
+
+	const balanceBefore = credits
+		? (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0)
+		: 0;
+
+	// calculate balance after based on event type
+	let balanceAfter = balanceBefore;
+	if (eventType === 'allocate') balanceAfter = balanceBefore + seconds;
+	if (eventType === 'deduct') balanceAfter = balanceBefore - seconds;
+	if (eventType === 'refund') balanceAfter = balanceBefore + seconds;
+	// reserve/freeze/unfreeze don't change actual balance, only projected
+
+	await db.insert(table.creditAuditLog).values({
+		id: nanoid(),
+		userId,
+		eventType,
+		seconds,
+		callId: callId ?? null,
+		metadata: metadata ? JSON.stringify(metadata) : null,
+		balanceBefore,
+		balanceAfter,
+		createdAt: new Date()
+	});
+}
 
 export interface UserCredits {
 	total: number;      // total seconds allocated this period
@@ -38,60 +140,84 @@ export async function getCredits(
 		.where(eq(table.userCallCredits.userId, userId))
 		.limit(1);
 
-	// no credits record yet
+	// no credits record yet - initial allocation
 	if (!existing) {
 		if (tierSeconds > 0) {
+			const now = new Date();
 			await db.insert(table.userCallCredits).values({
 				userId,
 				creditsTotal: tierSeconds,
 				creditsUsed: 0,
 				creditsRefunded: 0,
-				lastRefillAt: new Date()
+				version: 0,
+				lastRefillAt: now,
+				subscriptionStartedAt: now
 			});
+
+			await logCreditEvent(db, userId, 'allocate', tierSeconds, undefined, {
+				source: 'initial_allocation',
+				tier: pledgeTier ?? 'amount_based',
+				amountCents: pledgeAmountCents
+			});
+
 			return {
 				total: tierSeconds,
 				used: 0,
 				refunded: 0,
 				available: tierSeconds,
 				tierSeconds,
-				lastRefillAt: new Date()
+				lastRefillAt: now
 			};
 		}
 		return { total: 0, used: 0, refunded: 0, available: 0, tierSeconds: 0, lastRefillAt: null };
 	}
 
-	// check if new month - refresh if so
+	// refill based on billing cycles since subscription started
 	const now = new Date();
-	const lastRefill = existing.lastRefillAt;
-	const isNewMonth =
-		lastRefill &&
-		(lastRefill.getFullYear() < now.getFullYear() ||
-			lastRefill.getMonth() < now.getMonth());
+	const subscriptionStart = existing.subscriptionStartedAt || existing.lastRefillAt || now;
+	const daysSinceSubscription = (now.getTime() - subscriptionStart.getTime()) / (1000 * 60 * 60 * 24);
+	const currentCycle = Math.floor(daysSinceSubscription / 30);
 
-	if (isNewMonth && tierSeconds > 0) {
-		await db
-			.update(table.userCallCredits)
-			.set({
-				creditsTotal: tierSeconds,
-				creditsUsed: 0,
-				creditsRefunded: 0,
-				lastRefillAt: now
-			})
-			.where(eq(table.userCallCredits.userId, userId));
+	const lastRefillCycle = existing.lastRefillAt
+		? Math.floor((existing.lastRefillAt.getTime() - subscriptionStart.getTime()) / (1000 * 60 * 60 * 24) / 30)
+		: -1;
 
-		console.log(`[credits] refilled ${tierSeconds}s for user ${userId} (new month)`);
+	if (currentCycle > lastRefillCycle && tierSeconds > 0) {
+		try {
+			return await withOptimisticLock(db, userId, async () => {
+				await logCreditEvent(db, userId, 'allocate', tierSeconds, undefined, {
+					source: 'monthly_refill',
+					tier: pledgeTier ?? 'amount_based',
+					amountCents: pledgeAmountCents,
+					daysSinceSubscription: Math.floor(daysSinceSubscription),
+					currentCycle,
+					lastRefillCycle
+				});
 
-		// try to unfreeze any frozen calls
-		await unfreezeCallsIfPossible(db, userId, tierSeconds);
+				await unfreezeCallsIfPossible(db, userId, tierSeconds);
 
-		return {
-			total: tierSeconds,
-			used: 0,
-			refunded: 0,
-			available: tierSeconds,
-			tierSeconds,
-			lastRefillAt: now
-		};
+				return {
+					updates: {
+						creditsTotal: tierSeconds,
+						creditsUsed: 0,
+						creditsRefunded: 0,
+						lastRefillAt: now,
+						subscriptionStartedAt: existing.subscriptionStartedAt || now
+					},
+					result: {
+						total: tierSeconds,
+						used: 0,
+						refunded: 0,
+						available: tierSeconds,
+						tierSeconds,
+						lastRefillAt: now
+					}
+				};
+			});
+		} catch (e) {
+			console.log(`[credits] refill race detected for user ${userId}, refetching`);
+			return getCredits(db, userId, pledgeAmountCents, pledgeTier);
+		}
 	}
 
 	const total = existing.creditsTotal ?? 0;
@@ -170,7 +296,7 @@ export async function canScheduleCall(
 }
 
 // atomically check credits and reserve a slot by creating call record
-// returns callId if successful, null if insufficient credits
+// uses optimistic locking with retry to prevent race conditions
 export async function reserveCallSlot(
 	db: Database,
 	userId: string,
@@ -184,99 +310,132 @@ export async function reserveCallSlot(
 		callMetadata: string;
 	}
 ): Promise<{ success: true; callId: string } | { success: false; reason: string; available: number; projected?: number }> {
-	// note: D1 doesn't support SQL transactions, so this is check-then-insert (not atomic)
-	// race conditions are unlikely given user interaction timing
+	try {
+		return await withOptimisticLock(db, userId, async (credits) => {
+			const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
 
-	// check credits
-	const [credits] = await db
-		.select()
-		.from(table.userCallCredits)
-		.where(eq(table.userCallCredits.userId, userId))
-		.limit(1);
+			// get projected seconds for pending calls
+			const pendingCalls = await db
+				.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
+				.from(table.scheduledCalls)
+				.where(
+					and(
+						eq(table.scheduledCalls.userId, userId),
+						or(
+							eq(table.scheduledCalls.status, 'scheduled'),
+							eq(table.scheduledCalls.status, 'in_progress')
+						)
+					)
+				);
 
-	const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
+			const projected = pendingCalls.reduce((sum, c) => sum + (c.projectedSeconds || DEFAULT_PROJECTED_SECONDS), 0);
 
-	// get projected seconds for pending calls
-	const pendingCalls = await db
-		.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
-		.from(table.scheduledCalls)
-		.where(
-			and(
-				eq(table.scheduledCalls.userId, userId),
-				or(
-					eq(table.scheduledCalls.status, 'scheduled'),
-					eq(table.scheduledCalls.status, 'in_progress')
-				)
-			)
-		);
+			// check if allowed: normal case OR last call case (21s minimum after projected)
+			const normalCaseOk = available >= projected + DEFAULT_PROJECTED_SECONDS;
+			const lastCallOk = available >= projected + MINIMUM_LAST_CALL_SECONDS;
 
-	const projected = pendingCalls.reduce((sum, c) => sum + (c.projectedSeconds || DEFAULT_PROJECTED_SECONDS), 0);
+			if (!normalCaseOk && !lastCallOk) {
+				throw new Error(`no_credits:${available}:${projected}`);
+			}
 
-	// check if allowed: normal case OR last call case (21s minimum after projected)
-	const normalCaseOk = available >= projected + DEFAULT_PROJECTED_SECONDS;
-	const lastCallOk = available >= projected + MINIMUM_LAST_CALL_SECONDS;
+			// create call record after lock acquired
+			const now = new Date();
+			await db.insert(table.scheduledCalls).values({
+				id: callData.id,
+				userId,
+				therapistId: callData.therapistId,
+				therapistName: callData.therapistName,
+				therapistPhone: callData.therapistPhone,
+				eId: callData.eId,
+				scheduledAt: callData.scheduledAt,
+				attemptNumber: 1,
+				maxAttempts: 12,
+				status: 'scheduled',
+				projectedSeconds: DEFAULT_PROJECTED_SECONDS,
+				callMetadata: callData.callMetadata,
+				createdAt: now,
+				updatedAt: now
+			});
 
-	if (!normalCaseOk && !lastCallOk) {
-		return { success: false as const, reason: 'no_credits', available, projected };
+			// audit log: reserve projected seconds
+			await logCreditEvent(db, userId, 'reserve', DEFAULT_PROJECTED_SECONDS, callData.id, {
+				therapistId: callData.therapistId,
+				projected: DEFAULT_PROJECTED_SECONDS
+			});
+
+			return {
+				updates: {}, // no credit fields changed, just version increment for lock
+				result: { success: true as const, callId: callData.id }
+			};
+		});
+	} catch (e) {
+		const msg = e instanceof Error ? e.message : String(e);
+
+		// parse no_credits error
+		if (msg.startsWith('no_credits:')) {
+			const [, availableStr, projectedStr] = msg.split(':');
+			return {
+				success: false as const,
+				reason: 'no_credits',
+				available: parseInt(availableStr),
+				projected: parseInt(projectedStr)
+			};
+		}
+
+		// contention after max retries
+		if (msg.includes('optimistic lock failed')) {
+			return { success: false as const, reason: 'contention', available: 0 };
+		}
+
+		throw e;
 	}
-
-	// create call record
-	const now = new Date();
-	await db.insert(table.scheduledCalls).values({
-		id: callData.id,
-		userId,
-		therapistId: callData.therapistId,
-		therapistName: callData.therapistName,
-		therapistPhone: callData.therapistPhone,
-		eId: callData.eId,
-		scheduledAt: callData.scheduledAt,
-		attemptNumber: 1,
-		maxAttempts: 12,
-		status: 'scheduled',
-		projectedSeconds: DEFAULT_PROJECTED_SECONDS,
-		callMetadata: callData.callMetadata,
-		createdAt: now,
-		updatedAt: now
-	});
-
-	return { success: true as const, callId: callData.id };
 }
 
 // deduct seconds after call completes (capped at available to prevent debt)
-// uses transaction for atomicity
-// returns gifted seconds if we ate overage
+// uses optimistic locking with retry to prevent race conditions
 export async function deductSeconds(
 	db: Database,
 	userId: string,
-	actualSeconds: number
+	actualSeconds: number,
+	callId?: string
 ): Promise<{ deducted: number; remaining: number; giftedSeconds: number }> {
-	// note: D1 doesn't support SQL transactions, using read-then-update
-	const [credits] = await db
-		.select()
-		.from(table.userCallCredits)
-		.where(eq(table.userCallCredits.userId, userId))
-		.limit(1);
+	try {
+		return await withOptimisticLock(db, userId, async (credits) => {
+			if (!credits) {
+				return {
+					updates: {},
+					result: { deducted: 0, remaining: 0, giftedSeconds: 0 }
+				};
+			}
 
-	if (!credits) return { deducted: 0, remaining: 0, giftedSeconds: 0 };
+			const available = (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0);
+			const deducted = Math.min(actualSeconds, available);
+			const giftedSeconds = Math.max(0, actualSeconds - available);
+			const remaining = available - deducted;
 
-	const available = (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0);
-	const deducted = Math.min(actualSeconds, available);
-	const giftedSeconds = Math.max(0, actualSeconds - available);
+			if (giftedSeconds > 0) {
+				console.log(`[credits] deducted ${deducted}s, gifted ${giftedSeconds}s (actual: ${actualSeconds}s) to user ${userId}`);
+			} else {
+				console.log(`[credits] deducted ${deducted}s (actual: ${actualSeconds}s) from user ${userId}, remaining: ${remaining}s`);
+			}
 
-	await db
-		.update(table.userCallCredits)
-		.set({ creditsUsed: (credits.creditsUsed ?? 0) + deducted })
-		.where(eq(table.userCallCredits.userId, userId));
+			// audit log
+			await logCreditEvent(db, userId, 'deduct', deducted, callId, {
+				actualSeconds,
+				deducted,
+				giftedSeconds
+			});
 
-	const remaining = available - deducted;
-
-	if (giftedSeconds > 0) {
-		console.log(`[credits] deducted ${deducted}s, gifted ${giftedSeconds}s (actual: ${actualSeconds}s) to user ${userId}`);
-	} else {
-		console.log(`[credits] deducted ${deducted}s (actual: ${actualSeconds}s) from user ${userId}, remaining: ${remaining}s`);
+			return {
+				updates: { creditsUsed: (credits.creditsUsed ?? 0) + deducted },
+				result: { deducted, remaining, giftedSeconds }
+			};
+		});
+	} catch (e) {
+		// max retries exceeded - return 0 to avoid double-deduction
+		console.warn(`[credits] deductSeconds failed for user ${userId}:`, e);
+		return { deducted: 0, remaining: 0, giftedSeconds: 0 };
 	}
-
-	return { deducted, remaining, giftedSeconds };
 }
 
 // freeze all pending calls for a user (cancel in elevenlabs, mark as frozen)
@@ -409,59 +568,121 @@ export async function unfreezeCallsIfPossible(
 }
 
 // add credits manually (admin function)
+// uses optimistic locking with retry
 export async function addCredits(
 	db: Database,
 	userId: string,
 	seconds: number
 ): Promise<void> {
-	const [existing] = await db
-		.select()
-		.from(table.userCallCredits)
-		.where(eq(table.userCallCredits.userId, userId))
-		.limit(1);
+	try {
+		await withOptimisticLock(db, userId, async (credits) => {
+			if (!credits) {
+				// no existing record, create initial
+				const now = new Date();
+				await db.insert(table.userCallCredits).values({
+					userId,
+					creditsTotal: seconds,
+					creditsUsed: 0,
+					creditsRefunded: 0,
+					version: 0,
+					lastRefillAt: now,
+					subscriptionStartedAt: now
+				});
 
-	if (existing) {
-		const newTotal = (existing.creditsTotal ?? 0) + seconds;
-		await db
-			.update(table.userCallCredits)
-			.set({ creditsTotal: newTotal })
-			.where(eq(table.userCallCredits.userId, userId));
+				await logCreditEvent(db, userId, 'allocate', seconds, undefined, { source: 'manual_admin', initial: true });
 
-		// try to unfreeze calls with new credits
-		const available = newTotal - (existing.creditsUsed ?? 0) + (existing.creditsRefunded ?? 0);
-		await unfreezeCallsIfPossible(db, userId, available);
-	} else {
-		await db.insert(table.userCallCredits).values({
-			userId,
-			creditsTotal: seconds,
-			creditsUsed: 0,
-			creditsRefunded: 0,
-			lastRefillAt: new Date()
+				return { updates: {}, result: undefined };
+			}
+
+			const newTotal = (credits.creditsTotal ?? 0) + seconds;
+			const available = newTotal - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0);
+
+			// audit log
+			await logCreditEvent(db, userId, 'allocate', seconds, undefined, { source: 'manual_admin' });
+
+			// try to unfreeze calls with new credits
+			await unfreezeCallsIfPossible(db, userId, available);
+
+			return {
+				updates: { creditsTotal: newTotal },
+				result: undefined
+			};
 		});
+	} catch (e) {
+		console.warn(`[credits] addCredits failed for user ${userId}:`, e);
 	}
 }
 
 // refund credits (e.g., if call cancelled before connecting)
+// uses optimistic locking with retry
 export async function refundCredits(
 	db: Database,
 	userId: string,
-	seconds: number
+	seconds: number,
+	callId?: string
 ): Promise<void> {
-	const [existing] = await db
+	try {
+		await withOptimisticLock(db, userId, async (credits) => {
+			if (!credits) {
+				return { updates: {}, result: undefined };
+			}
+
+			const newRefunded = (credits.creditsRefunded ?? 0) + seconds;
+			const available = (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + newRefunded;
+
+			// audit log
+			await logCreditEvent(db, userId, 'refund', seconds, callId, { reason: 'call_refund' });
+
+			// try to unfreeze calls with refunded credits
+			await unfreezeCallsIfPossible(db, userId, available);
+
+			return {
+				updates: { creditsRefunded: newRefunded },
+				result: undefined
+			};
+		});
+	} catch (e) {
+		console.warn(`[credits] refundCredits failed for user ${userId}:`, e);
+	}
+}
+
+// reconcile audit log vs credits table (for monitoring/debugging)
+export async function reconcileCredits(
+	db: Database,
+	userId: string
+): Promise<{ match: boolean; table: number; audit: number; diff: number }> {
+	// get current balance from table
+	const [credits] = await db
 		.select()
 		.from(table.userCallCredits)
 		.where(eq(table.userCallCredits.userId, userId))
 		.limit(1);
 
-	if (!existing) return;
+	const tableBalance = credits
+		? (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0)
+		: 0;
 
-	const newRefunded = (existing.creditsRefunded ?? 0) + seconds;
-	await db
-		.update(table.userCallCredits)
-		.set({ creditsRefunded: newRefunded })
-		.where(eq(table.userCallCredits.userId, userId));
+	// sum audit log
+	const logs = await db
+		.select()
+		.from(table.creditAuditLog)
+		.where(eq(table.creditAuditLog.userId, userId));
 
-	// try to unfreeze calls with refunded credits
-	const available = (existing.creditsTotal ?? 0) - (existing.creditsUsed ?? 0) + newRefunded;
-	await unfreezeCallsIfPossible(db, userId, available);
+	let auditBalance = 0;
+	for (const log of logs) {
+		if (log.eventType === 'allocate') auditBalance += log.seconds;
+		if (log.eventType === 'deduct') auditBalance -= log.seconds;
+		if (log.eventType === 'refund') auditBalance += log.seconds;
+		// reserve/freeze/unfreeze don't affect balance
+	}
+
+	const diff = tableBalance - auditBalance;
+	const match = Math.abs(diff) < 1; // allow 1s rounding error
+
+	return {
+		match,
+		table: tableBalance,
+		audit: auditBalance,
+		diff
+	};
 }
