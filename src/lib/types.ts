@@ -1,5 +1,6 @@
 // chat state machine
 export type ChatState =
+	| 'theme_choice'
 	| 'greeting'
 	| 'for_whom'
 	| 'for_other_name'

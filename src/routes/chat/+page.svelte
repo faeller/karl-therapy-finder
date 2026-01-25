@@ -4,7 +4,7 @@
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
 	import { OptionId } from '$lib/data/optionIds';
-	import { resultsActionOptions, kostenerstattungGrantedOptions } from '$lib/data/chatOptions';
+	import { resultsActionOptions, kostenerstattungGrantedOptions, themeNextOption } from '$lib/data/chatOptions';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import OptionButtons from '$lib/components/chat/OptionButtons.svelte';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
@@ -35,7 +35,7 @@
 		if ($chatState === 'success') return 100;
 
 		// onboarding: 5-25%
-		const onboardingStates = ['greeting', 'for_whom', 'for_other_name', 'location', 'insurance_type', 'insurance_details', 'therapy_type', 'preferences'];
+		const onboardingStates = ['greeting', 'theme_choice', 'for_whom', 'for_other_name', 'location', 'insurance_type', 'insurance_details', 'therapy_type', 'preferences'];
 		const onboardingIdx = onboardingStates.indexOf($chatState);
 		if (onboardingIdx >= 0) return 5 + Math.round((onboardingIdx / (onboardingStates.length - 1)) * 20);
 
@@ -179,6 +179,15 @@
 			const plz = $campaignDraft.plz || '';
 			const url = `https://www.therapie.de/therapeutensuche/ergebnisse/?abrechnungsverfahren=6&ort=${plz}`;
 			window.open(url, '_blank');
+			return;
+		}
+		// handle theme selection
+		if (option.id === OptionId.themeCool) {
+			theme.setStyle('handdrawn');
+			return;
+		}
+		if (option.id === OptionId.themeModern) {
+			theme.setStyle('imessage');
 			return;
 		}
 		chat.handleOption(option);
@@ -579,6 +588,43 @@
 								{#if showProcessExplanation}
 									<MessageBubble role="karl" content={m.karl_process_explanation()} />
 								{/if}
+							{:else if message.contentKey === 'karl_theme_choice'}
+								<!-- theme choice with persistent buttons -->
+								<MessageBubble
+									role={message.role}
+									content={message.content}
+									contentKey={message.contentKey}
+									contentParams={message.contentParams}
+								/>
+								<div class="theme-choice-buttons mt-3">
+									<button
+										onclick={() => theme.setStyle('handdrawn')}
+										class="theme-btn"
+										class:selected={$style === 'handdrawn'}
+										style:border-radius={wobbly.button}
+									>
+										{m.option_theme_cool()}
+									</button>
+									<button
+										onclick={() => theme.setStyle('imessage')}
+										class="theme-btn"
+										class:selected={$style === 'imessage'}
+										style:border-radius={wobbly.button}
+									>
+										{m.option_theme_modern()}
+									</button>
+								</div>
+								{#if $chatState === 'theme_choice'}
+									<div class="flex justify-end mt-4">
+										<button
+											onclick={() => chat.handleOption(themeNextOption)}
+											class="option-btn primary"
+											style:border-radius={wobbly.button}
+										>
+											{m.chat_continue()}
+										</button>
+									</div>
+								{/if}
 							{:else}
 								<MessageBubble
 									role={message.role}
@@ -589,7 +635,7 @@
 								/>
 							{/if}
 
-							{#if message.options?.length && message === onboardingMessages.at(-1) && !isInResults}
+							{#if message.options?.length && message === onboardingMessages.at(-1) && !isInResults && message.contentKey !== 'karl_theme_choice'}
 								<div class="mt-4">
 									{#if isGettingLocation}
 										<div class="flex items-center gap-2 text-sm text-pencil/70">
@@ -1026,6 +1072,43 @@
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
+	}
+
+	.theme-choice-buttons {
+		display: flex;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.theme-btn {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.5rem 1rem;
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		transition: all 100ms;
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	.theme-btn:hover {
+		background-color: var(--color-pencil);
+		color: var(--color-paper);
+		transform: translateY(-1px);
+	}
+
+	.theme-btn.selected {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	.theme-btn.selected:hover {
+		background-color: var(--color-blue-pen);
+		filter: brightness(1.1);
 	}
 
 	.mehr-konfetti {

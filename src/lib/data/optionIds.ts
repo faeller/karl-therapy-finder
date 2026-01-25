@@ -1,5 +1,10 @@
 // option ids as const for type safety and autocomplete
 export const OptionId = {
+	// theme
+	themeCool: 'theme_cool',
+	themeModern: 'theme_modern',
+	themeNext: 'theme_next',
+
 	// for whom
 	forSelf: 'for_self',
 	forOther: 'for_other',

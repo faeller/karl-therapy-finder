@@ -1,9 +1,21 @@
 import type { ChatOption } from '$lib/types';
 import { OptionId } from './optionIds';
 
+export const themeOptions: ChatOption[] = [
+	{ id: OptionId.themeCool, labelDe: 'Cool (Handgezeichnet)', emoji: '✏️', isAction: true },
+	{ id: OptionId.themeModern, labelDe: 'Modern (Clean)', emoji: '📱', isAction: true }
+];
+
+export const themeNextOption: ChatOption = {
+	id: OptionId.themeNext,
+	labelDe: 'Weiter',
+	style: 'primary',
+	isAction: true
+};
+
 export const forWhomOptions: ChatOption[] = [
-	{ id: OptionId.forSelf, labelDe: 'Für mich selbst', emoji: '🙋', nextState: 'location' },
-	{ id: OptionId.forOther, labelDe: 'Für jemand anderen', emoji: '🤝', nextState: 'for_other_name' }
+	{ id: OptionId.forSelf, labelDe: 'Für mich selbst', emoji: '🙋', nextState: 'theme_choice' },
+	{ id: OptionId.forOther, labelDe: 'Für jemand anderen', emoji: '🤝', nextState: 'theme_choice' }
 ];
 
 export const locationOptions: ChatOption[] = [

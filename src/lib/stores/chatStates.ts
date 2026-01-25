@@ -1,6 +1,7 @@
 // state machine configuration - defines what each state needs
 import type { ChatState, ChatOption, EditableField } from '$lib/types';
 import {
+	themeOptions,
 	forWhomOptions,
 	locationOptions,
 	insuranceTypeOptions,
@@ -34,6 +35,11 @@ export interface StateConfig {
 
 // static state configurations
 export const stateConfigs: Partial<Record<ChatState, StateConfig>> = {
+	theme_choice: {
+		messageKey: 'karl_theme_choice',
+		options: themeOptions,
+		dynamic: true
+	},
 	greeting: {
 		messageKey: 'karl_greeting',
 		options: forWhomOptions,

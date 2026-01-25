@@ -180,6 +180,13 @@ async function handleOption(option: ChatOption) {
 	if (option.id === OptionId.mergeResults) mergeResults = true;
 	else if (option.id === OptionId.replaceResults) mergeResults = false;
 
+	// theme next: go to location or for_other_name based on forSelf
+	if (option.id === OptionId.themeNext) {
+		const draft = get(campaignDraft);
+		await transitionTo(draft.forSelf ? 'location' : 'for_other_name');
+		return;
+	}
+
 	if (option.nextState) await transitionTo(option.nextState);
 }
 
