@@ -218,6 +218,10 @@
 		gap: 0.375rem;
 	}
 
+	.legend-item[title] {
+		cursor: help;
+	}
+
 	.legend-color {
 		width: 1rem;
 		height: 0.5rem;
