@@ -42,6 +42,10 @@
 	const reservedPercent = $derived(Math.min(100, (projectedSeconds / maxSeconds) * 100));
 	const freeMins = $derived(Math.floor(freeSeconds / 60));
 	const freeSecs = $derived(freeSeconds % 60);
+
+	const usedSeconds = $derived(maxSeconds - availableSeconds);
+	const usedMins = $derived(Math.floor(usedSeconds / 60));
+	const usedSecs = $derived(usedSeconds % 60);
 </script>
 
 <div class="call-credits" class:compact class:no-background={noBackground}>
@@ -63,7 +67,10 @@
 	<!-- progress bar -->
 	<div class="progress-bar">
 		{#if hasCredits && maxSeconds > 0}
-			<div class="progress-track">
+			<div
+				class="progress-track"
+				title={usedSeconds > 0 ? `Verbraucht: ${usedMins}:${usedSecs.toString().padStart(2, '0')} min` : undefined}
+			>
 				<!-- free time in blue -->
 				<div
 					class="progress-segment free"

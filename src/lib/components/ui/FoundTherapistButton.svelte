@@ -90,32 +90,51 @@
 		}
 	}
 
+	/* imessage theme (default) */
 	.action-chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.625rem 1rem;
-		border: 2px solid var(--color-pencil);
-		background-color: var(--color-paper);
+		border: 1px solid var(--color-card-border);
+		background-color: var(--color-erased);
 		color: var(--color-pencil);
 		font-family: var(--font-body);
 		font-size: 0.875rem;
 		transition: all 100ms;
-		box-shadow: var(--shadow-hard-sm);
 	}
 
 	.action-chip:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+		color: white;
+	}
+
+	.action-chip.success {
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
 	}
 
-	.action-chip.success {
+	.action-chip.success:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .action-chip {
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	:global(:root.theme-handdrawn) .action-chip.success {
 		border-color: var(--color-blue-pen);
+		background-color: var(--color-paper);
 		color: var(--color-blue-pen);
 	}
 
-	.action-chip.success:hover {
+	:global(:root.theme-handdrawn) .action-chip.success:hover {
 		background-color: var(--color-blue-pen);
 		color: white;
 	}

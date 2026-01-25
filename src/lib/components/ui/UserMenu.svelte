@@ -117,23 +117,27 @@
 		font-weight: 700;
 	}
 
+	/* imessage theme (default) */
 	.dropdown {
 		position: absolute;
 		top: 100%;
 		right: 0;
 		margin-top: 8px;
-		background-color: var(--color-paper);
-		border: 2px solid var(--color-pencil);
-		box-shadow: var(--shadow-hard-sm);
-		min-width: 150px;
+		background-color: var(--color-erased);
+		border: 1px solid var(--color-card-border);
+		border-radius: 12px;
+		min-width: 160px;
 		z-index: 50;
+		overflow: hidden;
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
 	}
 
 	.dropdown-item {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 14px;
+		padding: 12px 16px;
 		font-family: var(--font-body);
 		font-size: 1rem;
 		color: var(--color-pencil);
@@ -142,11 +146,25 @@
 	}
 
 	.dropdown-item:hover {
-		background-color: var(--color-erased);
+		background-color: var(--color-paper);
 	}
 
 	.dropdown-item.logout:hover {
 		background-color: var(--color-red-marker);
 		color: white;
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .dropdown {
+		background-color: var(--color-paper);
+		border: 2px solid var(--color-pencil);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow-hard-sm);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+
+	:global(:root.theme-handdrawn) .dropdown-item:hover {
+		background-color: var(--color-erased);
 	}
 </style>

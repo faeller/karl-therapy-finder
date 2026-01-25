@@ -1,32 +1,86 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 
-type Theme = 'light' | 'dark';
+type ColorMode = 'light' | 'dark';
+type Style = 'handdrawn' | 'imessage';
 
-function getInitialTheme(): Theme {
-	if (!browser) return 'light';
-	const stored = localStorage.getItem('karl-theme') as Theme;
-	if (stored) return stored;
-	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+interface ThemeState {
+	colorMode: ColorMode;
+	style: Style;
 }
 
-const { subscribe, set } = writable<Theme>('light');
+const STORAGE_KEY = 'karl-theme';
+
+function getInitialState(): ThemeState {
+	if (!browser) return { colorMode: 'light', style: 'handdrawn' };
+
+	const stored = localStorage.getItem(STORAGE_KEY);
+
+	if (stored) {
+		// backward compat: old format was just 'light' or 'dark'
+		if (stored === 'light' || stored === 'dark') {
+			return { colorMode: stored, style: 'handdrawn' };
+		}
+		try {
+			const parsed = JSON.parse(stored) as Partial<ThemeState>;
+			return {
+				colorMode: parsed.colorMode ?? 'light',
+				style: parsed.style ?? 'handdrawn'
+			};
+		} catch {
+			// corrupted storage
+		}
+	}
+
+	const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+	return { colorMode: prefersDark ? 'dark' : 'light', style: 'handdrawn' };
+}
+
+const store = writable<ThemeState>({ colorMode: 'light', style: 'handdrawn' });
 
 if (browser) {
-	set(getInitialTheme());
-	// apply class to html
-	const unsubscribe = subscribe((theme) => {
-		document.documentElement.classList.toggle('dark', theme === 'dark');
-		localStorage.setItem('karl-theme', theme);
+	store.set(getInitialState());
+
+	store.subscribe((state) => {
+		const html = document.documentElement;
+		html.classList.toggle('dark', state.colorMode === 'dark');
+		html.classList.remove('theme-handdrawn', 'theme-imessage');
+		html.classList.add(`theme-${state.style}`);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 	});
 }
 
+export const colorMode = derived(store, ($s) => $s.colorMode);
+export const style = derived(store, ($s) => $s.style);
+
 export const theme = {
-	subscribe,
-	toggle: () => {
-		let current: Theme = 'light';
-		subscribe((t) => (current = t))();
-		set(current === 'light' ? 'dark' : 'light');
+	subscribe: store.subscribe,
+
+	toggleColorMode: () => {
+		store.update((s) => ({
+			...s,
+			colorMode: s.colorMode === 'light' ? 'dark' : 'light'
+		}));
 	},
-	set
+
+	setStyle: (newStyle: Style) => {
+		store.update((s) => ({ ...s, style: newStyle }));
+	},
+
+	toggleStyle: () => {
+		store.update((s) => ({
+			...s,
+			style: s.style === 'handdrawn' ? 'imessage' : 'handdrawn'
+		}));
+	},
+
+	// backward compat alias
+	toggle: () => {
+		store.update((s) => ({
+			...s,
+			colorMode: s.colorMode === 'light' ? 'dark' : 'light'
+		}));
+	},
+
+	set: store.set
 };

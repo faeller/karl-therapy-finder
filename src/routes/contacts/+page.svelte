@@ -244,7 +244,7 @@
 				<Loader2 size={32} class="animate-spin text-pencil/40" />
 			</div>
 		{:else if $contacts.length === 0}
-			<WobblyCard decoration="postit" class="text-center">
+			<WobblyCard variant="postit" class="text-center">
 				<p class="mb-2 font-heading text-lg">{m.contacts_empty()}</p>
 				<p class="mb-4 text-sm text-pencil/70">
 					{m.contacts_empty_hint()}

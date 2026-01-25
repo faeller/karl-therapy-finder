@@ -1,42 +1,102 @@
 @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
 @import 'tailwindcss';
 
-/* hand-drawn design tokens for tailwind */
+/* theme variables */
 @theme {
+	--color-paper: #f2f2f7;
+	--color-pencil: #1d1d1f;
+	--color-erased: #ffffff;
+	--color-card-border: rgba(0, 0, 0, 0.08);
+	--color-red-marker: #ff3b30;
+	--color-blue-pen: #007aff;
+	--color-postit: #e8f4fd;
+	--color-secondary: #6e6e73;
+	--color-lines: rgba(0, 0, 0, 0.04);
+	--font-heading: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+	--font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+	--font-brand: 'Kalam', cursive;
+	--shadow-hard: 0 2px 12px rgba(0, 0, 0, 0.08);
+	--shadow-hard-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+	--shadow-hard-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+	--shadow-hard-subtle: 0 0.5px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ========================================
+   imessage style (default) - light mode
+   ======================================== */
+:root, :root.theme-imessage {
+	--color-paper: #f2f2f7;
+	--color-pencil: #1d1d1f;
+	--color-erased: #ffffff;
+	--color-card-border: rgba(0, 0, 0, 0.08);
+	--color-red-marker: #ff3b30;
+	--color-blue-pen: #007aff;
+	--color-postit: #e8f4fd;
+	--color-secondary: #6e6e73;
+	--color-lines: rgba(0, 0, 0, 0.04);
+	--font-heading: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+	--font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+	--shadow-hard: 0 2px 12px rgba(0, 0, 0, 0.08);
+	--shadow-hard-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+	--shadow-hard-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+	--shadow-hard-subtle: 0 0.5px 1px rgba(0, 0, 0, 0.05);
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
+	--radius-button: 22px;
+	--radius-bubble: 18px;
+}
+
+/* imessage - dark mode */
+:root.dark, :root.dark.theme-imessage {
+	--color-paper: #000000;
+	--color-pencil: #f5f5f7;
+	--color-erased: #1c1c1e;
+	--color-card-border: rgba(255, 255, 255, 0.15);
+	--color-postit: #1c3545;
+	--color-secondary: #a1a1a6;
+	--color-lines: rgba(255, 255, 255, 0.03);
+	--shadow-hard: 0 2px 12px rgba(0, 0, 0, 0.5);
+	--shadow-hard-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+	--shadow-hard-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+	--shadow-hard-subtle: 0 0.5px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   handdrawn style - light mode
+   ======================================== */
+:root.theme-handdrawn {
 	--color-paper: #fdfbf7;
 	--color-pencil: #2d2d2d;
 	--color-erased: #e5e0d8;
+	--color-card-border: rgba(45, 45, 45, 0.2);
 	--color-red-marker: #ff4d4d;
 	--color-blue-pen: #2d5da1;
 	--color-postit: #fff9c4;
+	--color-secondary: #666666;
+	--color-lines: rgba(45, 45, 45, 0.08);
 	--font-heading: 'Kalam', cursive;
 	--font-body: 'Patrick Hand', cursive;
 	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
 	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
 	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
 	--shadow-hard-subtle: 3px 3px 0px 0px rgba(45, 45, 45, 0.1);
+	--radius-sm: 255px 15px 225px 15px / 15px 225px 15px 255px;
+	--radius-md: 15px 255px 15px 225px / 225px 15px 255px 15px;
+	--radius-lg: 225px 25px 255px 25px / 25px 255px 25px 225px;
+	--radius-button: 255px 15px 225px 15px / 15px 225px 15px 255px;
+	--radius-bubble: 20px 255px 20px 255px / 255px 20px 255px 20px;
 }
 
-/* light mode (root) - needed for .dark override to work */
-:root {
-	--color-paper: #fdfbf7;
-	--color-pencil: #2d2d2d;
-	--color-erased: #e5e0d8;
-	--color-red-marker: #ff4d4d;
-	--color-blue-pen: #2d5da1;
-	--color-postit: #fff9c4;
-	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
-	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
-	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
-	--shadow-hard-subtle: 3px 3px 0px 0px rgba(45, 45, 45, 0.1);
-}
-
-/* dark mode overrides */
-:root.dark {
+/* handdrawn - dark mode */
+:root.dark.theme-handdrawn {
 	--color-paper: #1a1a1a;
 	--color-pencil: #e5e0d8;
 	--color-erased: #2d2d2d;
+	--color-card-border: rgba(229, 224, 216, 0.2);
 	--color-postit: #3d3520;
+	--color-secondary: #a0a0a0;
+	--color-lines: rgba(229, 224, 216, 0.06);
 	--shadow-hard: 4px 4px 0px 0px var(--color-pencil);
 	--shadow-hard-sm: 2px 2px 0px 0px var(--color-pencil);
 	--shadow-hard-lg: 8px 8px 0px 0px var(--color-pencil);
@@ -45,99 +105,127 @@
 
 /* base styles */
 html {
-	font-size: 17.6px; /* 16 * 1.1 = 17.6px for 110% scale on mobile */
+	font-size: 16px;
 	font-family: var(--font-body);
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
 	scroll-behavior: smooth;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 @media (min-width: 768px) {
 	html {
-		font-size: 20px; /* 125% on desktop */
+		font-size: 17px;
 	}
 }
 
 body {
+	min-height: 100vh;
+	background:
+		radial-gradient(ellipse at 0% 0%, rgba(0, 122, 255, 0.04) 0%, transparent 50%),
+		radial-gradient(ellipse at 100% 100%, rgba(88, 86, 214, 0.04) 0%, transparent 50%),
+		var(--color-paper);
+}
+
+:root.dark body {
+	background:
+		radial-gradient(ellipse at 0% 0%, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+		radial-gradient(ellipse at 100% 100%, rgba(88, 86, 214, 0.08) 0%, transparent 50%),
+		var(--color-paper);
+}
+
+/* handdrawn body - paper texture */
+:root.theme-handdrawn body {
 	background-image: radial-gradient(var(--color-erased) 1px, transparent 1px);
 	background-size: 24px 24px;
-	min-height: 100vh;
+	background-color: var(--color-paper);
 }
 
 /* heading font */
 h1, h2, h3, h4, h5, h6 {
 	font-family: var(--font-heading);
-	font-weight: 700;
+	font-weight: 600;
+	letter-spacing: -0.02em;
 }
 
-/* remove default focus ring */
+/* remove default focus ring, add custom */
 *:focus {
 	outline: none;
 }
 
+*:focus-visible {
+	outline: 2px solid var(--color-blue-pen);
+	outline-offset: 2px;
+}
+
 /* selection color */
 ::selection {
+	background-color: rgba(0, 122, 255, 0.3);
+	color: inherit;
+}
+
+:root.theme-handdrawn ::selection {
 	background-color: var(--color-red-marker);
 	color: white;
 }
 
 /* scrollbar styling */
 ::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+	width: 6px;
+	height: 6px;
 }
 ::-webkit-scrollbar-track {
 	background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-	background: var(--color-pencil);
-	opacity: 0.3;
-	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-	opacity: 0.5;
+	background: rgba(0, 0, 0, 0.3);
 }
 :root.dark ::-webkit-scrollbar-thumb {
-	background: var(--color-erased);
+	background: rgba(255, 255, 255, 0.2);
+}
+:root.dark ::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.3);
 }
 
 /* dark mode card backgrounds */
 :root.dark .bg-white {
-	background-color: #252525;
+	background-color: #1c1c1e;
 }
 
 /* ========================================
-   shared components - extracted from duplicated component styles
+   shared components - iMessage style
    ======================================== */
 
-/* option buttons - used in OptionButtons, EditDialog, EterminserviceStep */
+/* option buttons */
 .option-btn {
 	display: inline-flex;
 	align-items: center;
-	border-width: 2px;
-	border-style: solid;
-	padding: 0.5rem 1rem;
+	border: 1px solid var(--color-card-border);
+	padding: 0.625rem 1.25rem;
 	font-family: var(--font-body);
 	font-size: 1rem;
-	transition: all 100ms;
-	background-color: var(--color-paper);
-	border-color: var(--color-pencil);
+	font-weight: 500;
+	border-radius: 20px;
+	background-color: var(--color-erased);
 	color: var(--color-pencil);
-	box-shadow: var(--shadow-hard-sm);
+	transition: all 100ms;
+}
+
+.option-btn:hover:not(:disabled):not(.selected) {
+	background-color: var(--color-red-marker);
+	border-color: var(--color-red-marker);
+	color: white;
 }
 
 @media (min-width: 768px) {
 	.option-btn {
-		font-size: 1.125rem;
+		font-size: 1.0625rem;
 	}
-}
-
-/* single select - hover turns red */
-.option-btn.single:hover,
-.option-btn:not(.multi):not(.selected):hover {
-	background-color: var(--color-red-marker);
-	border-color: var(--color-red-marker);
-	color: white;
 }
 
 /* multi select - selected turns blue */
@@ -149,27 +237,27 @@ h1, h2, h3, h4, h5, h6 {
 
 /* secondary style */
 .option-btn.secondary {
-	opacity: 0.6;
-	border-style: dashed;
-}
-
-.option-btn.secondary:hover {
-	opacity: 1;
-	border-style: solid;
+	opacity: 0.7;
+	background-color: transparent;
 }
 
 /* recommended highlight */
 .option-btn.recommended {
-	border-color: var(--color-blue-pen);
-	background-color: rgba(45, 93, 161, 0.1);
+	background-color: rgba(0, 122, 255, 0.1);
+	border-color: rgba(0, 122, 255, 0.3);
 }
 
 /* disabled state */
 .option-btn:disabled,
 .option-btn.disabled {
-	opacity: 0.35;
+	opacity: 0.4;
 	cursor: not-allowed;
-	background-color: var(--color-erased);
+}
+
+/* handdrawn style overrides for buttons */
+:root.theme-handdrawn .option-btn {
+	border: 2px solid var(--color-pencil);
+	box-shadow: var(--shadow-hard-sm);
 }
 
 /* confetti animation */
@@ -188,7 +276,8 @@ h1, h2, h3, h4, h5, h6 {
 .modal-overlay {
 	position: fixed;
 	inset: 0;
-	background-color: rgba(0, 0, 0, 0.5);
+	background-color: rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(4px);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -197,12 +286,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-content {
-	background-color: var(--color-paper);
-	border: 2px solid var(--color-pencil);
+	background-color: var(--color-erased);
+	border: 1px solid var(--color-card-border);
+	border-radius: 14px;
 	padding: 1.5rem;
 	max-width: 500px;
 	width: 100%;
-	box-shadow: var(--shadow-hard);
 }
 
 .modal-content.small {
@@ -212,10 +301,10 @@ h1, h2, h3, h4, h5, h6 {
 /* modal text */
 .modal-text {
 	font-family: var(--font-body);
-	font-size: 1.125rem;
+	font-size: 1rem;
 	color: var(--color-pencil);
 	margin-bottom: 1.5rem;
-	line-height: 1.4;
+	line-height: 1.5;
 }
 
 /* modal button row */
@@ -229,11 +318,12 @@ h1, h2, h3, h4, h5, h6 {
 	padding: 0.75rem 1rem;
 	font-family: var(--font-body);
 	font-size: 1rem;
-	border: 2px solid var(--color-pencil);
+	font-weight: 500;
+	border: 1px solid var(--color-card-border);
+	border-radius: 12px;
 	background-color: var(--color-paper);
 	color: var(--color-pencil);
 	transition: all 100ms;
-	box-shadow: var(--shadow-hard-sm);
 }
 
 .modal-btn:hover {
@@ -254,14 +344,12 @@ h1, h2, h3, h4, h5, h6 {
 /* prose styles for legal pages */
 .prose a {
 	color: var(--color-blue-pen);
-	text-decoration: underline;
-	text-underline-offset: 2px;
-	font-weight: 500;
-	transition: color 100ms;
+	text-decoration: none;
+	transition: opacity 150ms;
 }
 
 .prose a:hover {
-	color: var(--color-red-marker);
+	opacity: 0.7;
 }
 
 .prose h3 {

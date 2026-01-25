@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { X } from 'lucide-svelte';
+	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		text: string;
@@ -8,6 +10,27 @@
 
 	let { text, children }: Props = $props();
 	let showTooltip = $state(false);
+	let modalElement: HTMLDivElement | null = $state(null);
+	let mounted = $state(false);
+
+	onMount(() => {
+		mounted = true;
+		return () => {
+			// cleanup: remove modal from body if still there
+			if (modalElement?.parentNode === document.body) {
+				document.body.removeChild(modalElement);
+			}
+		};
+	});
+
+	// portal modal to body to escape parent opacity
+	$effect(() => {
+		if (mounted && showTooltip && modalElement) {
+			document.body.appendChild(modalElement);
+		} else if (mounted && !showTooltip && modalElement?.parentNode === document.body) {
+			document.body.removeChild(modalElement);
+		}
+	});
 </script>
 
 <span
@@ -20,19 +43,23 @@
 	{@render children()}
 </span>
 
-{#if showTooltip}
-	<svelte:body>
+<!-- modal rendered but portaled to body via $effect -->
+{#if mounted}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		bind:this={modalElement}
+		class="tooltip-overlay"
+		class:visible={showTooltip}
+		onclick={() => showTooltip = false}
+	>
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="tooltip-overlay" onclick={() => showTooltip = false}>
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
-				<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
-					<X size={16} />
-				</button>
-				<p class="tooltip-text">{text}</p>
-			</div>
+		<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
+			<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
+				<X size={16} />
+			</button>
+			<p class="tooltip-text">{text}</p>
 		</div>
-	</svelte:body>
+	</div>
 {/if}
 
 <style>
@@ -46,11 +73,15 @@
 		position: fixed;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.75);
-		display: flex;
+		display: none;
 		align-items: center;
 		justify-content: center;
 		z-index: 9999;
 		padding: 1rem;
+	}
+
+	.tooltip-overlay.visible {
+		display: flex;
 	}
 
 	.tooltip-modal {

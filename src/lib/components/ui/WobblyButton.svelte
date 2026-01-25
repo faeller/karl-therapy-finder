@@ -48,43 +48,74 @@
 </button>
 
 <style>
+	/* imessage theme (default) */
 	.wobbly-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		border: 1px solid var(--color-card-border);
+	}
+
+	.primary {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+	.primary:hover:not(:disabled) {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	.secondary {
+		background-color: var(--color-erased);
+		border-color: var(--color-card-border);
+		color: var(--color-pencil);
+	}
+	.secondary:hover:not(:disabled) {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+		color: white;
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .wobbly-btn {
 		border-width: 3px;
 		border-style: solid;
 	}
 
-	.primary {
+	:global(:root.theme-handdrawn) .primary {
 		background-color: var(--color-paper);
 		border-color: var(--color-pencil);
 		color: var(--color-pencil);
 		box-shadow: var(--shadow-hard);
 	}
-	.primary:hover:not(:disabled) {
+	:global(:root.theme-handdrawn) .primary:hover:not(:disabled) {
 		background-color: var(--color-red-marker);
 		border-color: var(--color-red-marker);
 		color: white;
 		box-shadow: var(--shadow-hard-sm);
 		transform: translate(2px, 2px);
 	}
-	.primary:active:not(:disabled) {
+	:global(:root.theme-handdrawn) .primary:active:not(:disabled) {
 		box-shadow: none;
 		transform: translate(4px, 4px);
 	}
 
-	.secondary {
+	:global(:root.theme-handdrawn) .secondary {
 		background-color: var(--color-erased);
 		border-color: var(--color-pencil);
 		color: var(--color-pencil);
 		box-shadow: var(--shadow-hard);
 	}
-	.secondary:hover:not(:disabled) {
+	:global(:root.theme-handdrawn) .secondary:hover:not(:disabled) {
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
 		box-shadow: var(--shadow-hard-sm);
 		transform: translate(2px, 2px);
 	}
-	.secondary:active:not(:disabled) {
+	:global(:root.theme-handdrawn) .secondary:active:not(:disabled) {
 		box-shadow: none;
 		transform: translate(4px, 4px);
 	}

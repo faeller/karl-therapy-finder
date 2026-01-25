@@ -18,10 +18,10 @@
 	import UserMenu from '$lib/components/ui/UserMenu.svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import GithubIcon from '$lib/components/ui/GithubIcon.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper } from 'lucide-svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper, Pencil, Smartphone } from 'lucide-svelte';
 	import FoundTherapistButton from '$lib/components/ui/FoundTherapistButton.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { theme } from '$lib/stores/theme';
+	import { theme, style } from '$lib/stores/theme';
 	import { m } from '$lib/paraglide/messages';
 	import type { ChatOption, Therapist, ChatMessage, ChatState } from '$lib/types';
 	import { SEPARATELY_RENDERED_KEYS } from '$lib/constants';
@@ -377,23 +377,34 @@
 
 <div class="flex h-[100dvh] flex-col">
 	<!-- header -->
-	<header class="border-b-2 border-pencil bg-paper">
+	<header class="navbar-glass">
 		<div class="mx-auto max-w-2xl px-3 py-2">
 			<div class="flex items-center justify-between gap-2">
 				<a href="/" class="flex items-center gap-2 min-w-0">
 					<KarlAvatar size="sm" />
-					<h1 class="font-heading text-lg font-bold truncate hidden min-[360px]:block">{m.app_name()}</h1>
+					<h1 class="text-lg font-bold truncate hidden min-[360px]:block" style="font-family: var(--font-brand)">{m.app_name()}</h1>
 				</a>
 				<div class="flex items-center gap-3 sm:gap-4 shrink-0">
 					<!-- desktop icons -->
 					<div class="hidden sm:flex items-center gap-4">
 						<LangToggle />
 						<button
+							onclick={() => theme.toggleStyle()}
+							class="text-pencil/50 hover:text-blue-pen"
+							title="Toggle theme style"
+						>
+							{#if $style === 'handdrawn'}
+								<Smartphone size={18} strokeWidth={2.5} />
+							{:else}
+								<Pencil size={18} strokeWidth={2.5} />
+							{/if}
+						</button>
+						<button
 							onclick={() => theme.toggle()}
 							class="text-pencil/50 hover:text-blue-pen"
 							title={m.chat_toggle_theme()}
 						>
-							{#if $theme === 'dark'}
+							{#if $theme.colorMode === 'dark'}
 								<Sun size={18} strokeWidth={2.5} />
 							{:else}
 								<Moon size={18} strokeWidth={2.5} />
@@ -462,11 +473,22 @@
 				<div class="sm:hidden flex items-center justify-end gap-4 mt-2 pt-2 border-t border-pencil/20">
 					<LangToggle />
 					<button
+						onclick={() => theme.toggleStyle()}
+						class="text-pencil/50 hover:text-blue-pen"
+						title="Toggle theme style"
+					>
+						{#if $style === 'handdrawn'}
+							<Smartphone size={18} strokeWidth={2.5} />
+						{:else}
+							<Pencil size={18} strokeWidth={2.5} />
+						{/if}
+					</button>
+					<button
 						onclick={() => theme.toggle()}
 						class="text-pencil/50 hover:text-blue-pen"
 						title={m.chat_toggle_theme()}
 					>
-						{#if $theme === 'dark'}
+						{#if $theme.colorMode === 'dark'}
 							<Sun size={18} strokeWidth={2.5} />
 						{:else}
 							<Moon size={18} strokeWidth={2.5} />
@@ -837,6 +859,27 @@
 {/if}
 
 <style>
+	.navbar-glass {
+		background: rgba(242, 242, 247, 0.8);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border-bottom: 1px solid var(--color-card-border);
+	}
+
+	:global(:root.dark) .navbar-glass {
+		background: rgba(20, 20, 22, 0.6);
+		backdrop-filter: blur(24px);
+		-webkit-backdrop-filter: blur(24px);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	:global(:root.theme-handdrawn) .navbar-glass {
+		background: var(--color-paper);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+		border-bottom: 2px solid var(--color-pencil);
+	}
+
 	.progress-bar {
 		flex: 1;
 		height: 4px;

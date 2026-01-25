@@ -390,7 +390,7 @@
 		width: 80px;
 		height: 80px;
 		border-radius: 50%;
-		border: 3px solid var(--color-pencil);
+		border: 2px solid var(--color-card-border);
 		object-fit: cover;
 	}
 
@@ -398,7 +398,7 @@
 		width: 80px;
 		height: 80px;
 		border-radius: 50%;
-		border: 3px solid var(--color-pencil);
+		border: 2px solid var(--color-card-border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -415,7 +415,7 @@
 		gap: 0.75rem;
 		width: 100%;
 		padding: 0.75rem 1rem;
-		border: 2px solid var(--color-pencil);
+		border: 1px solid var(--color-card-border);
 		background-color: var(--color-paper);
 		font-family: var(--font-body);
 		font-size: 1rem;
@@ -425,6 +425,16 @@
 
 	.sync-toggle:hover {
 		background-color: var(--color-erased);
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .avatar-large,
+	:global(:root.theme-handdrawn) .avatar-fallback-large {
+		border: 3px solid var(--color-pencil);
+	}
+
+	:global(:root.theme-handdrawn) .sync-toggle {
+		border: 2px solid var(--color-pencil);
 	}
 
 	.toggle-track {

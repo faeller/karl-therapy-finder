@@ -23,10 +23,9 @@
 		justify-content: center;
 		border-radius: 9999px;
 		border: 2px solid var(--color-pencil);
-		background-color: var(--color-paper);
-		font-family: var(--font-heading);
+		background-color: var(--color-erased);
+		font-family: var(--font-brand);
 		font-weight: 700;
-		box-shadow: var(--shadow-hard-sm);
 	}
 	.karl-avatar.shadow-md {
 		border-width: 3px;

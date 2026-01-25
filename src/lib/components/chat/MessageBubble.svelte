@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import KarlAvatar from './KarlAvatar.svelte';
@@ -79,7 +78,6 @@
 			class="bubble"
 			class:karl={role === 'karl'}
 			class:user={role === 'user'}
-			style:border-radius={role === 'karl' ? wobbly.bubble : wobbly.bubbleAlt}
 		>
 			{displayText}
 		</div>
@@ -104,20 +102,37 @@
 		}
 	}
 
+	/* imessage theme (default) */
 	.bubble {
-		border: 2px solid var(--color-pencil);
-		padding: 0.75rem 1rem;
+		padding: 0.625rem 1rem;
 		white-space: pre-line;
+		border-radius: var(--radius-bubble);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 	}
 
 	.bubble.karl {
-		background-color: var(--color-paper);
+		background-color: var(--color-erased);
 		color: var(--color-pencil);
 	}
 
 	.bubble.user {
 		background-color: var(--color-blue-pen);
 		color: white;
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .bubble {
+		border: 2px solid var(--color-pencil);
+		box-shadow: var(--shadow-hard-sm);
+	}
+
+	:global(:root.theme-handdrawn) .bubble.karl {
+		background-color: var(--color-paper);
+	}
+
+	:global(:root.theme-handdrawn) .bubble.user {
+		background-color: var(--color-paper);
+		color: var(--color-pencil);
 	}
 
 	.edit-btn {
@@ -127,11 +142,11 @@
 		padding: 0.25rem;
 		border-radius: 9999px;
 		background-color: var(--color-paper);
-		border: 1px solid var(--color-pencil);
+		border: none;
 		color: var(--color-pencil);
 		opacity: 0;
 		transition: opacity 150ms;
-		box-shadow: var(--shadow-hard-sm);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 	}
 
 	.bubble-wrapper:hover .edit-btn {
@@ -141,7 +156,10 @@
 	.edit-btn:hover {
 		opacity: 1 !important;
 		background-color: var(--color-blue-pen);
-		border-color: var(--color-blue-pen);
 		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .edit-btn {
+		border: 1px solid var(--color-pencil);
 	}
 </style>

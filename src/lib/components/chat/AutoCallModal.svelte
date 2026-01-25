@@ -83,6 +83,32 @@
 	let scheduledTime = $state<string | null>(null);
 	let selectedCallId = $state<string | null>(null);
 	let rateLimitRetrySeconds = $state<number>(0);
+	let rateLimitInterval: ReturnType<typeof setInterval> | null = null;
+
+	function startRateLimitCountdown() {
+		if (rateLimitInterval) clearInterval(rateLimitInterval);
+		if (rateLimitRetrySeconds > 0) {
+			rateLimitInterval = setInterval(() => {
+				rateLimitRetrySeconds--;
+				if (rateLimitRetrySeconds <= 0 && rateLimitInterval) {
+					clearInterval(rateLimitInterval);
+					rateLimitInterval = null;
+				}
+			}, 1000);
+		}
+	}
+
+	function formatCountdown(seconds: number): string {
+		if (seconds < 60) return `${seconds}s`;
+		if (seconds < 3600) {
+			const m = Math.floor(seconds / 60);
+			const s = seconds % 60;
+			return s > 0 ? `${m}m ${s}s` : `${m}m`;
+		}
+		const h = Math.floor(seconds / 3600);
+		const m = Math.floor((seconds % 3600) / 60);
+		return m > 0 ? `${h}h ${m}m` : `${h}h`;
+	}
 
 	// persist form data in localStorage
 	const STORAGE_KEY = 'karl_call_form';
@@ -244,6 +270,10 @@
 		error = null;
 		preflightData = null;
 		rateLimitRetrySeconds = 0;
+		if (rateLimitInterval) {
+			clearInterval(rateLimitInterval);
+			rateLimitInterval = null;
+		}
 
 		try {
 			const params = new URLSearchParams({ eId: therapist.id });
@@ -253,7 +283,16 @@
 
 			const response = await fetch(`/api/calls/preflight?${params}`);
 			if (!response.ok) {
-				const data = await response.json().catch(() => ({})) as { message?: string };
+				const data = await response.json().catch(() => ({})) as { message?: string; retryAfter?: number };
+
+				// handle rate limiting (429)
+				if (response.status === 429) {
+					const message = data.message || '';
+					const retryAfter = data.retryAfter || 10;
+					rateLimitRetrySeconds = retryAfter;
+					throw new Error(message || m.autocall_error_rate_limit({ seconds: String(retryAfter) }));
+				}
+
 				throw new Error(data.message || `Error ${response.status}`);
 			}
 
@@ -272,6 +311,7 @@
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.autocall_error_loading();
 			step = 'error';
+			startRateLimitCountdown();
 		}
 	}
 
@@ -343,10 +383,10 @@
 
 				// handle rate limiting (429)
 				if (response.status === 429) {
+					const message = data.message || '';
 					const retryAfter = data.retryAfter || 10;
-					// only show countdown for short limits (< 1 hour)
-					rateLimitRetrySeconds = retryAfter < 3600 ? retryAfter : 0;
-					throw new Error(data.message || m.autocall_error_rate_limit({ seconds: String(retryAfter) }));
+					rateLimitRetrySeconds = retryAfter;
+					throw new Error(message || m.autocall_error_rate_limit({ seconds: String(retryAfter) }));
 				}
 
 				throw new Error(data.message || `Error ${response.status}`);
@@ -376,16 +416,7 @@
 				track('validation_rejected', { reason: reasonMatch?.[1] || 'unknown' });
 			}
 			step = 'error';
-
-			// start countdown for rate limit
-			if (rateLimitRetrySeconds > 0) {
-				const countdown = setInterval(() => {
-					rateLimitRetrySeconds--;
-					if (rateLimitRetrySeconds <= 0) {
-						clearInterval(countdown);
-					}
-				}, 1000);
-			}
+			startRateLimitCountdown();
 		}
 	}
 
@@ -1260,7 +1291,7 @@
 						onclick={fetchPreflight}
 						disabled={rateLimitRetrySeconds > 0}
 					>
-						{rateLimitRetrySeconds > 0 ? `${m.autocall_error_retry()} (${rateLimitRetrySeconds}s)` : m.autocall_error_retry()}
+						{rateLimitRetrySeconds > 0 ? `${m.autocall_error_retry()} (${formatCountdown(rateLimitRetrySeconds)})` : m.autocall_error_retry()}
 					</button>
 				</div>
 			{/if}

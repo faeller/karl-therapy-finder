@@ -27,13 +27,31 @@
 		<meta name="twitter:image" content="https://karl-helps.org/og-image.png" />
 
 		<script>
-			// Prevent flash of unstyled content (FOUC) for dark mode
+			// prevent FOUC for dark mode and style theme
 			(function() {
 				const stored = localStorage.getItem('karl-theme');
-				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-				if (stored === 'dark' || (!stored && prefersDark)) {
+				let colorMode = 'light';
+				let style = 'handdrawn';
+
+				if (stored) {
+					// backward compat: old format was just 'light' or 'dark'
+					if (stored === 'light' || stored === 'dark') {
+						colorMode = stored;
+					} else {
+						try {
+							const parsed = JSON.parse(stored);
+							colorMode = parsed.colorMode || 'light';
+							style = parsed.style || 'handdrawn';
+						} catch {}
+					}
+				} else {
+					colorMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+				}
+
+				if (colorMode === 'dark') {
 					document.documentElement.classList.add('dark');
 				}
+				document.documentElement.classList.add('theme-' + style);
 			})();
 		</script>
 		%sveltekit.head%

@@ -99,10 +99,10 @@
 	}
 </script>
 
+<div class="card-wrapper">
 <div
-	class="therapist-card border-2 border-pencil p-4"
+	class="therapist-card relative p-4"
 	style:border-radius={wobbly.md}
-	style:box-shadow="var(--shadow-hard-subtle)"
 >
 	<div class="mb-3">
 		<h4 class="font-heading text-lg font-bold">{therapist.name}</h4>
@@ -204,7 +204,7 @@
 					style:border-radius={wobbly.button}
 				>
 					<PhoneCall size={16} strokeWidth={2.5} class="shrink-0" />
-					Anruf geplant
+					Anruf ansehen
 				</button>
 			{:else if canUseAutoCall && hasPhone}
 				<button
@@ -229,6 +229,7 @@
 		</div>
 	</div>
 
+</div>
 </div>
 
 {#if pendingContact}
@@ -270,17 +271,28 @@
 />
 
 <style>
+	/* wrapper for positioning tape relative to card */
+	.card-wrapper {
+		position: relative;
+		margin-top: 0.75rem;
+	}
+
+	/* ========================================
+	   imessage theme (default)
+	   ======================================== */
 	.therapist-card {
-		background-color: var(--color-paper);
+		background-color: var(--color-erased);
+		border: 1px solid var(--color-card-border);
+		overflow: visible;
 	}
 
 	.tag {
 		border-radius: 9999px;
-		border: 1px solid var(--color-pencil);
-		opacity: 0.5;
-		background-color: var(--color-erased);
+		background-color: var(--color-paper);
+		border: 1px solid var(--color-card-border);
 		padding: 0.125rem 0.5rem;
 		font-size: 0.75rem;
+		color: var(--color-secondary);
 	}
 
 	.action-btn {
@@ -289,13 +301,13 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		border: 2px solid var(--color-pencil);
+		border: 1px solid var(--color-card-border);
 		background-color: var(--color-paper);
-		padding: 0.5rem 1rem;
+		padding: 0.625rem 1rem;
 		font-family: var(--font-body);
 		font-size: 0.9375rem;
+		border-radius: 10px;
 		transition: all 100ms;
-		box-shadow: var(--shadow-hard-sm);
 	}
 
 	.action-btn:hover:not(:disabled) {
@@ -305,15 +317,18 @@
 	}
 
 	.action-btn.secondary {
-		background-color: transparent;
-		box-shadow: none;
+		background-color: var(--color-paper);
+	}
+
+	.action-btn.secondary:hover:not(:disabled) {
+		background-color: var(--color-erased);
+		border-color: var(--color-card-border);
+		color: var(--color-pencil);
 	}
 
 	.action-btn.coming-soon {
-		opacity: 0.35;
+		opacity: 0.4;
 		cursor: not-allowed;
-		background-color: var(--color-erased);
-		box-shadow: none;
 	}
 
 	.action-btn.auto-call {
@@ -322,17 +337,20 @@
 		color: white;
 	}
 
-	.action-btn.auto-call:hover {
+	.action-btn.auto-call:hover:not(:disabled) {
 		background-color: var(--color-red-marker);
 		border-color: var(--color-red-marker);
 	}
 
 	.action-btn.scheduled {
-		background-color: var(--color-erased);
-		border-style: dashed;
+		background-color: var(--color-paper);
 		font-size: 0.8rem;
+		color: var(--color-secondary);
+	}
+
+	.action-btn.scheduled:hover:not(:disabled) {
+		background-color: var(--color-erased);
 		color: var(--color-pencil);
-		opacity: 0.8;
 	}
 
 	.call-buttons {
@@ -355,7 +373,7 @@
 		margin-top: 0.75rem;
 		margin-bottom: 1rem;
 		padding: 0.75rem;
-		border-radius: 0.5rem;
+		border-radius: 12px;
 		background-color: var(--color-erased);
 	}
 
@@ -371,21 +389,114 @@
 
 	.confirm-btn {
 		flex: 1;
-		padding: 0.375rem 0.75rem;
-		border: 2px solid var(--color-pencil);
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--color-card-border);
+		border-radius: 8px;
 		background-color: var(--color-paper);
 		font-family: var(--font-body);
 		font-size: 0.875rem;
 		transition: all 100ms;
 	}
 
-	.confirm-btn.yes:hover {
+	.confirm-btn:hover {
+		background-color: var(--color-erased);
+	}
+
+	.confirm-btn.yes {
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
 		color: white;
 	}
 
-	.confirm-btn.no:hover {
+	.confirm-btn.yes:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	/* ========================================
+	   handdrawn theme overrides
+	   ======================================== */
+	:global(:root.theme-handdrawn) .therapist-card {
+		background-color: var(--color-paper);
+		border: 2px solid var(--color-pencil);
+		box-shadow: var(--shadow-hard-subtle);
+	}
+
+	:global(:root.theme-handdrawn) .tag {
+		border: 1px solid var(--color-pencil);
+		opacity: 0.5;
+		background-color: var(--color-erased);
+		color: inherit;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn {
+		border: 2px solid var(--color-pencil);
+		background-color: var(--color-paper);
+		box-shadow: var(--shadow-hard-sm);
+		transition: all 100ms;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn:hover:not(:disabled) {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn:active:not(:disabled) {
+		opacity: 1;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.secondary {
+		background-color: transparent;
+		box-shadow: none;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.coming-soon {
+		opacity: 0.35;
+		background-color: var(--color-erased);
+		box-shadow: none;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.auto-call {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.auto-call:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.scheduled {
+		background-color: var(--color-erased);
+		border-style: dashed;
+		opacity: 0.8;
+		color: var(--color-pencil);
+	}
+
+	:global(:root.theme-handdrawn) .confirm-prompt {
+		border-radius: 0.5rem;
+	}
+
+	:global(:root.theme-handdrawn) .confirm-btn {
+		border: 2px solid var(--color-pencil);
+		transition: all 100ms;
+	}
+
+	:global(:root.theme-handdrawn) .confirm-btn.yes {
+		background-color: var(--color-paper);
+		border-color: var(--color-pencil);
+		color: var(--color-pencil);
+	}
+
+	:global(:root.theme-handdrawn) .confirm-btn.yes:hover {
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .confirm-btn.no:hover {
 		background-color: var(--color-erased);
 	}
 </style>

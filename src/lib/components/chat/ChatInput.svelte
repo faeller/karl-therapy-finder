@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { wobbly } from '$lib/utils/wobbly';
 	import { Send } from 'lucide-svelte';
 
 	interface Props {
@@ -32,55 +31,51 @@
 		{placeholder}
 		onkeydown={handleKeydown}
 		class="chat-input"
-		style:border-radius={wobbly.sm}
 	/>
 	<button
 		type="submit"
 		disabled={!value.trim()}
 		class="chat-submit"
-		style:border-radius={wobbly.button}
 	>
-		<Send size={24} strokeWidth={2.5} />
+		<Send size={20} strokeWidth={2} />
 	</button>
 </form>
 
 <style>
 	.chat-input {
 		flex: 1;
-		border: 3px solid var(--color-blue-pen);
-		background-color: var(--color-paper);
-		padding: 0.875rem 1rem;
+		border: none;
+		background-color: var(--color-erased);
+		padding: 0.75rem 1rem;
 		font-family: var(--font-body);
-		font-size: 1.125rem;
+		font-size: 1rem;
 		color: var(--color-pencil);
-		box-shadow: var(--shadow-hard-sm);
+		border-radius: 20px;
 	}
 	.chat-input::placeholder {
 		color: var(--color-pencil);
 		opacity: 0.5;
 	}
 	.chat-input:focus {
-		border-color: var(--color-red-marker);
 		outline: none;
-		box-shadow: var(--shadow-hard);
+		box-shadow: 0 0 0 2px var(--color-blue-pen);
 	}
 
 	.chat-submit {
-		border: 3px solid var(--color-blue-pen);
+		border: none;
 		background-color: var(--color-blue-pen);
-		padding: 0.875rem;
-		transition: all 100ms;
-		box-shadow: var(--shadow-hard-sm);
+		padding: 0.75rem;
+		transition: all 150ms;
 		color: white;
+		border-radius: 50%;
 	}
 	.chat-submit:hover:not(:disabled) {
-		background-color: var(--color-red-marker);
-		border-color: var(--color-red-marker);
+		background-color: #0066d6;
 	}
 	.chat-submit:disabled {
 		cursor: not-allowed;
 		opacity: 0.4;
-		background-color: var(--color-paper);
+		background-color: var(--color-erased);
 		color: var(--color-pencil);
 	}
 </style>
