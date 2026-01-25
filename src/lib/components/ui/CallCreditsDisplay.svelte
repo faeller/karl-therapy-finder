@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Phone, HelpCircle } from 'lucide-svelte';
 	import { m } from '$lib/paraglide/messages';
+	import ReservedTimeInfo from './ReservedTimeInfo.svelte';
 
 	interface Props {
 		availableSeconds: number;
@@ -41,7 +42,7 @@
 	const freeMins = $derived(Math.floor(freeSeconds / 60));
 	const freeSecs = $derived(freeSeconds % 60);
 
-	let showTooltip = $state(false);
+	let showLegendTooltip = $state(false);
 </script>
 
 <div class="call-credits" class:compact class:no-background={noBackground}>
@@ -88,13 +89,19 @@
 				<div class="legend-color free"></div>
 				<span>Verfügbar</span>
 			</div>
-			<div class="legend-item" onclick={() => showTooltip = !showTooltip} role="button" tabindex="0">
+			<div
+				class="legend-item"
+				onclick={() => showLegendTooltip = !showLegendTooltip}
+				title="Reservierte Zeit für geplante Anrufe. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
+				role="button"
+				tabindex="0"
+			>
 				<div class="legend-color reserved"></div>
 				<span>Reserviert</span>
 				<HelpCircle size={12} class="help-icon" />
 			</div>
 		</div>
-		{#if showTooltip}
+		{#if showLegendTooltip}
 			<div class="tooltip-text">
 				Reservierte Zeit für geplante Anrufe. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen.
 			</div>
@@ -103,13 +110,7 @@
 
 	{#if pendingCalls > 0}
 		<div class="info-text" class:compact>
-			<span
-				class="reserved-info"
-				title="Reservierte Zeit für {pendingCalls} geplante{pendingCalls === 1 ? 'n' : ''} Anruf{pendingCalls === 1 ? '' : 'e'}. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
-			>
-				{pendingCalls} geplant ({reservedMins}:{reservedSecs.toString().padStart(2, '0')} min reserviert)
-				<HelpCircle size={14} class="help-icon" />
-			</span>
+			<ReservedTimeInfo projectedSeconds={projectedSeconds} pendingCalls={pendingCalls} />
 		</div>
 	{/if}
 </div>
@@ -196,17 +197,6 @@
 		text-align: left;
 	}
 
-	.reserved-info {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		cursor: help;
-	}
-
-	.help-icon {
-		opacity: 0.4;
-	}
-
 	.legend {
 		display: flex;
 		gap: 1rem;
@@ -223,7 +213,7 @@
 	}
 
 	.legend-item[role="button"] {
-		cursor: pointer;
+		cursor: help;
 	}
 
 	.legend-color {

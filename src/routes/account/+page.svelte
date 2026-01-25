@@ -5,6 +5,7 @@
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
 	import CallCreditsDisplay from '$lib/components/ui/CallCreditsDisplay.svelte';
+	import ReservedTimeInfo from '$lib/components/ui/ReservedTimeInfo.svelte';
 	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
