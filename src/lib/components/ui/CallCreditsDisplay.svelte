@@ -40,6 +40,8 @@
 	const reservedPercent = $derived(Math.min(100, (projectedSeconds / maxSeconds) * 100));
 	const freeMins = $derived(Math.floor(freeSeconds / 60));
 	const freeSecs = $derived(freeSeconds % 60);
+
+	let showTooltip = $state(false);
 </script>
 
 <div class="call-credits" class:compact class:no-background={noBackground}>
@@ -86,15 +88,17 @@
 				<div class="legend-color free"></div>
 				<span>Verfügbar</span>
 			</div>
-			<div
-				class="legend-item"
-				title="Reservierte Zeit für geplante Anrufe. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
-			>
+			<div class="legend-item" onclick={() => showTooltip = !showTooltip} role="button" tabindex="0">
 				<div class="legend-color reserved"></div>
 				<span>Reserviert</span>
 				<HelpCircle size={12} class="help-icon" />
 			</div>
 		</div>
+		{#if showTooltip}
+			<div class="tooltip-text">
+				Reservierte Zeit für geplante Anrufe. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen.
+			</div>
+		{/if}
 	{/if}
 
 	{#if pendingCalls > 0}
@@ -218,8 +222,8 @@
 		gap: 0.375rem;
 	}
 
-	.legend-item[title] {
-		cursor: help;
+	.legend-item[role="button"] {
+		cursor: pointer;
 	}
 
 	.legend-color {
@@ -235,5 +239,16 @@
 	.legend-color.reserved {
 		background-color: var(--color-pencil);
 		opacity: 0.6;
+	}
+
+	.tooltip-text {
+		margin-top: 0.5rem;
+		padding: 0.5rem;
+		font-size: 0.75rem;
+		line-height: 1.4;
+		color: var(--color-pencil);
+		background: var(--color-erased);
+		border-radius: 0.25rem;
+		opacity: 0.8;
 	}
 </style>
