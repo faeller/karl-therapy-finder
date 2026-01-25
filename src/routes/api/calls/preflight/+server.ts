@@ -9,6 +9,7 @@ import { getTherapistDetails, checkCanScheduleCall } from '$lib/server/callServi
 import { calculateNextCallSlot } from '$lib/server/aiService';
 import { getCredits } from '$lib/server/creditService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
+import { enforceRateLimits, getClientId, LIMITS } from '$lib/server/ratelimit';
 
 // helper to map call records consistently - returns all available fields
 function mapCall(c: typeof table.scheduledCalls.$inferSelect) {
@@ -37,10 +38,20 @@ function mapCall(c: typeof table.scheduledCalls.$inferSelect) {
 	};
 }
 
-export const GET: RequestHandler = async ({ locals, platform, url }) => {
+export const GET: RequestHandler = async ({ locals, platform, url, request }) => {
 	if (!locals.user) {
 		error(401, 'Not authenticated');
 	}
+
+	// rate limit before any expensive operations (per minute + per hour + daily)
+	// daily limit triggers 30-day ban
+	const kv = platform?.env?.THERAPIST_CACHE;
+	const clientId = getClientId(locals.user.id, request);
+	await enforceRateLimits(kv, clientId, [
+		{ endpoint: 'preflight', config: LIMITS.callPreflight },
+		{ endpoint: 'preflight_h', config: LIMITS.callPreflightHourly },
+		{ endpoint: 'preflight_d', config: LIMITS.callPreflightDaily, triggersBan: true }
+	]);
 
 	const d1 = await getD1(platform);
 	if (!d1) {

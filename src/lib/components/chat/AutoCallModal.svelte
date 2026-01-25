@@ -332,13 +332,16 @@
 			});
 
 			if (!response.ok) {
+				const data = await response.json().catch(() => ({})) as { message?: string; retryAfter?: number };
+
 				// handle rate limiting (429)
 				if (response.status === 429) {
-					rateLimitRetrySeconds = 10;
-					throw new Error(m.autocall_error_rate_limit({ seconds: '10' }));
+					const retryAfter = data.retryAfter || 10;
+					// only show countdown for short limits (< 1 hour)
+					rateLimitRetrySeconds = retryAfter < 3600 ? retryAfter : 0;
+					throw new Error(data.message || m.autocall_error_rate_limit({ seconds: String(retryAfter) }));
 				}
 
-				const data = await response.json().catch(() => ({})) as { message?: string };
 				throw new Error(data.message || `Error ${response.status}`);
 			}
 
@@ -1220,6 +1223,19 @@
 				<div class="state-view error">
 					<AlertCircle size={48} class="text-red-marker" />
 					<p class="state-title">{m.autocall_error_title()}</p>
+					{#if error && (error.toLowerCase().includes('not enough credits') || error.toLowerCase().includes('no call credits')) && preflightData?.credits}
+						<div class="mt-4 mb-4">
+							<CallCreditsDisplay
+								availableSeconds={preflightData.credits.availableSeconds}
+								projectedSeconds={preflightData.credits.projectedSeconds}
+								tierSeconds={preflightData.credits.tierSeconds}
+								totalSeconds={preflightData.credits.totalSeconds}
+								pendingCalls={preflightData.credits.pendingCalls}
+								compact={true}
+								showTitle={true}
+							/>
+						</div>
+					{/if}
 					<p class="state-detail">{error}</p>
 					<p class="error-links">
 						<a href="mailto:karl@mail.online-impressum.de">E-Mail</a> · <a href="https://github.com/faeller/karl-therapy-finder/issues" target="_blank" rel="noopener">GitHub Issue</a>

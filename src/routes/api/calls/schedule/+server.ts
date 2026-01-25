@@ -9,6 +9,7 @@ import { validateCallRequest } from '$lib/server/aiService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 import { eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
+import { enforceRateLimits, getClientId, LIMITS } from '$lib/server/ratelimit';
 
 interface ScheduleCallBody {
 	therapistId: string;
@@ -28,6 +29,16 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 	if (!locals.user) {
 		error(401, 'Not authenticated');
 	}
+
+	// rate limit - per minute + per hour + daily (DoW protection)
+	// daily limit triggers 30-day ban
+	const kv = platform?.env?.THERAPIST_CACHE;
+	const clientId = getClientId(locals.user.id, request);
+	await enforceRateLimits(kv, clientId, [
+		{ endpoint: 'schedule', config: LIMITS.callSchedule },
+		{ endpoint: 'schedule_h', config: LIMITS.callScheduleHourly },
+		{ endpoint: 'schedule_d', config: LIMITS.callScheduleDaily, triggersBan: true }
+	]);
 
 	const d1 = await getD1(platform);
 	if (!d1) {
@@ -63,6 +74,33 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 		}
 	} else if (!body.therapistId || !body.eId || !body.patientName || !body.callbackPhone) {
 		error(400, 'Missing required fields: therapistId, eId, patientName, callbackPhone');
+	}
+
+	// preflight checks BEFORE validation (prevents DoW - no anthropic call if user has no credits)
+	// skip for debug mode (admins)
+	let preflight: Awaited<ReturnType<typeof checkCanScheduleCall>> | null = null;
+	if (!isDebugMode && !isDebugTherapist) {
+		preflight = await checkCanScheduleCall(
+			db,
+			locals.user.id,
+			body.eId,
+			locals.user.pledgeTier
+		);
+
+		if (!preflight.canProceed) {
+			switch (preflight.reason) {
+				case 'tier_required':
+					error(402, 'Premium tier required for automated calls');
+				case 'no_credits':
+					error(402, 'No call credits remaining');
+				case 'therapist_blocked':
+					error(403, 'This practice does not accept automated calls');
+				case 'call_already_scheduled':
+					error(409, 'Call already scheduled for this therapist');
+				default:
+					error(400, 'Cannot schedule call');
+			}
+		}
 	}
 
 	// anti-abuse validation (runs for all modes including debug)
@@ -119,29 +157,6 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 				error(402, message);
 			}
 			error(500, message);
-		}
-	}
-
-	// preflight checks for real calls
-	const preflight = await checkCanScheduleCall(
-		db,
-		locals.user.id,
-		body.eId,
-		locals.user.pledgeTier
-	);
-
-	if (!preflight.canProceed) {
-		switch (preflight.reason) {
-			case 'tier_required':
-				error(402, 'Premium tier required for automated calls');
-			case 'no_credits':
-				error(402, 'No call credits remaining');
-			case 'therapist_blocked':
-				error(403, 'This practice does not accept automated calls');
-			case 'call_already_scheduled':
-				error(409, 'Call already scheduled for this therapist');
-			default:
-				error(400, 'Cannot schedule call');
 		}
 	}
 

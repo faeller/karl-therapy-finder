@@ -119,6 +119,9 @@
 				<li>Die gewünschte Therapieform</li>
 			</ul>
 
+			<h3>Anthropic</h3>
+			<p>Wir nutzen Anthropic's API für verschiedene Funktionen: Verbesserung des Services, Bereitstellung von Features und manchmal Validierung von Eingaben. Da der Therapiekontext Gesundheitsdaten impliziert, erfolgt die Verarbeitung auf Basis Ihrer Einwilligung (Art. 9 Abs. 2 lit. a DSGVO). Anthropic PBC, USA – <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>. Übermittlung via Standardvertragsklauseln.</p>
+
 			<br>
 			<h2>4. Hosting und Infrastruktur</h2>
 

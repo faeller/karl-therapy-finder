@@ -8,6 +8,7 @@ import * as table from '$lib/server/db/schema';
 import { nanoid } from 'nanoid';
 import { encrypt, decrypt } from '$lib/server/crypto';
 import { env } from '$env/dynamic/private';
+import { enforceRateLimit, getClientId, LIMITS } from '$lib/server/ratelimit';
 
 interface SyncPayload {
 	campaign?: unknown;
@@ -21,9 +22,13 @@ interface SyncPayload {
 }
 
 // get synced data
-export const GET: RequestHandler = async ({ locals, platform }) => {
+export const GET: RequestHandler = async ({ locals, platform, request }) => {
 	if (!locals.user) error(401, 'Not authenticated');
 	if (!locals.user.syncEnabled) error(403, 'Sync not enabled');
+
+	// rate limit
+	const kv = platform?.env?.THERAPIST_CACHE;
+	await enforceRateLimit(kv, getClientId(locals.user.id, request), 'sync', LIMITS.sync);
 
 	const d1 = await getD1(platform);
 	if (!d1) error(500, 'Database not available');
@@ -65,6 +70,10 @@ export const GET: RequestHandler = async ({ locals, platform }) => {
 export const POST: RequestHandler = async ({ locals, platform, request }) => {
 	if (!locals.user) error(401, 'Not authenticated');
 	if (!locals.user.syncEnabled) error(403, 'Sync not enabled');
+
+	// rate limit (shares limit with GET)
+	const kv = platform?.env?.THERAPIST_CACHE;
+	await enforceRateLimit(kv, getClientId(locals.user.id, request), 'sync', LIMITS.sync);
 
 	const d1 = await getD1(platform);
 	if (!d1) error(500, 'Database not available');
