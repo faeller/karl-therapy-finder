@@ -11,6 +11,7 @@
 	import { CallStatus, CallOutcome, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
 	import { m } from '$lib/paraglide/messages';
 	import { track } from '$lib/utils/analytics';
+	import CallCreditsDisplay from '$lib/components/ui/CallCreditsDisplay.svelte';
 
 	// i18n status labels
 	function getStatusLabelI18n(status: string, attemptNumber?: number): string {
@@ -166,6 +167,13 @@
 		canScheduleReason?: string;
 		creditsRemaining?: number;
 		projectedSeconds?: number;
+		credits?: {
+			availableSeconds: number;
+			projectedSeconds: number;
+			tierSeconds: number;
+			totalSeconds: number;
+			pendingCalls: number;
+		};
 	}
 	let preflightData = $state<PreflightData | null>(null);
 
@@ -615,22 +623,42 @@
 							{m.autocall_new_call()}
 						</button>
 					{:else if !preflightData?.canSchedule}
-						<p class="blocked-hint">
-							{#if preflightData?.canScheduleReason === 'call_already_scheduled'}
-								{m.autocall_blocked_scheduled()}
-							{:else if preflightData?.canScheduleReason === 'therapist_blocked'}
-								{m.autocall_blocked_practice()}
-							{:else if preflightData?.canScheduleReason === 'tier_required'}
-								{m.autocall_blocked_tier()}
-							{:else if preflightData?.canScheduleReason === 'no_credits'}
+						{#if preflightData?.canScheduleReason === 'no_credits' && preflightData?.credits}
+							<div class="mb-4">
+								<CallCreditsDisplay
+									availableSeconds={preflightData.credits.availableSeconds}
+									projectedSeconds={preflightData.credits.projectedSeconds}
+									tierSeconds={preflightData.credits.tierSeconds}
+									totalSeconds={preflightData.credits.totalSeconds}
+									pendingCalls={preflightData.credits.pendingCalls}
+									compact={true}
+									showTitle={true}
+								/>
+							</div>
+							<p class="blocked-hint">
 								{m.autocall_blocked_no_credits({
 									available: formatCredits(preflightData?.creditsRemaining ?? 0),
 									pending: formatCredits(preflightData?.projectedSeconds ?? 0)
 								})}
-							{:else}
-								{m.autocall_blocked_default()}
-							{/if}
-						</p>
+							</p>
+						{:else}
+							<p class="blocked-hint">
+								{#if preflightData?.canScheduleReason === 'call_already_scheduled'}
+									{m.autocall_blocked_scheduled()}
+								{:else if preflightData?.canScheduleReason === 'therapist_blocked'}
+									{m.autocall_blocked_practice()}
+								{:else if preflightData?.canScheduleReason === 'tier_required'}
+									{m.autocall_blocked_tier()}
+								{:else if preflightData?.canScheduleReason === 'no_credits'}
+									{m.autocall_blocked_no_credits({
+										available: formatCredits(preflightData?.creditsRemaining ?? 0),
+										pending: formatCredits(preflightData?.projectedSeconds ?? 0)
+									})}
+								{:else}
+									{m.autocall_blocked_default()}
+								{/if}
+							</p>
+						{/if}
 					{/if}
 				</div>
 

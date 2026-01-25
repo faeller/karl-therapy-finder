@@ -7,6 +7,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { getTherapistDetails, checkCanScheduleCall } from '$lib/server/callService';
 import { calculateNextCallSlot } from '$lib/server/aiService';
+import { getCredits } from '$lib/server/creditService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 
 // helper to map call records consistently - returns all available fields
@@ -188,6 +189,14 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 			.orderBy(desc(table.scheduledCalls.createdAt))
 			.limit(10);
 
+		// get full credit details for component display
+		const credits = await getCredits(
+			db,
+			locals.user.id,
+			locals.user.pledgeAmountCents,
+			locals.user.pledgeTier
+		);
+
 		return json({
 			therapist: {
 				eId: details.eId,
@@ -207,6 +216,13 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 			canScheduleReason: preflight.reason,
 			creditsRemaining: preflight.creditsRemaining,
 			projectedSeconds: preflight.projectedSeconds,
+			credits: {
+				availableSeconds: credits.available,
+				projectedSeconds: preflight.projectedSeconds ?? 0,
+				tierSeconds: credits.tierSeconds,
+				totalSeconds: credits.total,
+				pendingCalls: credits.pendingCalls
+			},
 			costUsd
 		});
 	} catch (e) {
