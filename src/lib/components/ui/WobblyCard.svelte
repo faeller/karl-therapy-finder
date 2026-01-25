@@ -37,7 +37,7 @@
 </div>
 
 <style>
-	/* imessage theme (default) */
+	/* modern theme (default) */
 	.card {
 		background-color: var(--color-erased);
 		border: 1px solid var(--color-card-border);
@@ -51,11 +51,12 @@
 	:global(.theme-handdrawn) .card {
 		background-color: var(--color-paper);
 		border: 2px solid var(--color-pencil);
-		border-radius: var(--wobbly-radius);
-		box-shadow: var(--shadow-hard-subtle);
+		border-radius: var(--radius-wobbly);
+		box-shadow: var(--shadow-hard);
 	}
 	:global(.theme-handdrawn) .card.postit {
 		background-color: var(--color-postit);
+		box-shadow: var(--shadow-hard);
 	}
 
 	/* decorations only visible in handdrawn theme */

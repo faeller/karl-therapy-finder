@@ -102,7 +102,7 @@
 		}
 	}
 
-	/* imessage theme (default) */
+	/* modern theme (default) */
 	.bubble {
 		padding: 0.625rem 1rem;
 		white-space: pre-line;

@@ -90,7 +90,7 @@
 		}
 	}
 
-	/* imessage theme (default) */
+	/* modern theme (default) */
 	.action-chip {
 		display: inline-flex;
 		align-items: center;

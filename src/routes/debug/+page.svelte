@@ -3,13 +3,23 @@
 	import { invalidateAll } from '$app/navigation';
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { ArrowLeft, RefreshCw, Phone, Clock, Ban, Database, DollarSign, Loader2, CheckCircle, XCircle, AlertTriangle, Play, Trash2, Bug, Webhook } from 'lucide-svelte';
+	import { ArrowLeft, RefreshCw, Phone, Clock, Ban, Database, DollarSign, Loader2, CheckCircle, XCircle, AlertTriangle, Play, Trash2, Bug, Webhook, Shield, ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { debug } from '$lib/stores/debug';
 
 	let { data, form } = $props();
 
+	import { onMount } from 'svelte';
+
 	let loading = $state(false);
 	let activeSection = $state<string | null>(null);
+	let callsExpanded = $state(false);
+	let tickCount = $state(0);
+
+	// tick every second to update countdowns
+	onMount(() => {
+		const interval = setInterval(() => tickCount++, 1000);
+		return () => clearInterval(interval);
+	});
 
 	// test therapist eId input
 	let testEId = $state('');
@@ -413,18 +423,99 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			{/if}
 		</WobblyCard>
 
-		<!-- scheduled calls -->
-		<WobblyCard class="mb-4">
-			<h2 class="font-heading text-lg font-bold mb-3 flex items-center gap-2">
-				<Phone size={20} />
-				Scheduled Calls ({data.calls.length})
-			</h2>
+		<!-- rate limit debug (dev only) -->
+		{#if data.rateLimit.devMode}
+			<WobblyCard class="mb-4">
+				<h2 class="font-heading text-lg font-bold mb-3 flex items-center gap-2">
+					<Shield size={20} />
+					Rate Limit Debug
+				</h2>
+				<p class="text-sm text-pencil/60 mb-4">
+					test limit: <code class="bg-erased px-1 rounded">{data.rateLimit.testLimit || 'false'}</code>
+					· user: <code class="bg-erased px-1 rounded">u:{data.rateLimit.userId?.slice(0, 8)}...</code>
+				</p>
 
-			{#if data.calls.length === 0}
-				<p class="text-pencil/60 text-sm">no calls scheduled yet</p>
-			{:else}
-				<div class="space-y-3">
-					{#each data.calls as call}
+				<div class="flex flex-wrap gap-2 mb-4">
+					<form method="POST" action="?/triggerRateLimit" use:enhance={() => { loading = true; return async ({ update }) => { await update(); loading = false; }; }}>
+						<input type="hidden" name="type" value="minute" />
+						<button type="submit" class="action-btn" style:border-radius={wobbly.button}>
+							trigger minute
+						</button>
+					</form>
+					<form method="POST" action="?/triggerRateLimit" use:enhance={() => { loading = true; return async ({ update }) => { await update(); loading = false; }; }}>
+						<input type="hidden" name="type" value="hourly" />
+						<button type="submit" class="action-btn" style:border-radius={wobbly.button}>
+							trigger hourly
+						</button>
+					</form>
+					<form method="POST" action="?/triggerRateLimit" use:enhance={() => { loading = true; return async ({ update }) => { await update(); loading = false; }; }}>
+						<input type="hidden" name="type" value="ban" />
+						<button type="submit" class="action-btn" style:border-radius={wobbly.button}>
+							trigger ban
+						</button>
+					</form>
+					<button type="button" onclick={() => invalidateAll()} class="action-btn" style:border-radius={wobbly.button}>
+						<RefreshCw size={14} />
+						reload
+					</button>
+					<form method="POST" action="?/clearAllRateLimits" use:enhance={() => { loading = true; return async ({ update }) => { await update(); loading = false; }; }}>
+						<button type="submit" class="action-btn text-red-marker" style:border-radius={wobbly.button}>
+							clear all
+						</button>
+					</form>
+				</div>
+
+				{#if data.rateLimit.entries.length === 0}
+					<p class="text-pencil/60 text-sm">no active rate limits</p>
+				{:else}
+					<div class="space-y-2">
+						{#each data.rateLimit.entries as entry}
+							{@const remaining = Math.max(0, entry.expiresIn - tickCount)}
+							{#if remaining > 0}
+								<div class="flex items-center justify-between border-2 border-pencil/20 rounded p-2 text-sm">
+									<div>
+										<code class="text-xs break-all">{entry.key}</code>
+										<span class="ml-2 text-pencil/60">= {entry.value}</span>
+										<span class="ml-2 text-xs text-pencil/50">({remaining}s)</span>
+									</div>
+									<form method="POST" action="?/deleteRateLimit" use:enhance>
+										<input type="hidden" name="key" value={entry.key} />
+										<button type="submit" class="text-red-marker hover:text-red-700" title="delete">
+											<Trash2 size={14} />
+										</button>
+									</form>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				{/if}
+			</WobblyCard>
+		{/if}
+
+		<!-- scheduled calls (collapsible) -->
+		<WobblyCard class="mb-4">
+			<button
+				type="button"
+				onclick={() => callsExpanded = !callsExpanded}
+				class="w-full flex items-center justify-between text-left"
+			>
+				<h2 class="font-heading text-lg font-bold flex items-center gap-2">
+					<Phone size={20} />
+					Scheduled Calls ({data.calls.length})
+				</h2>
+				{#if callsExpanded}
+					<ChevronDown size={20} />
+				{:else}
+					<ChevronRight size={20} />
+				{/if}
+			</button>
+
+			{#if callsExpanded}
+				{#if data.calls.length === 0}
+					<p class="text-pencil/60 text-sm mt-3">no calls scheduled yet</p>
+				{:else}
+					<div class="space-y-3 mt-3">
+						{#each data.calls as call}
 						<div class="border-2 border-pencil/20 rounded p-3">
 							<div class="flex items-start justify-between gap-2">
 								<div>
@@ -471,7 +562,8 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 							{/if}
 						</div>
 					{/each}
-				</div>
+					</div>
+				{/if}
 			{/if}
 		</WobblyCard>
 

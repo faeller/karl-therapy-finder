@@ -2,7 +2,9 @@ import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 
 type ColorMode = 'light' | 'dark';
-type Style = 'handdrawn' | 'imessage';
+type Style = 'handdrawn' | 'modern' | 'apfel';
+
+const STYLES: Style[] = ['handdrawn', 'modern', 'apfel'];
 
 interface ThemeState {
 	colorMode: ColorMode;
@@ -44,7 +46,7 @@ if (browser) {
 	store.subscribe((state) => {
 		const html = document.documentElement;
 		html.classList.toggle('dark', state.colorMode === 'dark');
-		html.classList.remove('theme-handdrawn', 'theme-imessage');
+		html.classList.remove('theme-handdrawn', 'theme-modern', 'theme-apfel');
 		html.classList.add(`theme-${state.style}`);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 	});
@@ -68,10 +70,11 @@ export const theme = {
 	},
 
 	toggleStyle: () => {
-		store.update((s) => ({
-			...s,
-			style: s.style === 'handdrawn' ? 'imessage' : 'handdrawn'
-		}));
+		store.update((s) => {
+			const currentIndex = STYLES.indexOf(s.style);
+			const nextIndex = (currentIndex + 1) % STYLES.length;
+			return { ...s, style: STYLES[nextIndex] };
+		});
 	},
 
 	// backward compat alias

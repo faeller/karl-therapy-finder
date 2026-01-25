@@ -9,6 +9,7 @@ import { handleCallWebhook } from '$lib/server/callService';
 import type { ElevenLabsWebhookPayload } from '$lib/server/elevenlabs';
 import { env } from '$env/dynamic/private';
 import { nanoid } from 'nanoid';
+import { getRateLimitEntries, clearRateLimits, triggerTestLimit, deleteRateLimitEntry, DEV_MODE, DEV_TEST_LIMIT } from '$lib/server/ratelimit';
 
 // auth handled in hooks.server.ts via HTTP Basic Auth
 
@@ -24,7 +25,13 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			cache: [],
 			costEvents: [],
 			webhookLogs: [],
-			envStatus: { configured: false, missing: [] }
+			envStatus: { configured: false, missing: [] },
+			rateLimit: {
+				devMode: DEV_MODE,
+				testLimit: DEV_TEST_LIMIT,
+				entries: await getRateLimitEntries(platform?.env?.THERAPIST_CACHE),
+				userId: locals.user?.id
+			}
 		};
 	}
 
@@ -147,6 +154,12 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		envStatus: {
 			configured: missing.length === 0,
 			missing
+		},
+		rateLimit: {
+			devMode: DEV_MODE,
+			testLimit: DEV_TEST_LIMIT,
+			entries: await getRateLimitEntries(platform?.env?.THERAPIST_CACHE),
+			userId: locals.user?.id
 		}
 	};
 };
@@ -297,6 +310,40 @@ export const actions: Actions = {
 
 		await db.delete(table.therapistCache).where(eq(table.therapistCache.eId, eId));
 		return { success: true, action: 'clearCache', eId };
+	},
+
+	// rate limit: trigger test limit
+	triggerRateLimit: async ({ locals, platform, request }) => {
+		if (!locals.user) return { success: false, error: 'not authenticated' };
+
+		const data = await request.formData();
+		const type = data.get('type') as 'minute' | 'hourly' | 'ban';
+		const identifier = `u:${locals.user.id}`;
+		const kv = platform?.env?.THERAPIST_CACHE;
+
+		await triggerTestLimit(kv, identifier, type);
+		return { success: true, action: 'triggerRateLimit', type };
+	},
+
+	// rate limit: clear all
+	clearAllRateLimits: async ({ locals, platform }) => {
+		if (!locals.user) return { success: false, error: 'not authenticated' };
+
+		const kv = platform?.env?.THERAPIST_CACHE;
+		await clearRateLimits(kv);
+		return { success: true, action: 'clearRateLimits' };
+	},
+
+	// rate limit: delete single entry
+	deleteRateLimit: async ({ locals, platform, request }) => {
+		if (!locals.user) return { success: false, error: 'not authenticated' };
+
+		const data = await request.formData();
+		const key = data.get('key') as string;
+		const kv = platform?.env?.THERAPIST_CACHE;
+
+		await deleteRateLimitEntry(kv, key);
+		return { success: true, action: 'deleteRateLimitEntry', key };
 	},
 
 	// schedule a test call (bypasses some preflight checks for testing)

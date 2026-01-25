@@ -22,6 +22,11 @@
 				<p><strong>Diese Seite befindet sich noch im Aufbau.</strong> Die Inhalte werden laufend ergänzt und präzisiert.</p>
 			</div>
 
+			<div class="practice-box">
+				<h3>Sind Sie eine Praxis?</h3>
+				<p>Sind Sie eine Praxis und KARL hat Sie angerufen? Dann klicken Sie bitte <a href="mailto:karl@mail.online-impressum.de?subject=Praxis%20Anfrage">hier</a>.</p>
+			</div>
+
 			<h2>Warum diese Seite?</h2>
 			<p>Wenn du KARLs automatische Anruf-Funktion nutzt, verarbeiten wir sogenannte <strong>Gesundheitsdaten</strong>, konkret die Information, dass du einen Therapieplatz suchst. Diese Daten sind nach Art. 9 DSGVO besonders schützenswert.</p>
 
@@ -115,5 +120,24 @@
 	}
 	.wip-box p {
 		margin: 0;
+	}
+	.practice-box {
+		background-color: #e0f2fe;
+		border: 2px solid #0284c7;
+		padding: 1rem;
+		margin: 1rem 0;
+		border-radius: 4px;
+		color: #0c4a6e;
+	}
+	:global(:root.dark) .practice-box {
+		background-color: #082f49;
+		border-color: #0ea5e9;
+		color: #bae6fd;
+	}
+	.practice-box h3 {
+		margin-top: 0;
+	}
+	.practice-box p {
+		margin: 0.5rem 0 0 0;
 	}
 </style>

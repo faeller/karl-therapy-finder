@@ -76,6 +76,7 @@
 		</p>
 
 		<div class="intro-card">
+			<div class="tape"></div>
 			<p class="intro-text">
 				{m.landing_intro()}
 			</p>
@@ -194,12 +195,17 @@
 	}
 
 	.intro-card {
+		position: relative;
 		background: var(--color-erased);
 		border: 1px solid var(--color-card-border);
 		border-radius: 1rem;
 		padding: 1.25rem 1.5rem;
 		margin-bottom: 2rem;
 		text-align: left;
+	}
+
+	.tape {
+		display: none;
 	}
 
 	@media (min-width: 768px) {
@@ -319,10 +325,22 @@
 
 	/* handdrawn theme */
 	:global(:root.theme-handdrawn) .intro-card {
-		background: var(--color-paper);
+		background: var(--color-postit);
 		border: 2px solid var(--color-pencil);
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-hard-subtle);
+		border-radius: var(--radius-wobbly);
+		box-shadow: var(--shadow-hard);
+	}
+
+	:global(:root.theme-handdrawn) .tape {
+		display: block;
+		position: absolute;
+		top: -12px;
+		left: 50%;
+		transform: translateX(-50%) rotate(-2deg);
+		width: 80px;
+		height: 24px;
+		background-color: var(--color-pencil);
+		opacity: 0.15;
 	}
 
 	:global(:root.theme-handdrawn) .cta-button {

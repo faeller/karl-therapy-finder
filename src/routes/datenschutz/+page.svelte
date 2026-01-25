@@ -168,7 +168,18 @@
 				<li><strong>Widerspruch</strong> (Art. 21 DSGVO): Widerspruch gegen bestimmte Verarbeitungen</li>
 				<li><strong>Widerruf der Einwilligung</strong>: Jederzeit mit Wirkung für die Zukunft</li>
 			</ul>
-			<p>Zur Ausübung Ihrer Rechte kontaktieren Sie uns unter der im Impressum angegebenen E-Mail-Adresse.</p>
+
+			<div class="info-box">
+				<h3>Self-Service Portal</h3>
+				<p>Angemeldete Nutzer können ihre Rechte direkt ausüben:</p>
+				<ul>
+					<li><strong>Datenexport:</strong> Alle gespeicherten Daten als JSON-Datei herunterladen</li>
+					<li><strong>Account löschen:</strong> Alle Daten unwiderruflich löschen</li>
+				</ul>
+				<p><a href="/daten">→ Zum Self-Service Portal</a></p>
+			</div>
+
+			<p>Zur Ausübung weiterer Rechte oder bei Fragen kontaktieren Sie uns unter der im Impressum angegebenen E-Mail-Adresse.</p>
 
 			<h3>Beschwerderecht</h3>
 			<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Die für uns zuständige Behörde ist:</p>

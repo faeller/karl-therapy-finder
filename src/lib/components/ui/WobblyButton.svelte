@@ -48,7 +48,7 @@
 </button>
 
 <style>
-	/* imessage theme (default) */
+	/* modern theme (default) */
 	.wobbly-btn {
 		display: inline-flex;
 		align-items: center;

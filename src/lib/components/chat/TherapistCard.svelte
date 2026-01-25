@@ -278,7 +278,7 @@
 	}
 
 	/* ========================================
-	   imessage theme (default)
+	   modern theme (default)
 	   ======================================== */
 	.therapist-card {
 		background-color: var(--color-erased);

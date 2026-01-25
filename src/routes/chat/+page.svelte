@@ -187,7 +187,11 @@
 			return;
 		}
 		if (option.id === OptionId.themeModern) {
-			theme.setStyle('imessage');
+			theme.setStyle('modern');
+			return;
+		}
+		if (option.id === OptionId.themeApfel) {
+			theme.setStyle('apfel');
 			return;
 		}
 		chat.handleOption(option);
@@ -606,12 +610,20 @@
 										{m.option_theme_cool()}
 									</button>
 									<button
-										onclick={() => theme.setStyle('imessage')}
+										onclick={() => theme.setStyle('modern')}
 										class="theme-btn"
-										class:selected={$style === 'imessage'}
+										class:selected={$style === 'modern'}
 										style:border-radius={wobbly.button}
 									>
 										{m.option_theme_modern()}
+									</button>
+									<button
+										onclick={() => theme.setStyle('apfel')}
+										class="theme-btn"
+										class:selected={$style === 'apfel'}
+										style:border-radius={wobbly.button}
+									>
+										{m.option_theme_apfel()}
 									</button>
 								</div>
 								{#if $chatState === 'theme_choice'}

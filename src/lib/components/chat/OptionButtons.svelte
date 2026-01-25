@@ -84,7 +84,7 @@
 			class="option-btn single"
 			style:border-radius={wobbly.button}
 		>
-			{m.chat_continue()} →
+			{selected.size > 0 ? m.chat_continue() : m.chat_skip()} →
 		</button>
 	{/if}
 

@@ -3,6 +3,7 @@ export const OptionId = {
 	// theme
 	themeCool: 'theme_cool',
 	themeModern: 'theme_modern',
+	themeApfel: 'theme_apfel',
 	themeNext: 'theme_next',
 
 	// for whom

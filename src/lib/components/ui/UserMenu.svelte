@@ -117,7 +117,7 @@
 		font-weight: 700;
 	}
 
-	/* imessage theme (default) */
+	/* modern theme (default) */
 	.dropdown {
 		position: absolute;
 		top: 100%;

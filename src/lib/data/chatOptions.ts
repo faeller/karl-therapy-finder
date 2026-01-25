@@ -48,8 +48,8 @@ export const preferenceOptions: ChatOption[] = [
 ];
 
 export const summaryOptions: ChatOption[] = [
-	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', nextState: 'terminservice', isAction: true },
-	{ id: OptionId.changeCriteria, labelDe: 'Nochmal ändern', emoji: '✏️', nextState: 'edit_hint', isAction: true }
+	{ id: OptionId.changeCriteria, labelDe: 'Nochmal ändern', nextState: 'edit_hint', isAction: true },
+	{ id: OptionId.startSearch, labelDe: "Los geht's!", nextState: 'terminservice', isAction: true }
 ];
 
 export const terminserviceOptions: ChatOption[] = [
@@ -58,7 +58,7 @@ export const terminserviceOptions: ChatOption[] = [
 ];
 
 export const editHintOptions: ChatOption[] = [
-	{ id: OptionId.startSearch, labelDe: "Los geht's!", emoji: '🔍', nextState: 'searching', isAction: true }
+	{ id: OptionId.startSearch, labelDe: "Los geht's!", nextState: 'searching', isAction: true }
 ];
 
 export const emailConfirmOptions: ChatOption[] = [
