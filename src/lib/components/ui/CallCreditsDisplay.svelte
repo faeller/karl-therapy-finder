@@ -226,6 +226,6 @@
 
 	.legend-color.reserved {
 		background-color: var(--color-pencil);
-		opacity: 0.3;
+		opacity: 0.6;
 	}
 </style>
