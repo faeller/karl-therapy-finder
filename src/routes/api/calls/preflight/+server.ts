@@ -206,6 +206,7 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 			canSchedule: preflight.canProceed,
 			canScheduleReason: preflight.reason,
 			creditsRemaining: preflight.creditsRemaining,
+			projectedSeconds: preflight.projectedSeconds,
 			costUsd
 		});
 	} catch (e) {

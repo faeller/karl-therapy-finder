@@ -166,14 +166,14 @@ function determinePledgeTierByAmount(amountCents: number): string | null {
 	return null;
 }
 
-// tier config: amount in cents → tier name and minutes
+// tier config: amount in cents → tier name and seconds
 // prices are in EUR: €4, €6, €12, €20, €40
-export const TIER_CONFIG: Record<number, { name: string; minutes: number }> = {
-	4000: { name: 'ozean', minutes: 150 },
-	2000: { name: 'welle', minutes: 75 },
-	1200: { name: 'fluss', minutes: 35 },
-	600: { name: 'quelle', minutes: 12 },
-	400: { name: 'tropfen', minutes: 5 }
+export const TIER_CONFIG: Record<number, { name: string; seconds: number }> = {
+	4000: { name: 'ozean', seconds: 150 * 60 },   // 150 min = 9000s
+	2000: { name: 'welle', seconds: 75 * 60 },    // 75 min = 4500s
+	1200: { name: 'fluss', seconds: 35 * 60 },    // 35 min = 2100s
+	600: { name: 'quelle', seconds: 12 * 60 },    // 12 min = 720s
+	400: { name: 'tropfen', seconds: 5 * 60 }     // 5 min = 300s
 };
 
 // sorted thresholds for tier lookup (highest first)
@@ -181,21 +181,25 @@ const TIER_THRESHOLDS = Object.keys(TIER_CONFIG)
 	.map(Number)
 	.sort((a, b) => b - a);
 
-export function getMinutesForTier(tierName: string | null): number {
+export function getSecondsForTier(tierName: string | null): number {
 	if (!tierName) return 0;
 	const entry = Object.values(TIER_CONFIG).find((t) => t.name === tierName);
-	return entry?.minutes ?? 0;
+	return entry?.seconds ?? 0;
 }
 
-export function getMinutesForAmount(amountCents: number | null): number {
+export function getSecondsForAmount(amountCents: number | null): number {
 	if (amountCents === null || amountCents === 0) return 0;
 
 	for (const threshold of TIER_THRESHOLDS) {
 		if (amountCents >= threshold) {
-			return TIER_CONFIG[threshold].minutes;
+			return TIER_CONFIG[threshold].seconds;
 		}
 	}
 
-	// custom amount below minimum tier = no minutes (use tier name for grandfathering)
+	// custom amount below minimum tier = no seconds (use tier name for grandfathering)
 	return 0;
 }
+
+// backwards compat aliases
+export const getMinutesForTier = (tierName: string | null) => Math.floor(getSecondsForTier(tierName) / 60);
+export const getMinutesForAmount = (amountCents: number | null) => Math.floor(getSecondsForAmount(amountCents) / 60);

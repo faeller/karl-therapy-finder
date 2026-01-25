@@ -2,8 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
-import * as table from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { cancelCall } from '$lib/server/callService';
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	if (!locals.user) {
@@ -30,34 +29,11 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		error(400, 'Missing callId');
 	}
 
-	// find the call and verify ownership
-	const [call] = await db
-		.select()
-		.from(table.scheduledCalls)
-		.where(and(
-			eq(table.scheduledCalls.id, callId),
-			eq(table.scheduledCalls.userId, locals.user.id)
-		))
-		.limit(1);
+	const success = await cancelCall(db, callId, locals.user.id);
 
-	if (!call) {
-		error(404, 'Call not found');
+	if (!success) {
+		error(404, 'Call not found or not cancellable');
 	}
-
-	if (call.status !== 'scheduled') {
-		error(400, 'Can only cancel scheduled calls');
-	}
-
-	// update status to cancelled
-	await db
-		.update(table.scheduledCalls)
-		.set({
-			status: 'cancelled',
-			updatedAt: new Date()
-		})
-		.where(eq(table.scheduledCalls.id, callId));
-
-	// todo: cancel the elevenlabs batch call if possible
 
 	return json({ success: true });
 };

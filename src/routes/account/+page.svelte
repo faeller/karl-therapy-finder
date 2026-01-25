@@ -4,13 +4,14 @@
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
-	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone } from 'lucide-svelte';
+	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
 	import { formatPledgeTier, formatPledgeAmount, user } from '$lib/stores/user';
 	import { initialSync, syncOnLogin, setupAutoSync } from '$lib/services/syncService';
 	import { dataSession } from '$lib/stores/dataSession';
+	import { getStatusLabel, getOutcomeLabel, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
 
 	let { data } = $props();
 	let syncEnabled = $state(data.user.syncEnabled ?? false);
@@ -26,8 +27,21 @@
 
 	let hasExistingData = $state(false);
 	let showSyncPrompt = $state(false);
+	let showCallHistory = $state(false);
 
 	const SYNC_PROMPT_KEY = 'karl_sync_prompt_pending';
+
+	function formatDuration(seconds: number | null): string {
+		if (!seconds) return '-';
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	function formatDateTime(iso: string | null): string {
+		if (!iso) return '-';
+		return new Date(iso).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+	}
 
 	onMount(() => {
 		hasExistingData = checkHasExistingData();
@@ -153,7 +167,17 @@
 					</p>
 				</div>
 			</div>
-			{#if !data.user.pledgeTier}
+			{#if data.user.pledgeTier}
+				<a
+					href="https://www.patreon.com/settings/memberships"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="manage-link mt-3"
+				>
+					Abo verwalten
+					<ExternalLink size={14} />
+				</a>
+			{:else}
 				<a
 					href="https://www.patreon.com/karlhelps"
 					target="_blank"
@@ -169,27 +193,134 @@
 		</WobblyCard>
 
 		<!-- call credits -->
-		{#if data.credits.tierMinutes > 0}
+		{#if true}
+			{@const hasCredits = data.credits.tierSeconds > 0 || data.credits.availableSeconds > 0}
+			{@const availableMins = Math.floor(data.credits.availableSeconds / 60)}
+			{@const availableSecs = data.credits.availableSeconds % 60}
+			{@const tierMins = Math.floor(data.credits.tierSeconds / 60)}
+			{@const totalMins = Math.floor(data.credits.totalSeconds / 60)}
+			{@const maxSeconds = data.credits.tierSeconds > 0 ? data.credits.tierSeconds : data.credits.totalSeconds}
 			<WobblyCard class="mt-4">
 				<div class="flex items-center gap-3">
 					<Phone size={24} class="text-blue-pen" />
 					<div class="flex-1">
 						<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
-						<p class="text-pencil/70">
-							{m.account_credits_remaining({ remaining: data.credits.remaining, total: data.credits.tierMinutes })}
-						</p>
+						{#if hasCredits}
+							<p class="text-pencil/70">
+								{availableMins}:{availableSecs.toString().padStart(2, '0')} / {tierMins > 0 ? tierMins : totalMins}:00 min
+							</p>
+						{:else}
+							<p class="text-pencil/70">
+								0:00 min
+							</p>
+						{/if}
 					</div>
 				</div>
-				<!-- progress bar -->
+					<!-- progress bar -->
 				<div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-erased">
-					<div
-						class="h-full bg-blue-pen transition-all"
-						style:width="{Math.min(100, (data.credits.remaining / data.credits.tierMinutes) * 100)}%"
-					></div>
+					{#if hasCredits && maxSeconds > 0}
+						<div
+							class="h-full bg-blue-pen transition-all"
+							style:width="{Math.min(100, (data.credits.availableSeconds / maxSeconds) * 100)}%"
+						></div>
+					{/if}
 				</div>
-				<p class="mt-2 text-xs text-pencil/50">
-					{m.account_credits_refresh()}
-				</p>
+				<div class="mt-2 flex justify-between text-xs text-pencil/50">
+					{#if data.credits.tierSeconds > 0}
+						<span>{m.account_credits_refresh()}</span>
+					{:else if !hasCredits}
+						<span>{m.auth_become_patron()}</span>
+					{:else}
+						<span></span>
+					{/if}
+					{#if data.credits.pendingCalls > 0}
+						<span>{data.credits.pendingCalls} geplant ({Math.floor(data.credits.projectedSeconds / 60)} min reserviert)</span>
+					{/if}
+				</div>
+
+				<!-- pending calls -->
+				{#if data.pendingCalls.length > 0}
+					<div class="mt-4 border-t border-pencil/20 pt-4">
+						<h3 class="text-sm font-bold mb-2 flex items-center gap-2">
+							<Clock size={16} />
+							Geplante Anrufe
+						</h3>
+						<div class="space-y-2">
+							{#each data.pendingCalls as call}
+								<div class="flex items-center justify-between text-sm bg-erased rounded px-3 py-2">
+									<div class="flex items-center gap-2">
+										{#if call.status === 'frozen'}
+											<Snowflake size={14} class="text-cyan-600" />
+										{:else}
+											<Clock size={14} class="text-blue-pen" />
+										{/if}
+										<span class="font-medium truncate max-w-[140px]">{call.therapistName || 'Unbekannt'}</span>
+									</div>
+									<div class="flex items-center gap-3 text-xs text-pencil/60">
+										<span>{formatDuration(call.projectedSeconds)} res.</span>
+										{#if call.status === 'frozen'}
+											<span class="text-cyan-600">pausiert</span>
+										{:else if call.scheduledAt}
+											<span>{formatDateTime(call.scheduledAt)}</span>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- call history toggle -->
+				{#if data.callHistory.length > 0}
+					<button
+						onclick={() => showCallHistory = !showCallHistory}
+						class="info-link mt-4"
+					>
+						{showCallHistory ? 'Verlauf ausblenden' : `Anrufverlauf (${data.callHistory.length})`}
+					</button>
+
+					{#if showCallHistory}
+						<div class="mt-3 space-y-2">
+							{#each data.callHistory as call}
+								<div class="text-sm bg-erased rounded px-3 py-2">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-2">
+											{#if call.status === 'completed'}
+												<CheckCircle size={14} class="text-green-600" />
+											{:else if call.status === 'cancelled'}
+												<XCircle size={14} class="text-pencil/50" />
+											{:else}
+												<XCircle size={14} class="text-red-marker" />
+											{/if}
+											<span class="font-medium truncate max-w-[140px]">{call.therapistName || 'Unbekannt'}</span>
+										</div>
+										<div class="text-xs text-pencil/60">
+											{call.completedAt ? formatDateTime(call.completedAt) : '-'}
+										</div>
+									</div>
+									<div class="flex items-center justify-between mt-1 text-xs text-pencil/60">
+										<div class="flex items-center gap-2">
+											{#if call.outcome}
+												<span class="px-1.5 py-0.5 rounded {getOutcomeColor(call.outcome)}">
+													{getOutcomeLabel(call.outcome)}
+												</span>
+											{/if}
+											{#if call.appointmentDate}
+												<span class="flex items-center gap-1 text-green-600">
+													<Calendar size={12} />
+													{call.appointmentDate} {call.appointmentTime || ''}
+												</span>
+											{/if}
+										</div>
+										{#if call.durationSeconds}
+											<span>{formatDuration(call.durationSeconds)}</span>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				{/if}
 			</WobblyCard>
 		{/if}
 
@@ -345,6 +476,20 @@
 	}
 
 	.info-link:hover {
+		color: var(--color-red-marker);
+	}
+
+	.manage-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		color: var(--color-blue-pen);
+		text-decoration: underline;
+	}
+
+	.manage-link:hover {
 		color: var(--color-red-marker);
 	}
 

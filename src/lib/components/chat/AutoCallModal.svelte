@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { X, Loader2, CheckCircle, AlertCircle, Phone, Trash2, Clock, Calendar, PhoneCall, History, XCircle, Info, ChevronLeft, MessageSquare, Hash, ExternalLink } from 'lucide-svelte';
+	import { X, Loader2, CheckCircle, AlertCircle, Phone, Trash2, Clock, Calendar, PhoneCall, History, XCircle, Info, ChevronLeft, MessageSquare, Hash, ExternalLink, Pause } from 'lucide-svelte';
 	import { browser } from '$app/environment';
 	import type { Therapist } from '$lib/types';
 	import { debug, DEBUG_THERAPIST_ID } from '$lib/stores/debug';
@@ -23,6 +23,7 @@
 			case 'completed': return m.call_status_completed();
 			case 'failed': return m.call_status_failed();
 			case 'cancelled': return m.call_status_cancelled();
+			case 'frozen': return m.call_status_frozen();
 			default: return status;
 		}
 	}
@@ -48,6 +49,22 @@
 
 	function isCallCompleted(status: string): boolean {
 		return status === 'completed';
+	}
+
+	function formatCredits(seconds: number): string {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return secs > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${mins}:00`;
+	}
+
+	function getGiftedSeconds(analysis?: string): number | null {
+		if (!analysis) return null;
+		try {
+			const parsed = JSON.parse(analysis);
+			return parsed.giftedSeconds ?? null;
+		} catch {
+			return null;
+		}
 	}
 
 	interface Props {
@@ -146,6 +163,8 @@
 		existingCalls: CallRecord[];
 		canSchedule: boolean;
 		canScheduleReason?: string;
+		creditsRemaining?: number;
+		projectedSeconds?: number;
 	}
 	let preflightData = $state<PreflightData | null>(null);
 
@@ -481,6 +500,8 @@
 										<CheckCircle size={16} />
 									{:else if call.status === 'scheduled'}
 										<Clock size={16} />
+									{:else if call.status === 'frozen'}
+										<Pause size={16} />
 									{:else}
 										<XCircle size={16} />
 									{/if}
@@ -488,6 +509,9 @@
 								</div>
 
 								<div class="call-details">
+									{#if call.status === 'frozen'}
+										<span class="call-frozen-hint">{m.autocall_frozen_hint()}</span>
+									{/if}
 									{#if call.scheduledAt}
 										<span class="call-time">{formatDateTime(call.scheduledAt)}</span>
 									{/if}
@@ -546,6 +570,20 @@
 											{#if call.scheduledAt}
 												<span class="call-time">{formatDateTime(call.scheduledAt)}</span>
 											{/if}
+											{#if call.attemptNumber && call.attemptNumber > 1}
+												<span class="call-attempt">{m.autocall_attempt({ current: call.attemptNumber, max: call.maxAttempts || 12 })}</span>
+											{/if}
+											{#if call.outcome}
+												<span class="call-outcome">{getOutcomeLabelI18n(call.outcome)}</span>
+											{/if}
+										</div>
+										<div class="call-actions">
+											{#if call.attemptHistory?.length || call.outcome || call.notes || (call.attemptNumber && call.attemptNumber > 1)}
+												<button class="action-link info-link" onclick={() => showDetails(call.id)}>
+													<Info size={14} />
+													{m.autocall_more_info()}
+												</button>
+											{/if}
 										</div>
 									</div>
 								{/each}
@@ -566,6 +604,11 @@
 								{m.autocall_blocked_practice()}
 							{:else if preflightData?.canScheduleReason === 'tier_required'}
 								{m.autocall_blocked_tier()}
+							{:else if preflightData?.canScheduleReason === 'no_credits'}
+								{m.autocall_blocked_no_credits({
+									available: formatCredits(preflightData?.creditsRemaining ?? 0),
+									pending: formatCredits(preflightData?.projectedSeconds ?? 0)
+								})}
 							{:else}
 								{m.autocall_blocked_default()}
 							{/if}
@@ -662,6 +705,12 @@
 									<div class="timing-item">
 										<span class="timing-label">{m.autocall_timing_duration()}</span>
 										<span class="timing-value">{formatDuration(selectedCall.durationSeconds)}</span>
+									</div>
+								{/if}
+								{#if getGiftedSeconds(selectedCall.analysis)}
+									<div class="timing-item gifted">
+										<span class="timing-label">{m.autocall_timing_gifted()}</span>
+										<span class="timing-value">{formatDuration(getGiftedSeconds(selectedCall.analysis)!)} ✨</span>
 									</div>
 								{/if}
 								{#if selectedCall.attemptNumber}
@@ -917,6 +966,13 @@
 									<span class="hours-line">{line}</span>
 								{/each}
 							</div>
+						</div>
+					{/if}
+
+					{#if preflightData?.creditsRemaining !== undefined}
+						<div class="credits-info">
+							<Clock size={14} />
+							<span>{m.autocall_confirm_credits({ available: formatCredits(preflightData.creditsRemaining) })}</span>
 						</div>
 					{/if}
 
@@ -1310,6 +1366,12 @@
 		font-style: italic;
 	}
 
+	.call-frozen-hint {
+		font-size: 0.75rem;
+		color: var(--color-cyan-600, #0891b2);
+		font-style: italic;
+	}
+
 	.action-link {
 		display: inline-flex;
 		align-items: center;
@@ -1523,6 +1585,11 @@
 		padding: 0.5rem;
 		background: var(--color-erased);
 		border-radius: 0.375rem;
+	}
+
+	.timing-item.gifted {
+		background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+		border: 1px solid #f59e0b;
 	}
 
 	.timing-label {
@@ -1827,8 +1894,12 @@
 	}
 
 	.call-item.cancelled {
-		padding: 0.5rem;
-		opacity: 0.6;
+		padding: 0.5rem 0.75rem;
+		opacity: 0.7;
+	}
+
+	.call-item.cancelled:hover {
+		opacity: 1;
 	}
 
 	/* confirm section */
@@ -1922,6 +1993,18 @@
 		padding: 0.125rem 0.5rem;
 		border-radius: 0.25rem;
 		white-space: nowrap;
+	}
+
+	.credits-info {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--color-pencil);
+		opacity: 0.8;
+		padding: 0.5rem 0.75rem;
+		background: var(--color-erased);
+		border-radius: 0.375rem;
 	}
 
 	.confirm-question {

@@ -5,7 +5,8 @@ export const CallStatus = {
 	IN_PROGRESS: 'in_progress',
 	COMPLETED: 'completed',
 	FAILED: 'failed',
-	CANCELLED: 'cancelled'
+	CANCELLED: 'cancelled',
+	FROZEN: 'frozen'
 } as const;
 
 export type CallStatus = (typeof CallStatus)[keyof typeof CallStatus];
@@ -30,7 +31,8 @@ export const STATUS_LABELS: Record<CallStatus, string> = {
 	[CallStatus.IN_PROGRESS]: 'Läuft',
 	[CallStatus.COMPLETED]: 'Abgeschlossen',
 	[CallStatus.FAILED]: 'Fehlgeschlagen',
-	[CallStatus.CANCELLED]: 'Abgebrochen'
+	[CallStatus.CANCELLED]: 'Abgebrochen',
+	[CallStatus.FROZEN]: 'Pausiert'
 };
 
 export const OUTCOME_LABELS: Record<CallOutcome, string> = {
@@ -51,7 +53,8 @@ export const STATUS_COLORS: Record<CallStatus, string> = {
 	[CallStatus.IN_PROGRESS]: 'text-yellow-600',
 	[CallStatus.COMPLETED]: 'text-green-600',
 	[CallStatus.FAILED]: 'text-red-marker',
-	[CallStatus.CANCELLED]: 'text-pencil/60'
+	[CallStatus.CANCELLED]: 'text-pencil/60',
+	[CallStatus.FROZEN]: 'text-cyan-600'
 };
 
 // colors for outcome badges

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { contacts, qualifyingContacts } from '$lib/stores/contacts';
 	import { downloadPdf, viewPdf } from '$lib/utils/pdf';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
@@ -9,6 +10,9 @@
 	import { m } from '$lib/paraglide/messages';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { nanoid } from 'nanoid';
+
+	let mounted = $state(false);
+	onMount(() => { mounted = true; });
 
 	// manual add form state
 	let showAddForm = $state(false);
@@ -235,7 +239,11 @@
 		{/if}
 
 		<!-- contact list -->
-		{#if $contacts.length === 0}
+		{#if !mounted && $contacts.length === 0}
+			<div class="flex justify-center py-12">
+				<Loader2 size={32} class="animate-spin text-pencil/40" />
+			</div>
+		{:else if $contacts.length === 0}
 			<WobblyCard decoration="postit" class="text-center">
 				<p class="mb-2 font-heading text-lg">{m.contacts_empty()}</p>
 				<p class="mb-4 text-sm text-pencil/70">

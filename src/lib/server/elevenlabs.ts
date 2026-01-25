@@ -173,6 +173,34 @@ export async function triggerOutboundCall(params: TriggerCallParams): Promise<Tr
 	}
 }
 
+// cancel a scheduled batch call
+export async function cancelBatchCall(batchId: string): Promise<boolean> {
+	const apiKey = env.ELEVENLABS_API_KEY;
+	if (!apiKey) {
+		console.error('[elevenlabs] ELEVENLABS_API_KEY not configured');
+		return false;
+	}
+
+	try {
+		const response = await fetch(`${ELEVENLABS_API_BASE}/convai/batch-calling/${batchId}/cancel`, {
+			method: 'POST',
+			headers: { 'xi-api-key': apiKey }
+		});
+
+		if (!response.ok) {
+			const text = await response.text();
+			console.error('[elevenlabs] batch cancel failed:', response.status, text);
+			return false;
+		}
+
+		console.log('[elevenlabs] batch call cancelled:', batchId);
+		return true;
+	} catch (e) {
+		console.error('[elevenlabs] batch cancel error:', e);
+		return false;
+	}
+}
+
 // get conversation details (for checking status, getting transcript)
 export async function getConversation(conversationId: string) {
 	const apiKey = env.ELEVENLABS_API_KEY;

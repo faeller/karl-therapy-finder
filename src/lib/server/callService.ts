@@ -7,6 +7,7 @@ import { getDb } from './db';
 import * as table from './db/schema';
 import {
 	triggerOutboundCall,
+	cancelBatchCall,
 	buildPracticeCallVariables,
 	getPracticeCallerAgentId,
 	estimateCallCost,
@@ -17,6 +18,7 @@ import {
 } from './elevenlabs';
 import { type CallOutcome } from '$lib/data/callConstants';
 import { parseOpeningHours, analyzeTranscript, calculateNextCallSlot, calculateRetrySlot, type OpeningHours, type RetryFailureType } from './aiService';
+import { canScheduleCall as checkCredits, deductSeconds, freezePendingCalls, reserveCallSlot, DEFAULT_PROJECTED_SECONDS } from './creditService';
 import { env } from '$env/dynamic/private';
 import { load } from 'cheerio';
 
@@ -45,16 +47,10 @@ export async function checkCanScheduleCall(
 		return { canProceed: false, reason: 'tier_required' };
 	}
 
-	// check credits - need at least 1 minute to schedule
-	const [credits] = await db
-		.select()
-		.from(table.userCallCredits)
-		.where(eq(table.userCallCredits.userId, userId))
-		.limit(1);
-
-	const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
-	if (available < 1) {
-		return { canProceed: false, reason: 'no_credits', creditsRemaining: 0 };
+	// check credits with projected liability (need enough for pending + new call)
+	const creditCheck = await checkCredits(db, userId, DEFAULT_PROJECTED_SECONDS);
+	if (!creditCheck.canSchedule) {
+		return { canProceed: false, reason: 'no_credits', creditsRemaining: creditCheck.available, projectedSeconds: creditCheck.projected };
 	}
 
 	// check blocklist
@@ -74,7 +70,7 @@ export async function checkCanScheduleCall(
 		}
 	}
 
-	// check for existing pending/scheduled call for this therapist by this user
+	// check for existing pending/scheduled/frozen call for this therapist by this user
 	const [existing] = await db
 		.select()
 		.from(table.scheduledCalls)
@@ -84,7 +80,8 @@ export async function checkCanScheduleCall(
 				eq(table.scheduledCalls.eId, eId),
 				or(
 					eq(table.scheduledCalls.status, 'scheduled'),
-					eq(table.scheduledCalls.status, 'in_progress')
+					eq(table.scheduledCalls.status, 'in_progress'),
+					eq(table.scheduledCalls.status, 'frozen')
 				)
 			)
 		)
@@ -94,7 +91,7 @@ export async function checkCanScheduleCall(
 		return { canProceed: false, reason: 'call_already_scheduled' };
 	}
 
-	return { canProceed: true, creditsRemaining: available };
+	return { canProceed: true, creditsRemaining: creditCheck.available };
 }
 
 // ============================================================================
@@ -266,33 +263,32 @@ export async function scheduleCall(
 		throw new Error('No available call slots found');
 	}
 
-	// store call params for retries
+	// store call params for retries and unfreezing
 	const callMetadata = JSON.stringify({
 		patientName: params.patientName,
 		patientInsurance: params.patientInsurance,
 		therapyType: params.therapyType,
 		callbackPhone: params.callbackPhone,
 		patientEmail: params.patientEmail,
-		urgency: params.urgency
+		urgency: params.urgency,
+		openingHours: details.openingHours // needed for re-scheduling if frozen
 	});
 
-	// create call record
+	// atomically check credits and create call record
 	const callId = nanoid();
-	await db.insert(table.scheduledCalls).values({
+	const reservation = await reserveCallSlot(db, params.userId, {
 		id: callId,
-		userId: params.userId,
 		therapistId: params.therapistId,
 		therapistName: params.therapistName || details.name,
 		therapistPhone: details.phone,
 		eId: params.eId,
 		scheduledAt: slot.date,
-		attemptNumber: 1,
-		maxAttempts: MAX_ATTEMPTS,
-		status: 'scheduled',
-		callMetadata,
-		createdAt: now,
-		updatedAt: now
+		callMetadata
 	});
+
+	if (!reservation.success) {
+		throw new Error(`Insufficient credits: ${reservation.available}s available`);
+	}
 
 	// build dynamic variables (include callId for webhook matching)
 	const variables = {
@@ -361,12 +357,8 @@ export async function scheduleDebugCall(
 		callbackPhone: params.callbackPhone
 	});
 
-	const now = new Date();
-	// schedule immediately for debug calls
-	const scheduledAt = now;
-
+	const scheduledAt = new Date();
 	const callId = nanoid();
-	console.log('[scheduleDebugCall] created callId:', callId, 'scheduledAt:', scheduledAt.toISOString());
 
 	// store call params for retries
 	const callMetadata = JSON.stringify({
@@ -379,23 +371,24 @@ export async function scheduleDebugCall(
 		isDebug: true
 	});
 
-	// create call record - use provided ids or fall back to debug defaults
-	await db.insert(table.scheduledCalls).values({
+	// atomically check credits and create call record
+	const reservation = await reserveCallSlot(db, params.userId, {
 		id: callId,
-		userId: params.userId,
 		therapistId: params.therapistId || 'debug-test-therapist',
 		therapistName: params.therapistName,
 		therapistPhone: params.therapistPhone,
 		eId: params.eId || 'debug',
 		scheduledAt,
-		attemptNumber: 1,
-		maxAttempts: MAX_ATTEMPTS,
-		status: 'scheduled',
-		callMetadata,
-		createdAt: now,
-		updatedAt: now
+		callMetadata
 	});
-	console.log('[scheduleDebugCall] db record created');
+
+	if (!reservation.success) {
+		throw new Error(reservation.reason === 'no_credits'
+			? 'Not enough credits for debug call'
+			: 'Failed to reserve call slot');
+	}
+
+	console.log('[scheduleDebugCall] db record created, callId:', callId);
 
 	let batchId = `debug_${callId}`;
 
@@ -600,6 +593,7 @@ export async function handleCallWebhook(
 		}
 
 		// only mark as failed if no retry scheduled
+		// (scheduleRetry already handles the update when canRetry is true)
 		if (!canRetry) {
 			await db.update(table.scheduledCalls)
 				.set({
@@ -607,14 +601,6 @@ export async function handleCallWebhook(
 					outcome: 'connection_failed',
 					notes: userMessage,
 					completedAt: now,
-					updatedAt: now
-				})
-				.where(eq(table.scheduledCalls.id, call.id));
-		} else {
-			// update notes but keep status as scheduled for retry
-			await db.update(table.scheduledCalls)
-				.set({
-					notes: userMessage,
 					updatedAt: now
 				})
 				.where(eq(table.scheduledCalls.id, call.id));
@@ -717,8 +703,8 @@ export async function handleCallWebhook(
 		})
 		.where(eq(table.scheduledCalls.id, call.id));
 
-	// handle different outcomes (pass notes for history recording)
-	await handleCallOutcome(db, call, outcome, analysis, analysis?.notes || null);
+	// handle different outcomes (pass durationSeconds directly since call object is stale)
+	await handleCallOutcome(db, call, outcome, analysis, analysis?.notes || null, durationSeconds);
 
 	return call.id;
 }
@@ -751,24 +737,28 @@ async function handleCallOutcome(
 	call: table.ScheduledCall,
 	outcome: CallOutcome,
 	analysis: Awaited<ReturnType<typeof analyzeTranscript>>['result'] | null,
-	currentNotes?: string | null
+	currentNotes?: string | null,
+	actualDurationSeconds?: number | null
 ): Promise<void> {
 	const now = new Date();
 
-	// deduct minutes for calls that connected (has duration)
-	if (call.durationSeconds && call.durationSeconds > 0) {
-		const minutesUsed = Math.ceil(call.durationSeconds / 60); // round up to nearest minute
-		const [userCredits] = await db
-			.select()
-			.from(table.userCallCredits)
-			.where(eq(table.userCallCredits.userId, call.userId))
-			.limit(1);
-		if (userCredits) {
+	// deduct seconds for calls that connected (capped at available to prevent debt)
+	if (actualDurationSeconds && actualDurationSeconds > 0) {
+		const { deducted, remaining, giftedSeconds } = await deductSeconds(db, call.userId, actualDurationSeconds);
+
+		// if we gifted seconds (ate overage), record it in the analysis json
+		if (giftedSeconds > 0) {
+			const existingAnalysis = call.analysis ? JSON.parse(call.analysis) : {};
+			const updatedAnalysis = { ...existingAnalysis, giftedSeconds };
 			await db
-				.update(table.userCallCredits)
-				.set({ creditsUsed: (userCredits.creditsUsed ?? 0) + minutesUsed })
-				.where(eq(table.userCallCredits.userId, call.userId));
-			console.log(`[credits] deducted ${minutesUsed} min (${call.durationSeconds}s) from user ${call.userId}`);
+				.update(table.scheduledCalls)
+				.set({ analysis: JSON.stringify(updatedAnalysis) })
+				.where(eq(table.scheduledCalls.id, call.id));
+		}
+
+		// if credits depleted, freeze other pending calls
+		if (remaining <= 0) {
+			await freezePendingCalls(db, call.userId);
 		}
 	}
 
@@ -1021,7 +1011,13 @@ export async function cancelCall(
 		return false;
 	}
 
-	// todo: cancel with elevenlabs if possible
+	// cancel with elevenlabs if we have a batch id
+	if (call.elevenlabsConvId) {
+		const cancelled = await cancelBatchCall(call.elevenlabsConvId);
+		if (!cancelled) {
+			console.warn('[callService] elevenlabs cancel failed for batch:', call.elevenlabsConvId);
+		}
+	}
 
 	await db
 		.update(table.scheduledCalls)
@@ -1038,6 +1034,7 @@ export async function cancelCall(
 // CREDITS MANAGEMENT
 // ============================================================================
 
+// get user credits (in seconds)
 export async function getUserCredits(
 	db: ReturnType<typeof getDb>,
 	userId: string
@@ -1060,34 +1057,5 @@ export async function getUserCredits(
 	};
 }
 
-export async function addCredits(
-	db: ReturnType<typeof getDb>,
-	userId: string,
-	amount: number
-): Promise<void> {
-	const [existing] = await db
-		.select()
-		.from(table.userCallCredits)
-		.where(eq(table.userCallCredits.userId, userId))
-		.limit(1);
-
-	const now = new Date();
-
-	if (existing) {
-		await db
-			.update(table.userCallCredits)
-			.set({
-				creditsTotal: (existing.creditsTotal ?? 0) + amount,
-				lastRefillAt: now
-			})
-			.where(eq(table.userCallCredits.userId, userId));
-	} else {
-		await db.insert(table.userCallCredits).values({
-			userId,
-			creditsTotal: amount,
-			creditsUsed: 0,
-			creditsRefunded: 0,
-			lastRefillAt: now
-		});
-	}
-}
+// re-export from creditService for convenience
+export { addCredits, refundCredits } from './creditService';

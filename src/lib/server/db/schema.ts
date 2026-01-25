@@ -65,7 +65,8 @@ export const scheduledCalls = sqliteTable('scheduled_calls', {
 	scheduledAt: integer('scheduled_at', { mode: 'timestamp' }).notNull(),
 	attemptNumber: integer('attempt_number').default(1),
 	maxAttempts: integer('max_attempts').default(3),
-	status: text('status').notNull(), // scheduled, in_progress, completed, failed, cancelled
+	status: text('status').notNull(), // scheduled, in_progress, completed, failed, cancelled, frozen
+	projectedSeconds: integer('projected_seconds').default(180), // estimated duration for credit reservation
 	outcome: text('outcome'), // success, callback, no_answer, no_availability, rejected_ai, rejected_privacy, rejected_other, unclear
 	transcript: text('transcript'),
 	analysis: text('analysis'), // json from haiku

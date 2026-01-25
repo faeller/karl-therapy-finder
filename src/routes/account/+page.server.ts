@@ -4,7 +4,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { updateSyncEnabled } from '$lib/server/auth';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
-import { eq } from 'drizzle-orm';
+import { eq, or, and, desc, inArray } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { getCredits } from '$lib/server/creditService';
 
@@ -13,8 +13,25 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		redirect(302, '/auth/patreon');
 	}
 
-	// fetch call credits (auto-refreshes if new month)
-	let credits = { total: 0, used: 0, remaining: 0, tierMinutes: 0 };
+	// fetch call credits in seconds (auto-refreshes if new month)
+	let credits = { totalSeconds: 0, usedSeconds: 0, availableSeconds: 0, tierSeconds: 0, projectedSeconds: 0, pendingCalls: 0 };
+	let pendingCalls: Array<{
+		id: string;
+		therapistName: string | null;
+		status: string;
+		scheduledAt: string | null;
+		projectedSeconds: number;
+	}> = [];
+	let callHistory: Array<{
+		id: string;
+		therapistName: string | null;
+		status: string;
+		outcome: string | null;
+		durationSeconds: number | null;
+		completedAt: string | null;
+		appointmentDate: string | null;
+		appointmentTime: string | null;
+	}> = [];
 
 	const d1 = await getD1(platform);
 	if (d1) {
@@ -25,15 +42,67 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			locals.user.pledgeAmountCents,
 			locals.user.pledgeTier
 		);
+
+		// get pending/frozen calls (reserving credits)
+		const pending = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(
+				and(
+					eq(table.scheduledCalls.userId, locals.user.id),
+					inArray(table.scheduledCalls.status, ['scheduled', 'in_progress', 'frozen'])
+				)
+			)
+			.orderBy(desc(table.scheduledCalls.scheduledAt));
+
+		pendingCalls = pending.map(c => ({
+			id: c.id,
+			therapistName: c.therapistName,
+			status: c.status,
+			scheduledAt: c.scheduledAt?.toISOString() || null,
+			projectedSeconds: c.projectedSeconds || 180
+		}));
+
+		const projectedSeconds = pending.reduce((sum, c) => sum + (c.projectedSeconds || 180), 0);
+
+		// get completed call history (last 20)
+		const history = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(
+				and(
+					eq(table.scheduledCalls.userId, locals.user.id),
+					inArray(table.scheduledCalls.status, ['completed', 'failed', 'cancelled'])
+				)
+			)
+			.orderBy(desc(table.scheduledCalls.completedAt))
+			.limit(20);
+
+		// only include calls that actually used seconds
+		callHistory = history
+			.filter(c => c.durationSeconds && c.durationSeconds > 0)
+			.map(c => ({
+				id: c.id,
+				therapistName: c.therapistName,
+				status: c.status,
+				outcome: c.outcome,
+				durationSeconds: c.durationSeconds,
+				completedAt: c.completedAt?.toISOString() || null,
+				appointmentDate: c.appointmentDate,
+				appointmentTime: c.appointmentTime
+			}));
+
 		credits = {
-			total: userCredits.total,
-			used: userCredits.used,
-			remaining: userCredits.remaining,
-			tierMinutes: userCredits.tierMinutes
+			totalSeconds: userCredits.total,
+			usedSeconds: userCredits.used,
+			availableSeconds: userCredits.available,
+			tierSeconds: userCredits.tierSeconds,
+			projectedSeconds,
+			pendingCalls: pending.length
 		};
 	}
 
-	return { user: locals.user, credits };
+	return { user: locals.user, credits, pendingCalls, callHistory };
 };
 
 export const actions: Actions = {

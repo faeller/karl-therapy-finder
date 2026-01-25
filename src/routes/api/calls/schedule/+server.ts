@@ -4,6 +4,7 @@ import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
 import { checkCanScheduleCall, scheduleCall, scheduleDebugCall } from '$lib/server/callService';
+import { DEFAULT_PROJECTED_SECONDS } from '$lib/server/creditService';
 import { validateCallRequest } from '$lib/server/aiService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 import { eq } from 'drizzle-orm';
@@ -105,12 +106,15 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 				success: true,
 				callId: result.callId,
 				scheduledAt: result.scheduledAt.toISOString(),
-				batchId: result.batchId,
-				creditsRemaining: 999
+				batchId: result.batchId
 			});
 		} catch (e) {
 			console.error('[schedule-debug] failed:', e);
-			error(500, e instanceof Error ? e.message : 'Failed to schedule debug call');
+			const message = e instanceof Error ? e.message : 'Failed to schedule debug call';
+			if (message.includes('Not enough credits')) {
+				error(402, message);
+			}
+			error(500, message);
 		}
 	}
 
@@ -156,7 +160,7 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 			callId: result.callId,
 			scheduledAt: result.scheduledAt.toISOString(),
 			batchId: result.batchId,
-			creditsRemaining: (preflight.creditsRemaining ?? 1) - 1
+			creditsRemaining: (preflight.creditsRemaining ?? 0) - DEFAULT_PROJECTED_SECONDS
 		});
 	} catch (e) {
 		console.error('[schedule] failed:', e);
