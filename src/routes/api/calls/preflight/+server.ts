@@ -90,6 +90,26 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 			.orderBy(desc(table.scheduledCalls.createdAt))
 			.limit(10);
 
+		// get credit details for display
+		const debugCredits = await getCredits(
+			db,
+			locals.user.id,
+			locals.user.pledgeAmountCents,
+			locals.user.pledgeTier
+		);
+
+		// calculate total projected seconds from pending calls
+		const pendingCalls = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(
+				and(
+					eq(table.scheduledCalls.userId, locals.user.id),
+					eq(table.scheduledCalls.status, 'scheduled')
+				)
+			);
+		const totalProjected = pendingCalls.reduce((sum, call) => sum + (call.projectedSeconds || 0), 0);
+
 		return json({
 			therapist: {
 				eId,
@@ -103,7 +123,14 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 				isImmediate: true
 			},
 			existingCalls: calls.map(mapCall),
-			canSchedule: true
+			canSchedule: true,
+			credits: {
+				availableSeconds: debugCredits.available,
+				projectedSeconds: totalProjected,
+				tierSeconds: debugCredits.tierSeconds,
+				totalSeconds: debugCredits.total,
+				pendingCalls: debugCredits.pendingCalls
+			}
 		});
 	}
 
