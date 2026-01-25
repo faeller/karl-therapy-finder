@@ -243,7 +243,7 @@ export async function getCredits(
 	};
 }
 
-// get projected seconds for all pending/scheduled calls
+// get projected seconds for all pending/scheduled/frozen calls
 export async function getProjectedSeconds(db: Database, userId: string): Promise<number> {
 	const pendingCalls = await db
 		.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
@@ -253,7 +253,8 @@ export async function getProjectedSeconds(db: Database, userId: string): Promise
 				eq(table.scheduledCalls.userId, userId),
 				or(
 					eq(table.scheduledCalls.status, 'scheduled'),
-					eq(table.scheduledCalls.status, 'in_progress')
+					eq(table.scheduledCalls.status, 'in_progress'),
+					eq(table.scheduledCalls.status, 'frozen')
 				)
 			)
 		);
@@ -275,6 +276,7 @@ export async function canScheduleCall(
 
 	const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
 
+	// include frozen calls in projected to prevent over-commitment after unfreeze
 	const pendingCalls = await db
 		.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
 		.from(table.scheduledCalls)
@@ -283,7 +285,8 @@ export async function canScheduleCall(
 				eq(table.scheduledCalls.userId, userId),
 				or(
 					eq(table.scheduledCalls.status, 'scheduled'),
-					eq(table.scheduledCalls.status, 'in_progress')
+					eq(table.scheduledCalls.status, 'in_progress'),
+					eq(table.scheduledCalls.status, 'frozen')
 				)
 			)
 		);
@@ -343,7 +346,7 @@ export async function reserveCallSlot(
 		return await withOptimisticLock(db, userId, async (credits) => {
 			const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
 
-			// get projected seconds for pending calls
+			// get projected seconds for pending calls (include frozen to prevent over-commitment)
 			const pendingCalls = await db
 				.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
 				.from(table.scheduledCalls)
@@ -352,7 +355,8 @@ export async function reserveCallSlot(
 						eq(table.scheduledCalls.userId, userId),
 						or(
 							eq(table.scheduledCalls.status, 'scheduled'),
-							eq(table.scheduledCalls.status, 'in_progress')
+							eq(table.scheduledCalls.status, 'in_progress'),
+							eq(table.scheduledCalls.status, 'frozen')
 						)
 					)
 				);
@@ -526,6 +530,24 @@ export async function unfreezeCallsIfPossible(
 
 	if (frozenCalls.length === 0) return 0;
 
+	// get projected seconds already committed by scheduled/in_progress calls
+	const existingCalls = await db
+		.select({ projectedSeconds: table.scheduledCalls.projectedSeconds })
+		.from(table.scheduledCalls)
+		.where(
+			and(
+				eq(table.scheduledCalls.userId, userId),
+				or(
+					eq(table.scheduledCalls.status, 'scheduled'),
+					eq(table.scheduledCalls.status, 'in_progress')
+				)
+			)
+		);
+	const existingProjected = existingCalls.reduce(
+		(sum, c) => sum + (c.projectedSeconds || DEFAULT_PROJECTED_SECONDS),
+		0
+	);
+
 	// limit batch size to avoid rate limiting
 	const callsToUnfreeze = frozenCalls.slice(0, MAX_UNFREEZE_BATCH);
 	if (frozenCalls.length > MAX_UNFREEZE_BATCH) {
@@ -533,14 +555,15 @@ export async function unfreezeCallsIfPossible(
 	}
 
 	// calculate total projected for calls we're unfreezing
-	const totalProjected = callsToUnfreeze.reduce(
+	const unfreezeProjected = callsToUnfreeze.reduce(
 		(sum, c) => sum + (c.projectedSeconds || DEFAULT_PROJECTED_SECONDS),
 		0
 	);
 
-	// check if we have enough to unfreeze this batch
-	if (availableSeconds < totalProjected) {
-		console.log(`[credits] not enough to unfreeze batch: available=${availableSeconds}s, needed=${totalProjected}s`);
+	// check if we have enough for existing + unfreeze batch
+	const totalNeeded = existingProjected + unfreezeProjected;
+	if (availableSeconds < totalNeeded) {
+		console.log(`[credits] not enough to unfreeze: available=${availableSeconds}s, existing=${existingProjected}s, unfreeze=${unfreezeProjected}s`);
 		return 0;
 	}
 
