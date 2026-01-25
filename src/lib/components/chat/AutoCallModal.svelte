@@ -79,6 +79,7 @@
 	type Step = 'loading' | 'confirm' | 'form' | 'form2' | 'scheduling' | 'success' | 'error' | 'history' | 'details' | 'timeline';
 	let step = $state<Step>('loading');
 	let error = $state<string | null>(null);
+	let errorIsInsufficientCredits = $state<boolean>(false);
 	let scheduledTime = $state<string | null>(null);
 	let selectedCallId = $state<string | null>(null);
 	let rateLimitRetrySeconds = $state<number>(0);
@@ -300,6 +301,7 @@
 
 		step = 'scheduling';
 		error = null;
+		errorIsInsufficientCredits = false;
 
 		// save form data for next time
 		saveForm();
@@ -333,6 +335,11 @@
 
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({})) as { message?: string; retryAfter?: number };
+
+				// handle insufficient credits (402)
+				if (response.status === 402) {
+					errorIsInsufficientCredits = true;
+				}
 
 				// handle rate limiting (429)
 				if (response.status === 429) {
@@ -1223,7 +1230,7 @@
 				<div class="state-view error">
 					<AlertCircle size={48} class="text-red-marker" />
 					<p class="state-title">{m.autocall_error_title()}</p>
-					{#if error && (error.toLowerCase().includes('not enough credits') || error.toLowerCase().includes('no call credits')) && preflightData?.credits}
+					{#if errorIsInsufficientCredits && preflightData?.credits}
 						<div class="mt-4 mb-4">
 							<CallCreditsDisplay
 								availableSeconds={preflightData.credits.availableSeconds}

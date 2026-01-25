@@ -124,6 +124,14 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 			.orderBy(desc(table.scheduledCalls.createdAt))
 			.limit(10);
 
+		// get credit details for display
+		const debugCredits = await getCredits(
+			db,
+			locals.user.id,
+			locals.user.pledgeAmountCents,
+			locals.user.pledgeTier
+		);
+
 		// try to fetch real therapist details for opening hours display
 		try {
 			const { details } = await getTherapistDetails(db, eId, locals.user.id);
@@ -150,7 +158,14 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 					isImmediate: true
 				},
 				existingCalls: existingCalls.map(mapCall),
-				canSchedule: true
+				canSchedule: true,
+				credits: {
+					availableSeconds: debugCredits.available,
+					projectedSeconds: 0,
+					tierSeconds: debugCredits.tierSeconds,
+					totalSeconds: debugCredits.total,
+					pendingCalls: debugCredits.pendingCalls
+				}
 			});
 		} catch {
 			// fallback if therapist fetch fails
@@ -167,7 +182,14 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 					isImmediate: true
 				},
 				existingCalls: existingCalls.map(mapCall),
-				canSchedule: true
+				canSchedule: true,
+				credits: {
+					availableSeconds: debugCredits.available,
+					projectedSeconds: 0,
+					tierSeconds: debugCredits.tierSeconds,
+					totalSeconds: debugCredits.total,
+					pendingCalls: debugCredits.pendingCalls
+				}
 			});
 		}
 	}
