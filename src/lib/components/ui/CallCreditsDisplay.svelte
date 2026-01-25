@@ -173,8 +173,7 @@
 	}
 
 	.progress-segment.reserved {
-		background-color: var(--color-pencil);
-		opacity: 0.3;
+		background-color: rgba(0, 0, 0, 0.3);
 	}
 
 	.info-text {
@@ -225,7 +224,6 @@
 	}
 
 	.legend-color.reserved {
-		background-color: var(--color-pencil);
-		opacity: 0.3;
+		background-color: rgba(0, 0, 0, 0.3);
 	}
 </style>
