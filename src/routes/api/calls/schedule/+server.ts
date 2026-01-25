@@ -66,13 +66,17 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 	}
 
 	// anti-abuse validation (runs for all modes including debug)
+	// check for non-expired override
 	const override = await db
 		.select()
 		.from(table.validationOverrides)
 		.where(eq(table.validationOverrides.userId, locals.user.id))
 		.limit(1);
 
-	if (override.length === 0) {
+	const hasValidOverride = override.length > 0 &&
+		(!override[0].expiresAt || override[0].expiresAt.getTime() > Date.now());
+
+	if (!hasValidOverride) {
 		const validation = await validateCallRequest(body.patientName, body.callbackPhone, body.patientEmail);
 		if (!validation.result.valid) {
 			console.warn('[schedule] validation failed:', validation.result.reason, body.patientName);

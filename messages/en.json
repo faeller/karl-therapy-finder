@@ -45,6 +45,7 @@
 	"autocall_confirm_yes": "Yes, continue",
 	"autocall_debug_immediate": "Debug: Call executes immediately",
 	"autocall_error_loading": "Error loading",
+	"autocall_error_rate_limit": "Too many requests. Please wait {seconds} seconds and try again.",
 	"autocall_error_retry": "Try again",
 	"autocall_error_title": "Error",
 	"autocall_error_unknown": "Unknown error",

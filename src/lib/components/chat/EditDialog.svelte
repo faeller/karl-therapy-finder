@@ -18,7 +18,11 @@
 
 	let { karlMessage, currentValue, currentContentKey, onSubmit, onMultiSubmit, onClose }: Props = $props();
 
-	let textValue = $state(currentValue);
+	let textValue = $state('');
+
+	$effect(() => {
+		textValue = currentValue;
+	});
 
 	const initialSelected = $derived.by(() => {
 		if (!karlMessage.multiSelect || !currentContentKey) return new Set<string>();
@@ -96,11 +100,14 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="modal-overlay" onclick={onClose}>
+<div class="modal-overlay" onclick={onClose} role="button" tabindex="-1">
 	<div
 		class="modal-content"
 		onclick={(e) => e.stopPropagation()}
 		style:border-radius={wobbly.md}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
 	>
 		<div class="header">
 			<button onclick={onClose} class="close-btn">
@@ -142,6 +149,7 @@
 		<!-- Show text input if this was a text-based question -->
 		{#if karlMessage.inputType}
 			<div class="input-group">
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					type="text"
 					bind:value={textValue}

@@ -80,6 +80,7 @@
 	let error = $state<string | null>(null);
 	let scheduledTime = $state<string | null>(null);
 	let selectedCallId = $state<string | null>(null);
+	let rateLimitRetrySeconds = $state<number>(0);
 
 	// persist form data in localStorage
 	const STORAGE_KEY = 'karl_call_form';
@@ -233,6 +234,7 @@
 		step = 'loading';
 		error = null;
 		preflightData = null;
+		rateLimitRetrySeconds = 0;
 
 		try {
 			const params = new URLSearchParams({ eId: therapist.id });
@@ -322,6 +324,12 @@
 			});
 
 			if (!response.ok) {
+				// handle rate limiting (429)
+				if (response.status === 429) {
+					rateLimitRetrySeconds = 10;
+					throw new Error(m.autocall_error_rate_limit({ seconds: '10' }));
+				}
+
 				const data = await response.json().catch(() => ({})) as { message?: string };
 				throw new Error(data.message || `Error ${response.status}`);
 			}
@@ -350,11 +358,22 @@
 				track('validation_rejected', { reason: reasonMatch?.[1] || 'unknown' });
 			}
 			step = 'error';
+
+			// start countdown for rate limit
+			if (rateLimitRetrySeconds > 0) {
+				const countdown = setInterval(() => {
+					rateLimitRetrySeconds--;
+					if (rateLimitRetrySeconds <= 0) {
+						clearInterval(countdown);
+					}
+				}, 1000);
+			}
 		}
 	}
 
 	function handleClose() {
 		if (step === 'scheduling') return;
+		rateLimitRetrySeconds = 0;
 		onClose();
 	}
 
@@ -461,9 +480,8 @@
 			class="modal-content"
 			style:border-radius={wobbly.lg}
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={() => {}}
-			role="dialog"
-			aria-modal="true"
+			role="presentation"
+			tabindex="-1"
 		>
 			<button class="close-btn" onclick={handleClose} disabled={step === 'scheduling'}>
 				<X size={20} />
@@ -1178,8 +1196,13 @@
 					<p class="error-links">
 						<a href="mailto:karl@mail.online-impressum.de">E-Mail</a> · <a href="https://github.com/faeller/karl-therapy-finder/issues" target="_blank" rel="noopener">GitHub Issue</a>
 					</p>
-					<button class="retry-btn" style:border-radius={wobbly.button} onclick={fetchPreflight}>
-						{m.autocall_error_retry()}
+					<button
+						class="retry-btn"
+						style:border-radius={wobbly.button}
+						onclick={fetchPreflight}
+						disabled={rateLimitRetrySeconds > 0}
+					>
+						{rateLimitRetrySeconds > 0 ? `${m.autocall_error_retry()} (${rateLimitRetrySeconds}s)` : m.autocall_error_retry()}
 					</button>
 				</div>
 			{/if}
@@ -2012,10 +2035,6 @@
 		line-height: 1.5;
 	}
 
-	.confirm-question strong {
-		color: var(--color-blue-pen);
-	}
-
 	.confirm-actions {
 		display: flex;
 		gap: 0.75rem;
@@ -2058,10 +2077,6 @@
 		background: var(--color-erased);
 		border-radius: 0.375rem;
 		font-size: 0.875rem;
-	}
-
-	.form-time strong {
-		color: var(--color-blue-pen);
 	}
 
 	.debug-badge {
@@ -2206,6 +2221,12 @@
 
 	.done-btn:hover, .retry-btn:hover {
 		background: var(--color-erased);
+	}
+
+	.retry-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		background: var(--color-paper);
 	}
 
 	/* timeline view */

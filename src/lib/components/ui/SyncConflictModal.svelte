@@ -20,6 +20,9 @@
 			class="modal-content"
 			onclick={(e) => e.stopPropagation()}
 			style:border-radius={wobbly.md}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
 		>
 			<h2 class="modal-title">{m.sync_conflict_title()}</h2>
 			<p class="modal-text">{m.sync_conflict_message()}</p>

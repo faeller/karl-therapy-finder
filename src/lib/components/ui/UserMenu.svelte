@@ -33,16 +33,19 @@
 			{/if}
 		</button>
 		{#if showDropdown}
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 			<div
 				class="dropdown"
 				style:border-radius={wobbly.sm}
 				onclick={(e) => e.stopPropagation()}
+				role="menu"
+				tabindex="-1"
 			>
-				<a href="/account" class="dropdown-item" onclick={closeDropdown}>
+				<a href="/account" class="dropdown-item" onclick={closeDropdown} role="menuitem">
 					<User size={16} />
 					{m.auth_account()}
 				</a>
-				<a href="/auth/logout" class="dropdown-item logout" onclick={closeDropdown}>
+				<a href="/auth/logout" class="dropdown-item logout" onclick={closeDropdown} role="menuitem">
 					<LogOut size={16} />
 					{m.auth_logout()}
 				</a>

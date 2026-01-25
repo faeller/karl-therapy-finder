@@ -70,6 +70,7 @@ async function callAnthropic(
 	const body: Record<string, unknown> = {
 		model: ANTHROPIC_MODEL,
 		max_tokens: 1024,
+		temperature: 0,
 		system: systemPrompt,
 		messages: [{ role: 'user', content: userMessage }]
 	};
