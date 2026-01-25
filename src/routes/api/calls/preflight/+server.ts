@@ -132,6 +132,18 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 			locals.user.pledgeTier
 		);
 
+		// calculate total projected seconds from pending calls
+		const pendingCalls = await db
+			.select()
+			.from(table.scheduledCalls)
+			.where(
+				and(
+					eq(table.scheduledCalls.userId, locals.user.id),
+					eq(table.scheduledCalls.status, 'scheduled')
+				)
+			);
+		const totalProjected = pendingCalls.reduce((sum, call) => sum + (call.projectedSeconds || 0), 0);
+
 		// try to fetch real therapist details for opening hours display
 		try {
 			const { details } = await getTherapistDetails(db, eId, locals.user.id);
@@ -161,7 +173,7 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 				canSchedule: true,
 				credits: {
 					availableSeconds: debugCredits.available,
-					projectedSeconds: 0,
+					projectedSeconds: totalProjected,
 					tierSeconds: debugCredits.tierSeconds,
 					totalSeconds: debugCredits.total,
 					pendingCalls: debugCredits.pendingCalls
@@ -185,7 +197,7 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 				canSchedule: true,
 				credits: {
 					availableSeconds: debugCredits.available,
-					projectedSeconds: 0,
+					projectedSeconds: totalProjected,
 					tierSeconds: debugCredits.tierSeconds,
 					totalSeconds: debugCredits.total,
 					pendingCalls: debugCredits.pendingCalls

@@ -10,6 +10,7 @@
 		pendingCalls: number;
 		compact?: boolean;
 		showTitle?: boolean;
+		noBackground?: boolean;
 	}
 
 	let {
@@ -19,7 +20,8 @@
 		totalSeconds,
 		pendingCalls,
 		compact = false,
-		showTitle = false
+		showTitle = false,
+		noBackground = false
 	}: Props = $props();
 
 	const hasCredits = $derived(tierSeconds > 0 || availableSeconds > 0);
@@ -38,7 +40,7 @@
 	const freeSecs = $derived(freeSeconds % 60);
 </script>
 
-<div class="call-credits" class:compact>
+<div class="call-credits" class:compact class:no-background={noBackground}>
 	{#if showTitle}
 		<div class="header">
 			<Phone size={20} class="text-blue-pen" />
@@ -98,6 +100,10 @@
 		padding: 0.75rem;
 		background: var(--color-erased);
 		border-radius: 0.5rem;
+	}
+
+	.call-credits.no-background {
+		background: transparent;
 	}
 
 	.header {

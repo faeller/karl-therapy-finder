@@ -1231,7 +1231,7 @@
 					<AlertCircle size={48} class="text-red-marker" />
 					<p class="state-title">{m.autocall_error_title()}</p>
 					{#if errorIsInsufficientCredits && preflightData?.credits}
-						<div class="mt-4 mb-4">
+						<div class="mb-4">
 							<CallCreditsDisplay
 								availableSeconds={preflightData.credits.availableSeconds}
 								projectedSeconds={preflightData.credits.projectedSeconds}
@@ -1240,6 +1240,7 @@
 								pendingCalls={preflightData.credits.pendingCalls}
 								compact={true}
 								showTitle={true}
+								noBackground={true}
 							/>
 						</div>
 					{/if}
