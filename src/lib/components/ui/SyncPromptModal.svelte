@@ -13,11 +13,14 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="modal-overlay" onclick={onLater}>
+<div class="modal-overlay" onclick={onLater} role="button" tabindex="-1">
 	<div
 		class="modal-content"
 		onclick={(e) => e.stopPropagation()}
 		style:border-radius={wobbly.md}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
 	>
 		<div class="icon-wrapper">
 			<Cloud size={40} class="text-blue-pen" />

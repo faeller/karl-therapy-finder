@@ -207,7 +207,17 @@ export const validationOverrides = sqliteTable('validation_overrides', {
 		.references(() => user.id),
 	reason: text('reason'), // why they were whitelisted
 	approvedBy: text('approved_by'), // admin who approved
+	expiresAt: integer('expires_at', { mode: 'timestamp' }), // optional expiration date
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
 export type ValidationOverride = typeof validationOverrides.$inferSelect;
+
+// processed webhooks - tracks webhook ids for replay protection
+export const processedWebhooks = sqliteTable('processed_webhooks', {
+	id: text('id').primaryKey(),
+	conversationId: text('conversation_id'),
+	processedAt: integer('processed_at', { mode: 'timestamp' }).notNull()
+});
+
+export type ProcessedWebhook = typeof processedWebhooks.$inferSelect;

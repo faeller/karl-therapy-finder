@@ -1,7 +1,7 @@
 // call service - orchestrates the auto-call system
 // handles scheduling, execution tracking, retries, and blocklist management
 import { nanoid } from 'nanoid';
-import { eq, and, lt, gt, isNull, or, desc } from 'drizzle-orm';
+import { eq, and, or, desc } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getDb } from './db';
 import * as table from './db/schema';
@@ -18,7 +18,7 @@ import {
 } from './elevenlabs';
 import { type CallOutcome } from '$lib/data/callConstants';
 import { parseOpeningHours, analyzeTranscript, calculateNextCallSlot, calculateRetrySlot, type OpeningHours, type RetryFailureType } from './aiService';
-import { canScheduleCall as checkCredits, deductSeconds, freezePendingCalls, reserveCallSlot, DEFAULT_PROJECTED_SECONDS } from './creditService';
+import { canScheduleCall as checkCredits, deductSeconds, freezePendingCalls, reserveCallSlot, refundCredits, DEFAULT_PROJECTED_SECONDS } from './creditService';
 import { env } from '$env/dynamic/private';
 import { load } from 'cheerio';
 
@@ -742,6 +742,13 @@ async function handleCallOutcome(
 ): Promise<void> {
 	const now = new Date();
 
+	// check if this call was already processed (prevent double-deduction from webhook replay)
+	if (call.durationSeconds !== null && call.durationSeconds !== undefined) {
+		console.log('[handleCallOutcome] call already has durationSeconds, skipping deduction:', call.id);
+		// still allow status updates but skip credit deduction
+		actualDurationSeconds = null;
+	}
+
 	// deduct seconds for calls that connected (capped at available to prevent debt)
 	if (actualDurationSeconds && actualDurationSeconds > 0) {
 		const { deducted, remaining, giftedSeconds } = await deductSeconds(db, call.userId, actualDurationSeconds, call.id);
@@ -908,6 +915,11 @@ async function scheduleRetry(
 		console.log('[scheduleRetry] retry scheduled, attempt:', newAttempt, 'batchId:', result.batchId);
 	} catch (e) {
 		console.error('[scheduleRetry] failed to trigger call:', e);
+
+		// refund projected seconds since the call never got scheduled
+		const projectedSeconds = call.projectedSeconds || DEFAULT_PROJECTED_SECONDS;
+		await refundCredits(db, call.userId, projectedSeconds, call.id);
+
 		// mark as failed since we couldn't schedule
 		await db
 			.update(table.scheduledCalls)
@@ -1018,6 +1030,10 @@ export async function cancelCall(
 			console.warn('[callService] elevenlabs cancel failed for batch:', call.elevenlabsConvId);
 		}
 	}
+
+	// refund projected seconds back to user's available credits
+	const projectedSeconds = call.projectedSeconds || DEFAULT_PROJECTED_SECONDS;
+	await refundCredits(db, userId, projectedSeconds, callId);
 
 	await db
 		.update(table.scheduledCalls)

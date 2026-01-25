@@ -807,9 +807,11 @@
 
 {#if showReSearchModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-	<div class="modal-overlay" onclick={() => setReSearchModal(false)}>
+	<div class="modal-overlay" role="button" tabindex="-1" onclick={() => setReSearchModal(false)}>
 		<div
 			class="modal-content small"
+			role="button"
+			tabindex="-1"
 			onclick={(e) => e.stopPropagation()}
 			style:border-radius={wobbly.md}
 		>
@@ -980,16 +982,6 @@
 	.action-chip:hover {
 		background-color: var(--color-blue-pen);
 		border-color: var(--color-blue-pen);
-		color: white;
-	}
-
-	.action-chip.success {
-		border-color: var(--color-blue-pen);
-		color: var(--color-blue-pen);
-	}
-
-	.action-chip.success:hover {
-		background-color: var(--color-blue-pen);
 		color: white;
 	}
 

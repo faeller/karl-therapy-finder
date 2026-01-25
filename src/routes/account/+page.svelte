@@ -14,9 +14,14 @@
 	import { getStatusLabel, getOutcomeLabel, getStatusColor, getOutcomeColor } from '$lib/data/callConstants';
 
 	let { data } = $props();
-	let syncEnabled = $state(data.user.syncEnabled ?? false);
+	let syncEnabled = $state(false);
 	let showSyncInfo = $state(false);
 	let syncing = $state(false);
+
+	// sync state when data changes
+	$effect(() => {
+		syncEnabled = data.user.syncEnabled ?? false;
+	});
 
 	// check for existing local data
 	function checkHasExistingData(): boolean {

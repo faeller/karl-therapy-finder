@@ -45,6 +45,28 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 		error(401, 'Invalid signature');
 	}
 
+	// extract timestamp from signature for replay protection
+	const timestampMatch = signatureHeader?.match(/t=(\d+)/);
+	if (timestampMatch) {
+		const webhookTimestampInt = parseInt(timestampMatch[1]);
+		const currentTimestamp = Math.floor(Date.now() / 1000);
+		const ageDiff = Math.abs(currentTimestamp - webhookTimestampInt);
+
+		// reject webhooks older than 5 minutes or from the future
+		if (ageDiff > 300) {
+			console.warn('[webhook] timestamp too old or too new:', ageDiff, 'seconds');
+			await db.insert(table.webhookLogs).values({
+				id: nanoid(),
+				source: 'elevenlabs',
+				rawPayload: rawBody,
+				headers: JSON.stringify(headers),
+				processingError: `timestamp too old/new: ${ageDiff}s`,
+				createdAt: now
+			});
+			error(401, 'Webhook timestamp invalid');
+		}
+	}
+
 	// parse payload
 	let payload: ElevenLabsWebhookPayload;
 	try {
@@ -64,6 +86,28 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 	// extract data from nested structure
 	const conversationId = payload.data?.conversation_id;
 	const status = payload.data?.status;
+
+	// check for replay - use conversation_id + timestamp as unique id
+	const webhookTimestamp = timestampMatch ? timestampMatch[1] : String(Date.now());
+	const webhookId = conversationId ? `${conversationId}_${webhookTimestamp}` : `unknown_${webhookTimestamp}`;
+
+	const [existing] = await db
+		.select()
+		.from(table.processedWebhooks)
+		.where(eq(table.processedWebhooks.id, webhookId))
+		.limit(1);
+
+	if (existing) {
+		console.log('[webhook] already processed:', webhookId);
+		return json({ success: true, message: 'Already processed' });
+	}
+
+	// store processed webhook id
+	await db.insert(table.processedWebhooks).values({
+		id: webhookId,
+		conversationId,
+		processedAt: now
+	});
 
 	// log the webhook
 	const logId = nanoid();

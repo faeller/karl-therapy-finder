@@ -45,6 +45,7 @@
 	"autocall_confirm_yes": "Ja, weiter",
 	"autocall_debug_immediate": "Debug: Anruf erfolgt sofort",
 	"autocall_error_loading": "Fehler beim Laden",
+	"autocall_error_rate_limit": "Zu viele Anfragen. Bitte warte {seconds} Sekunden und versuche es erneut.",
 	"autocall_error_retry": "Erneut versuchen",
 	"autocall_error_title": "Fehler",
 	"autocall_error_unknown": "Unbekannter Fehler",

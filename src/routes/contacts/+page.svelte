@@ -317,46 +317,76 @@
 
 						<!-- contact method -->
 						<div class="mt-3">
-							<label class="mb-1 block text-xs text-pencil/60">{m.contacts_method_label()}</label>
+							<div class="mb-1 block text-xs text-pencil/60">{m.contacts_method_label()}</div>
 							<div class="flex flex-wrap gap-2">
 								{#each methodOptions as option}
-									<ChipButton
-										selected={contact.method === option.key}
-										onclick={() => updateMethod(contact.id, option.key)}
-									>
-										{getMethodLabel(option.labelKey)}
-									</ChipButton>
+									<label class="inline-flex items-center">
+										<input
+											type="radio"
+											name="method-{contact.id}"
+											value={option.key}
+											checked={contact.method === option.key}
+											onchange={() => updateMethod(contact.id, option.key)}
+											class="sr-only"
+										/>
+										<ChipButton
+											selected={contact.method === option.key}
+											onclick={() => updateMethod(contact.id, option.key)}
+										>
+											{getMethodLabel(option.labelKey)}
+										</ChipButton>
+									</label>
 								{/each}
 							</div>
 						</div>
 
 						<!-- status -->
 						<div class="mt-3">
-							<label class="mb-1 block text-xs text-pencil/60">{m.contacts_status_label()}</label>
+							<div class="mb-1 block text-xs text-pencil/60">{m.contacts_status_label()}</div>
 							<div class="flex flex-wrap gap-2">
 								{#each ['pending', 'sent', 'replied', 'no_reply'] as status}
-									<ChipButton
-										selected={contact.status === status}
-										onclick={() => updateStatus(contact.id, status as ContactAttempt['status'])}
-									>
-										{getStatusLabel(status as ContactAttempt['status'])}
-									</ChipButton>
+									<label class="inline-flex items-center">
+										<input
+											type="radio"
+											name="status-{contact.id}"
+											value={status}
+											checked={contact.status === status}
+											onchange={() => updateStatus(contact.id, status as ContactAttempt['status'])}
+											class="sr-only"
+										/>
+										<ChipButton
+											selected={contact.status === status}
+											onclick={() => updateStatus(contact.id, status as ContactAttempt['status'])}
+										>
+											{getStatusLabel(status as ContactAttempt['status'])}
+										</ChipButton>
+									</label>
 								{/each}
 							</div>
 						</div>
 
 						{#if contact.status === 'replied'}
 							<div class="mt-3">
-								<label class="mb-1 block text-xs text-pencil/60">{m.waiting_time()}:</label>
+								<div class="mb-1 block text-xs text-pencil/60">{m.waiting_time()}:</div>
 								<div class="flex flex-wrap gap-2">
 									{#each waitingTimeOptions as option}
-										<ChipButton
-											selected={contact.waitingTime === option.value}
-											variant="blue"
-											onclick={() => updateWaitingTime(contact.id, option.value)}
-										>
-											{getWaitingTimeLabel(option.key)}
-										</ChipButton>
+										<label class="inline-flex items-center">
+											<input
+												type="radio"
+												name="waiting-{contact.id}"
+												value={option.value}
+												checked={contact.waitingTime === option.value}
+												onchange={() => updateWaitingTime(contact.id, option.value)}
+												class="sr-only"
+											/>
+											<ChipButton
+												selected={contact.waitingTime === option.value}
+												variant="blue"
+												onclick={() => updateWaitingTime(contact.id, option.value)}
+											>
+												{getWaitingTimeLabel(option.key)}
+											</ChipButton>
+										</label>
 									{/each}
 								</div>
 							</div>
@@ -378,6 +408,7 @@
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={() => {}}
 			role="dialog"
+			tabindex="-1"
 		>
 			<button onclick={closeAddForm} class="absolute right-3 top-3 text-pencil/50 hover:text-pencil">
 				<X size={20} />
@@ -442,15 +473,25 @@
 
 				<!-- method -->
 				<div>
-					<label class="mb-1 block text-sm font-medium">{m.contacts_method_label()}</label>
+					<div class="mb-1 block text-sm font-medium">{m.contacts_method_label()}</div>
 					<div class="flex gap-2">
 						{#each methodOptions as option}
-							<ChipButton
-								selected={addMethod === option.key}
-								onclick={() => addMethod = option.key}
-							>
-								{getMethodLabel(option.labelKey)}
-							</ChipButton>
+							<label class="inline-flex items-center">
+								<input
+									type="radio"
+									name="add-method"
+									value={option.key}
+									checked={addMethod === option.key}
+									onchange={() => addMethod = option.key}
+									class="sr-only"
+								/>
+								<ChipButton
+									selected={addMethod === option.key}
+									onclick={() => addMethod = option.key}
+								>
+									{getMethodLabel(option.labelKey)}
+								</ChipButton>
+							</label>
 						{/each}
 					</div>
 				</div>

@@ -183,8 +183,9 @@ export async function getCredits(
 		: -1;
 
 	if (currentCycle > lastRefillCycle && tierSeconds > 0) {
+		let result;
 		try {
-			return await withOptimisticLock(db, userId, async () => {
+			result = await withOptimisticLock(db, userId, async () => {
 				await logCreditEvent(db, userId, 'allocate', tierSeconds, undefined, {
 					source: 'monthly_refill',
 					tier: pledgeTier ?? 'amount_based',
@@ -193,8 +194,6 @@ export async function getCredits(
 					currentCycle,
 					lastRefillCycle
 				});
-
-				await unfreezeCallsIfPossible(db, userId, tierSeconds);
 
 				return {
 					updates: {
@@ -218,6 +217,16 @@ export async function getCredits(
 			console.log(`[credits] refill race detected for user ${userId}, refetching`);
 			return getCredits(db, userId, pledgeAmountCents, pledgeTier);
 		}
+
+		// unfreeze calls outside the lock to avoid blocking refill
+		try {
+			await unfreezeCallsIfPossible(db, userId, tierSeconds);
+		} catch (e) {
+			console.warn(`[credits] unfreeze failed after refill for user ${userId}:`, e);
+			// don't fail the refill if unfreeze fails
+		}
+
+		return result;
 	}
 
 	const total = existing.creditsTotal ?? 0;
@@ -310,6 +319,26 @@ export async function reserveCallSlot(
 		callMetadata: string;
 	}
 ): Promise<{ success: true; callId: string } | { success: false; reason: string; available: number; projected?: number }> {
+	// ensure user has credits record (create empty one if not)
+	const [existing] = await db
+		.select()
+		.from(table.userCallCredits)
+		.where(eq(table.userCallCredits.userId, userId))
+		.limit(1);
+
+	if (!existing) {
+		const now = new Date();
+		await db.insert(table.userCallCredits).values({
+			userId,
+			creditsTotal: 0,
+			creditsUsed: 0,
+			creditsRefunded: 0,
+			version: 0,
+			lastRefillAt: now,
+			subscriptionStartedAt: now
+		});
+	}
+
 	try {
 		return await withOptimisticLock(db, userId, async (credits) => {
 			const available = (credits?.creditsTotal ?? 0) - (credits?.creditsUsed ?? 0) + (credits?.creditsRefunded ?? 0);
@@ -477,6 +506,9 @@ export async function freezePendingCalls(db: Database, userId: string): Promise<
 }
 
 // unfreeze calls if user has enough credits
+// rate limited to max 5 calls per batch to avoid api throttling
+const MAX_UNFREEZE_BATCH = 5;
+
 export async function unfreezeCallsIfPossible(
 	db: Database,
 	userId: string,
@@ -494,20 +526,26 @@ export async function unfreezeCallsIfPossible(
 
 	if (frozenCalls.length === 0) return 0;
 
-	// calculate total projected for frozen calls
-	const totalProjected = frozenCalls.reduce(
+	// limit batch size to avoid rate limiting
+	const callsToUnfreeze = frozenCalls.slice(0, MAX_UNFREEZE_BATCH);
+	if (frozenCalls.length > MAX_UNFREEZE_BATCH) {
+		console.log(`[credits] limiting unfreeze batch to ${MAX_UNFREEZE_BATCH} of ${frozenCalls.length} frozen calls`);
+	}
+
+	// calculate total projected for calls we're unfreezing
+	const totalProjected = callsToUnfreeze.reduce(
 		(sum, c) => sum + (c.projectedSeconds || DEFAULT_PROJECTED_SECONDS),
 		0
 	);
 
-	// check if we have enough to unfreeze all
+	// check if we have enough to unfreeze this batch
 	if (availableSeconds < totalProjected) {
-		console.log(`[credits] not enough to unfreeze: available=${availableSeconds}s, needed=${totalProjected}s`);
+		console.log(`[credits] not enough to unfreeze batch: available=${availableSeconds}s, needed=${totalProjected}s`);
 		return 0;
 	}
 
 	let unfrozenCount = 0;
-	for (const call of frozenCalls) {
+	for (const call of callsToUnfreeze) {
 		try {
 			// parse call metadata for re-scheduling
 			const metadata = call.callMetadata ? JSON.parse(call.callMetadata) : null;
@@ -561,7 +599,8 @@ export async function unfreezeCallsIfPossible(
 	}
 
 	if (unfrozenCount > 0) {
-		console.log(`[credits] unfroze ${unfrozenCount}/${frozenCalls.length} calls for user ${userId}`);
+		const remaining = frozenCalls.length - unfrozenCount;
+		console.log(`[credits] unfroze ${unfrozenCount}/${frozenCalls.length} calls for user ${userId}${remaining > 0 ? `, ${remaining} still frozen` : ''}`);
 	}
 
 	return unfrozenCount;
@@ -574,6 +613,8 @@ export async function addCredits(
 	userId: string,
 	seconds: number
 ): Promise<void> {
+	let available = 0;
+	let isNewRecord = false;
 	try {
 		await withOptimisticLock(db, userId, async (credits) => {
 			if (!credits) {
@@ -591,23 +632,27 @@ export async function addCredits(
 
 				await logCreditEvent(db, userId, 'allocate', seconds, undefined, { source: 'manual_admin', initial: true });
 
+				available = seconds;
+				isNewRecord = true;
 				return { updates: {}, result: undefined };
 			}
 
 			const newTotal = (credits.creditsTotal ?? 0) + seconds;
-			const available = newTotal - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0);
+			available = newTotal - (credits.creditsUsed ?? 0) + (credits.creditsRefunded ?? 0);
 
 			// audit log
 			await logCreditEvent(db, userId, 'allocate', seconds, undefined, { source: 'manual_admin' });
-
-			// try to unfreeze calls with new credits
-			await unfreezeCallsIfPossible(db, userId, available);
 
 			return {
 				updates: { creditsTotal: newTotal },
 				result: undefined
 			};
 		});
+
+		// try to unfreeze calls with new credits (outside lock)
+		if (available > 0) {
+			await unfreezeCallsIfPossible(db, userId, available);
+		}
 	} catch (e) {
 		console.warn(`[credits] addCredits failed for user ${userId}:`, e);
 	}
@@ -621,6 +666,7 @@ export async function refundCredits(
 	seconds: number,
 	callId?: string
 ): Promise<void> {
+	let available = 0;
 	try {
 		await withOptimisticLock(db, userId, async (credits) => {
 			if (!credits) {
@@ -628,19 +674,21 @@ export async function refundCredits(
 			}
 
 			const newRefunded = (credits.creditsRefunded ?? 0) + seconds;
-			const available = (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + newRefunded;
+			available = (credits.creditsTotal ?? 0) - (credits.creditsUsed ?? 0) + newRefunded;
 
 			// audit log
 			await logCreditEvent(db, userId, 'refund', seconds, callId, { reason: 'call_refund' });
-
-			// try to unfreeze calls with refunded credits
-			await unfreezeCallsIfPossible(db, userId, available);
 
 			return {
 				updates: { creditsRefunded: newRefunded },
 				result: undefined
 			};
 		});
+
+		// try to unfreeze calls with refunded credits (outside lock)
+		if (available > 0) {
+			await unfreezeCallsIfPossible(db, userId, available);
+		}
 	} catch (e) {
 		console.warn(`[credits] refundCredits failed for user ${userId}:`, e);
 	}

@@ -18,15 +18,10 @@
 		children
 	}: Props = $props();
 
-	let isOpen = $state(defaultOpen);
-	let prevDefaultOpen = defaultOpen;
+	let isOpen = $state(false);
 
-	// react to defaultOpen changes (e.g. when state transitions)
 	$effect(() => {
-		if (defaultOpen !== prevDefaultOpen) {
-			isOpen = defaultOpen;
-			prevDefaultOpen = defaultOpen;
-		}
+		isOpen = defaultOpen;
 	});
 </script>
 

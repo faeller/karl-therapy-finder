@@ -224,9 +224,10 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 				{#if $debug.enabled}
 					<div class="space-y-3">
 						<div>
-							<label class="text-sm text-pencil/70">test therapist phone (will be called)</label>
+							<label for="testTherapistPhone" class="text-sm text-pencil/70">test therapist phone (will be called)</label>
 							<input
 								type="tel"
+								id="testTherapistPhone"
 								value={$debug.testPhone}
 								oninput={(e) => debug.setTestPhone(e.currentTarget.value)}
 								placeholder="+49 170 1234567"
@@ -234,9 +235,10 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 							/>
 						</div>
 						<div>
-							<label class="text-sm text-pencil/70">callback phone (your number for callbacks)</label>
+							<label for="debugCallbackPhone" class="text-sm text-pencil/70">callback phone (your number for callbacks)</label>
 							<input
 								type="tel"
+								id="debugCallbackPhone"
 								value={$debug.callbackPhone}
 								oninput={(e) => debug.setCallbackPhone(e.currentTarget.value)}
 								placeholder="+49 170 1234567"
@@ -324,23 +326,23 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			<form method="POST" action="?/scheduleTestCall" use:enhance={() => { loading = true; activeSection = 'schedule'; return async ({ update }) => { await update(); loading = false; activeSection = null; }; }} class="space-y-3">
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="text-sm text-pencil/70">therapist eId *</label>
-						<input type="text" name="eId" bind:value={scheduleEId} placeholder="e.g. 123456" class="input-field w-full" required />
+						<label for="scheduleTherapistEId" class="text-sm text-pencil/70">therapist eId *</label>
+						<input type="text" id="scheduleTherapistEId" name="eId" bind:value={scheduleEId} placeholder="e.g. 123456" class="input-field w-full" required />
 					</div>
 					<div>
-						<label class="text-sm text-pencil/70">callback phone *</label>
-						<input type="tel" name="callbackPhone" bind:value={scheduleCallbackPhone} placeholder="+49 170 1234567" class="input-field w-full" required />
+						<label for="scheduleCallbackPhone" class="text-sm text-pencil/70">callback phone *</label>
+						<input type="tel" id="scheduleCallbackPhone" name="callbackPhone" bind:value={scheduleCallbackPhone} placeholder="+49 170 1234567" class="input-field w-full" required />
 					</div>
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="text-sm text-pencil/70">patient name</label>
-						<input type="text" name="patientName" bind:value={schedulePatientName} class="input-field w-full" />
+						<label for="schedulePatientName" class="text-sm text-pencil/70">patient name</label>
+						<input type="text" id="schedulePatientName" name="patientName" bind:value={schedulePatientName} class="input-field w-full" />
 					</div>
 					<div>
-						<label class="text-sm text-pencil/70">insurance</label>
-						<select name="patientInsurance" bind:value={scheduleInsurance} class="input-field w-full">
+						<label for="scheduleInsurance" class="text-sm text-pencil/70">insurance</label>
+						<select id="scheduleInsurance" name="patientInsurance" bind:value={scheduleInsurance} class="input-field w-full">
 							<option value="gesetzlich versichert">GKV (gesetzlich)</option>
 							<option value="privat versichert">PKV (privat)</option>
 							<option value="Selbstzahler">Selbstzahler</option>
@@ -350,8 +352,8 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="text-sm text-pencil/70">therapy type</label>
-						<select name="therapyType" bind:value={scheduleTherapyType} class="input-field w-full">
+						<label for="scheduleTherapyType" class="text-sm text-pencil/70">therapy type</label>
+						<select id="scheduleTherapyType" name="therapyType" bind:value={scheduleTherapyType} class="input-field w-full">
 							<option value="Verhaltenstherapie">Verhaltenstherapie</option>
 							<option value="Tiefenpsychologie">Tiefenpsychologie</option>
 							<option value="Psychoanalyse">Psychoanalyse</option>
@@ -359,8 +361,8 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 						</select>
 					</div>
 					<div>
-						<label class="text-sm text-pencil/70">urgency</label>
-						<select name="urgency" bind:value={scheduleUrgency} class="input-field w-full">
+						<label for="scheduleUrgency" class="text-sm text-pencil/70">urgency</label>
+						<select id="scheduleUrgency" name="urgency" bind:value={scheduleUrgency} class="input-field w-full">
 							<option value="low">niedrig</option>
 							<option value="medium">mittel</option>
 							<option value="high">dringend</option>
@@ -484,8 +486,8 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			<form method="POST" action="?/simulateWebhook" use:enhance={() => { loading = true; activeSection = 'webhook'; return async ({ update }) => { await update(); loading = false; activeSection = null; }; }} class="space-y-3">
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="text-sm text-pencil/70">call id</label>
-						<select name="callId" bind:value={simCallId} class="input-field w-full">
+						<label for="simCallId" class="text-sm text-pencil/70">call id</label>
+						<select id="simCallId" name="callId" bind:value={simCallId} class="input-field w-full">
 							<option value="">select a call...</option>
 							{#each data.calls.filter(c => c.status === 'scheduled') as call}
 								<option value={call.id}>{call.therapistName} ({call.id.slice(0, 8)}...)</option>
@@ -493,8 +495,8 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 						</select>
 					</div>
 					<div>
-						<label class="text-sm text-pencil/70">status</label>
-						<select name="status" bind:value={simStatus} class="input-field w-full">
+						<label for="simStatus" class="text-sm text-pencil/70">status</label>
+						<select id="simStatus" name="status" bind:value={simStatus} class="input-field w-full">
 							<option value="completed">completed</option>
 							<option value="no_answer">no_answer</option>
 							<option value="busy">busy</option>
@@ -505,12 +507,12 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 				</div>
 
 				<div>
-					<label class="text-sm text-pencil/70">duration (seconds)</label>
-					<input type="number" name="durationSeconds" bind:value={simDuration} class="input-field w-24" />
+					<label for="simDuration" class="text-sm text-pencil/70">duration (seconds)</label>
+					<input type="number" id="simDuration" name="durationSeconds" bind:value={simDuration} class="input-field w-24" />
 				</div>
 
 				<div>
-					<label class="text-sm text-pencil/70 flex items-center justify-between">
+					<label for="simTranscript" class="text-sm text-pencil/70 flex items-center justify-between">
 						<span>transcript</span>
 						<span class="text-xs">
 							<button type="button" onclick={() => simTranscript = sampleTranscripts.success} class="text-blue-pen hover:underline">success</button>
@@ -524,7 +526,7 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 							<button type="button" onclick={() => simTranscript = sampleTranscripts.rejected_privacy} class="text-blue-pen hover:underline">reject privacy</button>
 						</span>
 					</label>
-					<textarea name="transcript" bind:value={simTranscript} rows="6" class="input-field w-full font-mono text-xs"></textarea>
+					<textarea id="simTranscript" name="transcript" bind:value={simTranscript} rows="6" class="input-field w-full font-mono text-xs"></textarea>
 				</div>
 
 				<button type="submit" class="action-btn primary" style:border-radius={wobbly.button} disabled={!simCallId || (loading && activeSection === 'webhook')}>
