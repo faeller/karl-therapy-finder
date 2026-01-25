@@ -86,9 +86,13 @@
 				<div class="legend-color free"></div>
 				<span>Verfügbar</span>
 			</div>
-			<div class="legend-item">
+			<div
+				class="legend-item"
+				title="Reservierte Zeit für geplante Anrufe. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
+			>
 				<div class="legend-color reserved"></div>
 				<span>Reserviert</span>
+				<HelpCircle size={12} class="help-icon" />
 			</div>
 		</div>
 	{/if}
