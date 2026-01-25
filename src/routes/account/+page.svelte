@@ -4,7 +4,7 @@
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import WobblyButton from '$lib/components/ui/WobblyButton.svelte';
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
-	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar } from 'lucide-svelte';
+	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar, HelpCircle } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { m } from '$lib/paraglide/messages';
@@ -214,13 +214,7 @@
 						<h2 class="font-heading text-lg font-bold">{m.account_call_credits()}</h2>
 						{#if hasCredits}
 							<p class="text-pencil/70">
-								{availableMins}:{availableSecs.toString().padStart(2, '0')}
-								{#if data.credits.projectedSeconds > 0}
-									<span class="reserved-time" title="Reservierte Zeit für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen.">
-										({reservedMins}:{reservedSecs.toString().padStart(2, '0')} res.)
-									</span>
-								{/if}
-								/ {tierMins > 0 ? tierMins : totalMins}:00 min
+								{availableMins}:{availableSecs.toString().padStart(2, '0')} / {tierMins > 0 ? tierMins : totalMins}:00 min
 							</p>
 						{:else}
 							<p class="text-pencil/70">
@@ -232,10 +226,27 @@
 					<!-- progress bar -->
 				<div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-erased">
 					{#if hasCredits && maxSeconds > 0}
-						<div
-							class="h-full bg-blue-pen transition-all"
-							style:width="{Math.min(100, (data.credits.availableSeconds / maxSeconds) * 100)}%"
-						></div>
+						{@const freeSeconds = data.credits.availableSeconds - data.credits.projectedSeconds}
+						{@const freePercent = Math.min(100, (freeSeconds / maxSeconds) * 100)}
+						{@const reservedPercent = Math.min(100, (data.credits.projectedSeconds / maxSeconds) * 100)}
+						{@const freeMins = Math.floor(freeSeconds / 60)}
+						{@const freeSecs = freeSeconds % 60}
+						<div class="h-full flex">
+							<!-- free time in blue -->
+							<div
+								class="bg-blue-pen transition-all"
+								style:width="{freePercent}%"
+								title="Verfügbar: {freeMins}:{freeSecs.toString().padStart(2, '0')} min"
+							></div>
+							<!-- reserved time in grey -->
+							{#if data.credits.projectedSeconds > 0}
+								<div
+									class="bg-pencil/30 transition-all"
+									style:width="{reservedPercent}%"
+									title="Reserviert: {reservedMins}:{reservedSecs.toString().padStart(2, '0')} min für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}"
+								></div>
+							{/if}
+						</div>
 					{/if}
 				</div>
 				<div class="mt-2 flex justify-between text-xs text-pencil/50">
@@ -247,7 +258,13 @@
 						<span></span>
 					{/if}
 					{#if data.credits.pendingCalls > 0}
-						<span>{data.credits.pendingCalls} geplant ({Math.floor(data.credits.projectedSeconds / 60)} min reserviert)</span>
+						<span
+							class="flex items-center gap-1 cursor-help"
+							title="Reservierte Zeit für {data.credits.pendingCalls} geplante{data.credits.pendingCalls === 1 ? 'n' : ''} Anruf{data.credits.pendingCalls === 1 ? '' : 'e'}. Diese Minuten werden vorläufig blockiert, um sicherzustellen, dass genug Guthaben für anstehende Anrufe vorhanden ist. Nach Abschluss des Anrufs wird nur die tatsächlich genutzte Zeit abgezogen."
+						>
+							{data.credits.pendingCalls} geplant ({reservedMins}:{reservedSecs.toString().padStart(2, '0')} min reserviert)
+							<HelpCircle size={14} class="text-pencil/40" />
+						</span>
 					{/if}
 				</div>
 
@@ -519,13 +536,6 @@
 	.logout-link:hover {
 		opacity: 1;
 		color: var(--color-red-marker);
-	}
-
-	.reserved-time {
-		color: var(--color-pencil);
-		opacity: 0.5;
-		font-size: 0.875rem;
-		cursor: help;
 	}
 </style>
 

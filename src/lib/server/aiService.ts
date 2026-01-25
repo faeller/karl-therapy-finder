@@ -171,6 +171,10 @@ export interface ValidationResult {
 	confidence: number;
 }
 
+// in-memory cache for validation results (10 min ttl)
+const validationCache = new Map<string, { result: ValidationResult; cost: CostTracking; expiresAt: number }>();
+const VALIDATION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 const VALIDATION_SYSTEM_PROMPT = `Du prüfst Anfragen für automatisierte Anrufe bei Therapiepraxen auf Missbrauch.
 
 Diese Daten werden DIREKT an unseren KI-Telefonagenten weitergegeben, der damit bei Praxen anruft. Der Name wird genau so am Telefon genannt.
@@ -211,33 +215,46 @@ export async function validateCallRequest(
 	const phoneClean = callbackPhone.replace(/\s/g, '');
 	const emailClean = email?.trim() || '';
 
+	// check cache first
+	const cacheKey = `${nameClean}:${phoneClean}:${emailClean}`;
+	const cached = validationCache.get(cacheKey);
+	if (cached && cached.expiresAt > Date.now()) {
+		return { result: cached.result, cost: cached.cost };
+	}
+
+	// helper to cache and return
+	const cacheAndReturn = (result: ValidationResult, cost: CostTracking) => {
+		validationCache.set(cacheKey, { result, cost, expiresAt: Date.now() + VALIDATION_CACHE_TTL });
+		return { result, cost };
+	};
+
 	// disallowed characters in name (potential injection)
 	if (/[{}()<>[\]\\|;:"`~@#$%^&*=+]/.test(nameClean)) {
-		return {
-			result: { valid: false, reason: 'Name enthält ungültige Sonderzeichen', confidence: 1 },
-			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
-		};
+		return cacheAndReturn(
+			{ valid: false, reason: 'Name enthält ungültige Sonderzeichen', confidence: 1 },
+			{ inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		);
 	}
 
 	// obvious spam patterns
 	if (nameClean.length < 2 || nameClean.length > 100) {
-		return {
-			result: { valid: false, reason: 'Name ungültige Länge', confidence: 1 },
-			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
-		};
+		return cacheAndReturn(
+			{ valid: false, reason: 'Name ungültige Länge', confidence: 1 },
+			{ inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		);
 	}
 	if (/^[0-9]+$/.test(nameClean) || /^(.)\1+$/.test(nameClean)) {
-		return {
-			result: { valid: false, reason: 'Name sieht nach Spam aus', confidence: 1 },
-			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
-		};
+		return cacheAndReturn(
+			{ valid: false, reason: 'Name sieht nach Spam aus', confidence: 1 },
+			{ inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		);
 	}
 	// must start with 0 or + and be 8-20 chars
 	if (!/^(0|\+)[\d\-/() ]{7,19}$/.test(phoneClean)) {
-		return {
-			result: { valid: false, reason: 'Telefonnummer muss mit 0 oder + beginnen', confidence: 1 },
-			cost: { inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
-		};
+		return cacheAndReturn(
+			{ valid: false, reason: 'Telefonnummer muss mit 0 oder + beginnen', confidence: 1 },
+			{ inputTokens: 0, outputTokens: 0, model: 'regex', costUsd: 0 }
+		);
 	}
 
 	// llm check with structured output (anthropic only)
@@ -247,39 +264,79 @@ export async function validateCallRequest(
 		: `Name: ${nameClean}\nTelefon: ${phoneClean}`;
 
 	if (provider === 'anthropic') {
-		const { response, cost } = await callAnthropic(
-			VALIDATION_SYSTEM_PROMPT,
-			userMessage,
-			VALIDATION_SCHEMA
-		);
-		try {
-			const parsed = JSON.parse(response) as ValidationResult;
-			return { result: parsed, cost };
-		} catch {
-			return {
-				result: { valid: true, reason: 'parse error, allowing', confidence: 0.5 },
-				cost
-			};
+		// retry up to 4 times on parse errors
+		const maxRetries = 4;
+		let totalCost: CostTracking = { inputTokens: 0, outputTokens: 0, model: ANTHROPIC_MODEL, costUsd: 0 };
+
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			const { response, cost } = await callAnthropic(
+				VALIDATION_SYSTEM_PROMPT,
+				userMessage,
+				VALIDATION_SCHEMA
+			);
+
+			// accumulate costs
+			totalCost.inputTokens += cost.inputTokens;
+			totalCost.outputTokens += cost.outputTokens;
+			totalCost.costUsd += cost.costUsd;
+
+			try {
+				const parsed = JSON.parse(response) as ValidationResult;
+				return cacheAndReturn(parsed, totalCost);
+			} catch (e) {
+				console.warn(`[validation] parse error on attempt ${attempt}/${maxRetries}:`, response.slice(0, 100));
+				if (attempt === maxRetries) {
+					// exhausted retries, fail closed
+					return cacheAndReturn(
+						{ valid: false, reason: 'Validierung fehlgeschlagen. Bitte versuche andere Daten', confidence: 0 },
+						totalCost
+					);
+				}
+				// wait briefly before retry (exponential backoff)
+				await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt - 1)));
+			}
 		}
 	}
 
 	// fallback for openrouter (no structured outputs)
-	const { response, cost } = await callOpenRouter(
-		VALIDATION_SYSTEM_PROMPT + '\n\nAntworte NUR mit rohem JSON, kein Markdown, keine Code-Blöcke: {"valid": true/false, "reason": "...", "confidence": 0.0-1.0}',
-		userMessage
-	);
+	const maxRetries = 4;
+	let totalCost: CostTracking = { inputTokens: 0, outputTokens: 0, model: OPENROUTER_MODEL, costUsd: 0 };
 
-	try {
-		const jsonMatch = response.match(/\{[\s\S]*\}/);
-		if (!jsonMatch) throw new Error('no json');
-		const parsed = JSON.parse(jsonMatch[0]) as ValidationResult;
-		return { result: parsed, cost };
-	} catch {
-		return {
-			result: { valid: true, reason: 'parse error, allowing', confidence: 0.5 },
-			cost
-		};
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		const { response, cost } = await callOpenRouter(
+			VALIDATION_SYSTEM_PROMPT + '\n\nAntworte NUR mit rohem JSON, kein Markdown, keine Code-Blöcke: {"valid": true/false, "reason": "...", "confidence": 0.0-1.0}',
+			userMessage
+		);
+
+		// accumulate costs
+		totalCost.inputTokens += cost.inputTokens;
+		totalCost.outputTokens += cost.outputTokens;
+		totalCost.costUsd += cost.costUsd;
+
+		try {
+			const jsonMatch = response.match(/\{[\s\S]*\}/);
+			if (!jsonMatch) throw new Error('no json');
+			const parsed = JSON.parse(jsonMatch[0]) as ValidationResult;
+			return cacheAndReturn(parsed, totalCost);
+		} catch (e) {
+			console.warn(`[validation] parse error on attempt ${attempt}/${maxRetries}:`, response.slice(0, 100));
+			if (attempt === maxRetries) {
+				// exhausted retries, fail closed
+				return cacheAndReturn(
+					{ valid: false, reason: 'Validierung fehlgeschlagen. Bitte versuche andere Daten', confidence: 0 },
+					totalCost
+				);
+			}
+			// wait briefly before retry
+			await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt - 1)));
+		}
 	}
+
+	// should never reach here, but typescript needs it
+	return cacheAndReturn(
+		{ valid: false, reason: 'Validierung fehlgeschlagen', confidence: 0 },
+		totalCost
+	);
 }
 
 // ============================================================================
