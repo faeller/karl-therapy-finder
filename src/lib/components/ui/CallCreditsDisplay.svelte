@@ -11,6 +11,7 @@
 		compact?: boolean;
 		showTitle?: boolean;
 		noBackground?: boolean;
+		showLegend?: boolean;
 	}
 
 	let {
@@ -21,7 +22,8 @@
 		pendingCalls,
 		compact = false,
 		showTitle = false,
-		noBackground = false
+		noBackground = false,
+		showLegend = false
 	}: Props = $props();
 
 	const hasCredits = $derived(tierSeconds > 0 || availableSeconds > 0);
@@ -77,6 +79,19 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if showLegend}
+		<div class="legend">
+			<div class="legend-item">
+				<div class="legend-color free"></div>
+				<span>Verfügbar</span>
+			</div>
+			<div class="legend-item">
+				<div class="legend-color reserved"></div>
+				<span>Reserviert</span>
+			</div>
+		</div>
+	{/if}
 
 	{#if pendingCalls > 0}
 		<div class="info-text" class:compact>
@@ -182,5 +197,35 @@
 
 	.help-icon {
 		opacity: 0.4;
+	}
+
+	.legend {
+		display: flex;
+		gap: 1rem;
+		margin-top: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.7;
+	}
+
+	.legend-item {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.legend-color {
+		width: 1rem;
+		height: 0.5rem;
+		border-radius: 0.125rem;
+	}
+
+	.legend-color.free {
+		background-color: var(--color-blue-pen);
+	}
+
+	.legend-color.reserved {
+		background-color: var(--color-pencil);
+		opacity: 0.3;
 	}
 </style>

@@ -1241,7 +1241,13 @@
 								compact={true}
 								showTitle={true}
 								noBackground={true}
+								showLegend={true}
 							/>
+							<p class="mt-3 text-sm text-center">
+								<a href="/account" class="text-blue-pen underline hover:text-red-marker">
+									Mehr Info in deinem Account
+								</a>
+							</p>
 						</div>
 					{/if}
 					<p class="state-detail">{error}</p>
