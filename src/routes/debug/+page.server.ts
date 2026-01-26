@@ -7,6 +7,7 @@ import * as table from '$lib/server/db/schema';
 import { getUserCredits, addCredits, getTherapistDetails } from '$lib/server/callService';
 import { handleCallWebhook } from '$lib/server/callService';
 import type { ElevenLabsWebhookPayload } from '$lib/server/elevenlabs';
+import { listBatchCalls, cancelBatchCall } from '$lib/server/elevenlabs';
 import { env } from '$env/dynamic/private';
 import { nanoid } from 'nanoid';
 import { getRateLimitEntries, clearRateLimits, triggerTestLimit, deleteRateLimitEntry, DEV_MODE, DEV_TEST_LIMIT } from '$lib/server/ratelimit';

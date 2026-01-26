@@ -290,6 +290,40 @@ Praxis: Ja, bitte keine weiteren Anrufe dieser Art. Das ist nicht DSGVO-konform.
 			</form>
 		</WobblyCard>
 
+		<!-- elevenlabs pending batch calls -->
+		<WobblyCard class="mb-4">
+			<h2 class="font-heading text-lg font-bold mb-3 flex items-center gap-2">
+				<Phone size={20} />
+				ElevenLabs Pending Batch Calls
+			</h2>
+			{#if data.elevenlabsBatchCalls && data.elevenlabsBatchCalls.length > 0}
+				<div class="space-y-2">
+					{#each data.elevenlabsBatchCalls as batch}
+						<div class="bg-erased rounded p-3 flex items-start justify-between gap-3">
+							<div class="flex-1 text-sm">
+								<div class="font-mono text-xs text-pencil/60 mb-1">{batch.batchId}</div>
+								<div class="font-medium">{batch.callName || 'unnamed'}</div>
+								<div class="text-xs text-pencil/60 mt-1">
+									<span>status: {batch.status}</span>
+									<span class="mx-2">•</span>
+									<span>scheduled: {batch.scheduledAt}</span>
+								</div>
+							</div>
+							<form method="POST" action="?/cancelBatchCall" use:enhance={() => { loading = true; return async ({ update }) => { await update(); loading = false; }; }}>
+								<input type="hidden" name="batchId" value={batch.batchId} />
+								<button type="submit" class="action-btn-sm danger" disabled={loading}>
+									<Trash2 size={14} />
+									cancel
+								</button>
+							</form>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="text-sm text-pencil/60">no pending batch calls in elevenlabs</p>
+			{/if}
+		</WobblyCard>
+
 		<!-- test therapist fetch -->
 		<WobblyCard class="mb-4">
 			<h2 class="font-heading text-lg font-bold mb-3">Test Opening Hours Parser</h2>

@@ -201,6 +201,35 @@ export async function cancelBatchCall(batchId: string): Promise<boolean> {
 	}
 }
 
+// list all batch calls (for admin debugging)
+export async function listBatchCalls(): Promise<Array<{ batchId: string; agentId: string; status: string; scheduledAt: string; callName: string }> | null> {
+	const apiKey = env.ELEVENLABS_API_KEY;
+	if (!apiKey) {
+		console.error('[elevenlabs] ELEVENLABS_API_KEY not configured');
+		return null;
+	}
+
+	try {
+		// /workspace endpoint lists all batch calls for the workspace
+		const response = await fetch(`${ELEVENLABS_API_BASE}/convai/batch-calling/workspace`, {
+			method: 'GET',
+			headers: { 'xi-api-key': apiKey }
+		});
+
+		if (!response.ok) {
+			const text = await response.text();
+			console.error('[elevenlabs] list batch calls failed:', response.status, text);
+			return null;
+		}
+
+		const data = await response.json();
+		return data.batch_calls || [];
+	} catch (e) {
+		console.error('[elevenlabs] list batch calls error:', e);
+		return null;
+	}
+}
+
 // get conversation details (for checking status, getting transcript)
 export async function getConversation(conversationId: string) {
 	const apiKey = env.ELEVENLABS_API_KEY;
