@@ -540,6 +540,7 @@
 			<div class="modal-header">
 				<PhoneCall size={24} />
 				<h2>{m.autocall_title()}</h2>
+				<span class="beta-badge">beta</span>
 			</div>
 
 			<p class="therapist-name">{therapist.name}</p>
@@ -1361,6 +1362,18 @@
 		font-family: var(--font-heading);
 		font-size: 1.25rem;
 		font-weight: bold;
+	}
+
+	.beta-badge {
+		font-size: 0.625rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		background: var(--color-blue-pen);
+		color: white;
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		line-height: 1;
 	}
 
 	.therapist-name {
