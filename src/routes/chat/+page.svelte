@@ -62,6 +62,9 @@
 
 	// undo - find previous user message and go back
 	function handleUndo() {
+		if (!confirm('Wirklich einen Schritt zurück gehen? Daten können verloren gehen und das Feature ist noch experimentell und buggy.')) {
+			return;
+		}
 		const msgs = $messages;
 		if (msgs.length < 2) return;
 		// find last user message index
