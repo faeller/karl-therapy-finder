@@ -1255,8 +1255,9 @@
 						/>
 					</div>
 					<div>
-						<label class="block text-sm font-medium admin-secondary mb-1">Reason *</label>
+						<label for="blocklist-reason" class="block text-sm font-medium admin-secondary mb-1">Reason *</label>
 						<select
+							id="blocklist-reason"
 							name="reason"
 							bind:value={blocklistReason}
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1268,8 +1269,9 @@
 						</select>
 					</div>
 					<div>
-						<label class="block text-sm font-medium admin-secondary mb-1">Details</label>
+						<label for="blocklist-details" class="block text-sm font-medium admin-secondary mb-1">Details</label>
 						<textarea
+							id="blocklist-details"
 							name="details"
 							bind:value={blocklistDetails}
 							rows="2"

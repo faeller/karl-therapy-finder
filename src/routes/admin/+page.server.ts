@@ -6,6 +6,7 @@ import { isAdmin, isModerator } from '$lib/server/roles';
 import { eq, desc, sql, and, or, inArray } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { nanoid } from 'nanoid';
+import { unfreezeCallsIfPossible, freezePendingCalls } from '$lib/server/creditService';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	if (!locals.user || !isAdmin(locals.user.role)) {
@@ -256,6 +257,24 @@ export const actions: Actions = {
 			balanceAfter: balanceBefore + delta,
 			createdAt: now
 		});
+
+		// trigger freeze/unfreeze based on new balance
+		const balanceAfter = balanceBefore + delta;
+		if (!isDeduct && balanceAfter > 0) {
+			// adding credits - try to unfreeze
+			try {
+				await unfreezeCallsIfPossible(db, userId, balanceAfter);
+			} catch (e) {
+				console.warn('[admin] unfreeze failed after credit award:', e);
+			}
+		} else if (isDeduct && balanceAfter <= 0) {
+			// deducting to 0 or negative - freeze pending calls
+			try {
+				await freezePendingCalls(db, userId);
+			} catch (e) {
+				console.warn('[admin] freeze failed after credit deduction:', e);
+			}
+		}
 
 		return { success: true };
 	},
