@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { wobbly } from '$lib/utils/wobbly';
-	import { X, Loader2, CheckCircle, AlertCircle, Phone, Trash2, Clock, Calendar, PhoneCall, History, XCircle, Info, ChevronLeft, MessageSquare, Hash, ExternalLink, Pause } from 'lucide-svelte';
+	import { X, Loader2, CheckCircle, AlertCircle, Phone, Trash2, Clock, Calendar, PhoneCall, History, XCircle, Info, ChevronLeft, MessageSquare, Hash, ExternalLink, Snowflake } from 'lucide-svelte';
 	import { browser } from '$app/environment';
 	import type { Therapist } from '$lib/types';
 	import { debug, DEBUG_THERAPIST_ID } from '$lib/stores/debug';
@@ -12,6 +12,8 @@
 	import { m } from '$lib/paraglide/messages';
 	import { track } from '$lib/utils/analytics';
 	import CallCreditsDisplay from '$lib/components/ui/CallCreditsDisplay.svelte';
+	import FrozenCallInfo from '$lib/components/ui/FrozenCallInfo.svelte';
+	import Tooltip from '$lib/components/ui/Tooltip.svelte';
 
 	// i18n status labels
 	function getStatusLabelI18n(status: string, attemptNumber?: number): string {
@@ -567,7 +569,7 @@
 									{:else if call.status === 'scheduled'}
 										<Clock size={16} />
 									{:else if call.status === 'frozen'}
-										<Pause size={16} />
+										<Snowflake size={16} />
 									{:else}
 										<XCircle size={16} />
 									{/if}
@@ -576,7 +578,7 @@
 
 								<div class="call-details">
 									{#if call.status === 'frozen'}
-										<span class="call-frozen-hint">{m.autocall_frozen_hint()}</span>
+										<FrozenCallInfo class="call-frozen-hint" />
 									{/if}
 									{#if call.scheduledAt}
 										<span class="call-time">{formatDateTime(call.scheduledAt)}</span>
