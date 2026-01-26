@@ -365,14 +365,14 @@
 			<div class="flex items-center gap-3">
 				<Database size={24} class="text-pencil/60" />
 				<div class="flex-1">
-					<h2 class="font-heading text-lg font-bold">daten & datenschutz</h2>
-					<p class="text-sm text-pencil/70">verwalte deine daten und datenschutzrechte</p>
+					<h2 class="font-heading text-lg font-bold">{m.account_gdpr_title()}</h2>
+					<p class="text-sm text-pencil/70">{m.account_gdpr_description()}</p>
 				</div>
 			</div>
 
-			<a href="/daten" class="mt-3 block">
+			<a href="/account/gdpr" class="mt-3 block">
 				<WobblyButton variant="secondary" class="w-full">
-					meine daten verwalten
+					{m.account_gdpr_button()}
 				</WobblyButton>
 			</a>
 		</WobblyCard>

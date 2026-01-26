@@ -176,7 +176,7 @@
 					<li><strong>Datenexport:</strong> Alle gespeicherten Daten als JSON-Datei herunterladen</li>
 					<li><strong>Account löschen:</strong> Alle Daten unwiderruflich löschen</li>
 				</ul>
-				<p><a href="/daten">→ Zum Self-Service Portal</a></p>
+				<p>Sie finden es <a href="/account/gdpr">hier</a>.</p>
 			</div>
 
 			<p>Zur Ausübung weiterer Rechte oder bei Fragen kontaktieren Sie uns unter der im Impressum angegebenen E-Mail-Adresse.</p>
@@ -230,12 +230,22 @@
 		margin: 1rem 0;
 		border-radius: 4px;
 	}
+	:global(:root.theme-modern) .info-box,
+	:global(:root.theme-apfel) .info-box {
+		border: 1px solid var(--color-card-border);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-hard-sm);
+	}
 	.info-box h3 {
 		margin-top: 0;
 	}
 	.info-box.warning {
 		background-color: #fef3c7;
 		border-color: #f59e0b;
+	}
+	:global(:root.theme-modern) .info-box.warning,
+	:global(:root.theme-apfel) .info-box.warning {
+		border-width: 1px;
 	}
 	:global(:root.dark) .info-box.warning {
 		background-color: #451a03;
