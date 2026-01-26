@@ -21,6 +21,7 @@
 	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper, Pencil, Smartphone } from 'lucide-svelte';
 	import FoundTherapistButton from '$lib/components/ui/FoundTherapistButton.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
+	import { track } from '$lib/utils/analytics';
 	import { theme, style } from '$lib/stores/theme';
 	import { m } from '$lib/paraglide/messages';
 	import type { ChatOption, Therapist, ChatMessage, ChatState } from '$lib/types';
@@ -600,6 +601,7 @@
 									contentKey={message.contentKey}
 									contentParams={message.contentParams}
 								/>
+								<!-- theme style buttons -->
 								<div class="theme-choice-buttons mt-3">
 									<button
 										onclick={() => theme.setStyle('handdrawn')}
@@ -626,10 +628,31 @@
 										{m.option_theme_apfel()}
 									</button>
 								</div>
+								<!-- dark/light mode buttons -->
+								<div class="theme-choice-buttons mt-3">
+									<button
+										onclick={() => theme.set({ ...$theme, colorMode: 'light' })}
+										class="theme-btn color-mode-btn"
+										class:selected={$theme.colorMode === 'light'}
+										style:border-radius={wobbly.button}
+									>
+										<Sun size={16} class="mr-1" />
+										Hell
+									</button>
+									<button
+										onclick={() => theme.set({ ...$theme, colorMode: 'dark' })}
+										class="theme-btn color-mode-btn"
+										class:selected={$theme.colorMode === 'dark'}
+										style:border-radius={wobbly.button}
+									>
+										<Moon size={16} class="mr-1" />
+										Dunkel
+									</button>
+								</div>
 								{#if $chatState === 'theme_choice'}
 									<div class="flex justify-end mt-4">
 										<button
-											onclick={() => chat.handleOption(themeNextOption)}
+											onclick={() => { track('theme_selected', { theme: $style }); chat.handleOption(themeNextOption); }}
 											class="option-btn primary"
 											style:border-radius={wobbly.button}
 										>
@@ -893,7 +916,6 @@
 			role="button"
 			tabindex="-1"
 			onclick={(e) => e.stopPropagation()}
-			style:border-radius={wobbly.md}
 		>
 			<p class="modal-text">{m.karl_research_prompt()}</p>
 			<div class="modal-buttons">

@@ -13,6 +13,9 @@ interface ThemeState {
 
 const STORAGE_KEY = 'karl-theme';
 
+// track if user had a theme before this session (checked before store writes)
+const hadThemeOnLoad = browser ? !!localStorage.getItem(STORAGE_KEY) : false;
+
 function getInitialState(): ThemeState {
 	if (!browser) return { colorMode: 'light', style: 'handdrawn' };
 
@@ -54,6 +57,21 @@ if (browser) {
 
 export const colorMode = derived(store, ($s) => $s.colorMode);
 export const style = derived(store, ($s) => $s.style);
+
+// check if user has never set a theme (first visit)
+export function isFirstVisit(): boolean {
+	return !hadThemeOnLoad;
+}
+
+// set default style only if first visit
+export function setDefaultStyleIfFirstVisit(defaultStyle: Style, defaultColorMode?: ColorMode): boolean {
+	if (!browser) return false;
+	if (hadThemeOnLoad) return false;
+
+	const colorMode = defaultColorMode ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+	store.set({ colorMode, style: defaultStyle });
+	return true;
+}
 
 export const theme = {
 	subscribe: store.subscribe,
