@@ -39,7 +39,7 @@ export async function validateSessionToken(db: Database, token: string) {
 				pledgeTier: table.user.pledgeTier,
 				pledgeAmountCents: table.user.pledgeAmountCents,
 				syncEnabled: table.user.syncEnabled,
-				isAdmin: table.user.isAdmin
+				role: table.user.role
 			},
 			session: table.session
 		})
@@ -134,7 +134,7 @@ export async function upsertPatreonUser(db: Database, data: PatreonUserData): Pr
 		pledgeTier: data.pledgeTier,
 		pledgeAmountCents: data.pledgeAmountCents,
 		syncEnabled: false,
-		isAdmin: false,
+		role: 'user',
 		createdAt: now,
 		updatedAt: now
 	});

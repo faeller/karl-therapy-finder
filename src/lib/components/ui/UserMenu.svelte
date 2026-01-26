@@ -1,18 +1,56 @@
 <script lang="ts">
 	import { user } from '$lib/stores/user';
-	import { User, LogOut } from 'lucide-svelte';
+	import { User, LogOut, Settings } from 'lucide-svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { wobbly } from '$lib/utils/wobbly';
+	import { onMount } from 'svelte';
+
+	const isAdmin = $derived($user?.role === 'admin');
 
 	let showDropdown = $state(false);
+	let buttonRef: HTMLButtonElement | null = $state(null);
+	let dropdownRef: HTMLDivElement | null = $state(null);
+	let mounted = $state(false);
+	let dropdownPos = $state({ top: 0, right: 0 });
 
-	function toggleDropdown() {
+	onMount(() => {
+		mounted = true;
+		return () => {
+			if (dropdownRef?.parentNode === document.body) {
+				document.body.removeChild(dropdownRef);
+			}
+		};
+	});
+
+	function updatePosition() {
+		if (buttonRef) {
+			const rect = buttonRef.getBoundingClientRect();
+			dropdownPos = {
+				top: rect.bottom + 8,
+				right: window.innerWidth - rect.right
+			};
+		}
+	}
+
+	function toggleDropdown(e: MouseEvent) {
+		e.stopPropagation();
+		if (!showDropdown) {
+			updatePosition();
+		}
 		showDropdown = !showDropdown;
 	}
 
 	function closeDropdown() {
 		showDropdown = false;
 	}
+
+	// portal dropdown to body when shown
+	$effect(() => {
+		if (mounted && showDropdown && dropdownRef) {
+			document.body.appendChild(dropdownRef);
+		} else if (mounted && !showDropdown && dropdownRef?.parentNode === document.body) {
+			document.body.removeChild(dropdownRef);
+		}
+	});
 </script>
 
 <svelte:window onclick={closeDropdown} />
@@ -20,7 +58,8 @@
 <div class="user-menu">
 	{#if $user}
 		<button
-			onclick={(e) => { e.stopPropagation(); toggleDropdown(); }}
+			bind:this={buttonRef}
+			onclick={toggleDropdown}
 			class="avatar-btn"
 			title={$user.username}
 		>
@@ -32,25 +71,6 @@
 				</div>
 			{/if}
 		</button>
-		{#if showDropdown}
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div
-				class="dropdown"
-				style:border-radius={wobbly.sm}
-				onclick={(e) => e.stopPropagation()}
-				role="menu"
-				tabindex="-1"
-			>
-				<a href="/account" class="dropdown-item" onclick={closeDropdown} role="menuitem">
-					<User size={16} />
-					{m.auth_account()}
-				</a>
-				<a href="/auth/logout" class="dropdown-item logout" onclick={closeDropdown} role="menuitem">
-					<LogOut size={16} />
-					{m.auth_logout()}
-				</a>
-			</div>
-		{/if}
 	{:else}
 		<a
 			href="/auth/patreon"
@@ -61,6 +81,36 @@
 		</a>
 	{/if}
 </div>
+
+<!-- dropdown portaled to body -->
+{#if mounted}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		bind:this={dropdownRef}
+		class="dropdown"
+		class:visible={showDropdown}
+		style:top="{dropdownPos.top}px"
+		style:right="{dropdownPos.right}px"
+		onclick={(e) => e.stopPropagation()}
+		role="menu"
+		tabindex="-1"
+	>
+		<a href="/account" class="dropdown-item" onclick={closeDropdown} role="menuitem">
+			<User size={16} />
+			{m.auth_account()}
+		</a>
+		{#if isAdmin}
+			<a href="/admin" class="dropdown-item admin" onclick={closeDropdown} role="menuitem">
+				<Settings size={16} />
+				Admin
+			</a>
+		{/if}
+		<a href="/auth/logout" class="dropdown-item logout" onclick={closeDropdown} role="menuitem">
+			<LogOut size={16} />
+			{m.auth_logout()}
+		</a>
+	</div>
+{/if}
 
 <style>
 	.user-menu {
@@ -117,36 +167,38 @@
 		font-weight: 700;
 	}
 
-	/* modern theme (default) */
+	/* dropdown - portaled to body, positioned fixed */
 	.dropdown {
-		position: absolute;
-		top: 100%;
-		right: 0;
-		margin-top: 8px;
-		background-color: var(--color-erased);
-		border: 1px solid var(--color-card-border);
-		border-radius: 12px;
+		position: fixed;
+		display: none;
 		min-width: 160px;
-		z-index: 50;
+		z-index: 99999;
+		background: #ffffff;
+		border: 1px solid #e5e5e5;
+		border-radius: 12px;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
 		overflow: hidden;
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
+	}
+
+	.dropdown.visible {
+		display: block;
 	}
 
 	.dropdown-item {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 12px;
 		padding: 12px 16px;
 		font-family: var(--font-body);
-		font-size: 1rem;
-		color: var(--color-pencil);
+		font-size: 0.9375rem;
+		color: #1c1c1e;
 		text-decoration: none;
 		transition: background-color 100ms;
+		cursor: pointer;
 	}
 
 	.dropdown-item:hover {
-		background-color: var(--color-paper);
+		background-color: #f5f5f5;
 	}
 
 	.dropdown-item.logout:hover {
@@ -154,17 +206,57 @@
 		color: white;
 	}
 
+	.dropdown-item.admin {
+		color: #007aff;
+	}
+
+	.dropdown-item.admin:hover {
+		background-color: #007aff;
+		color: white;
+	}
+
+	/* dark mode */
+	:global(:root.dark) .dropdown {
+		background: #2c2c2e;
+		border-color: #3a3a3c;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+	}
+
+	:global(:root.dark) .dropdown-item {
+		color: #ffffff;
+	}
+
+	:global(:root.dark) .dropdown-item:hover {
+		background-color: #3a3a3c;
+	}
+
 	/* handdrawn theme */
 	:global(:root.theme-handdrawn) .dropdown {
-		background-color: var(--color-paper);
+		background: var(--color-paper);
 		border: 2px solid var(--color-pencil);
 		border-radius: var(--radius-sm);
 		box-shadow: var(--shadow-hard-sm);
-		backdrop-filter: none;
-		-webkit-backdrop-filter: none;
+	}
+
+	:global(:root.theme-handdrawn) .dropdown-item {
+		color: var(--color-pencil);
 	}
 
 	:global(:root.theme-handdrawn) .dropdown-item:hover {
 		background-color: var(--color-erased);
+	}
+
+	:global(:root.theme-handdrawn) .dropdown-item.admin {
+		color: var(--color-blue-pen);
+	}
+
+	:global(:root.theme-handdrawn) .dropdown-item.admin:hover {
+		background-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .dropdown-item.logout:hover {
+		background-color: var(--color-red-marker);
+		color: white;
 	}
 </style>

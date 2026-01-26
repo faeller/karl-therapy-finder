@@ -9,7 +9,7 @@ export const user = sqliteTable('user', {
 	pledgeTier: text('pledge_tier'), // 'free' | 'supporter' | 'premium' etc
 	pledgeAmountCents: integer('pledge_amount_cents'),
 	syncEnabled: integer('sync_enabled', { mode: 'boolean' }).default(false),
-	isAdmin: integer('is_admin', { mode: 'boolean' }).default(false),
+	role: text('role').default('user'), // user | tester | moderator | admin
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
@@ -87,9 +87,11 @@ export type ScheduledCall = typeof scheduledCalls.$inferSelect;
 export type NewScheduledCall = typeof scheduledCalls.$inferInsert;
 
 // therapist blocklist - practices that rejected ai calls or have privacy concerns
+// can block by eId (tk database) or phone number (arbitrary numbers)
 export const therapistBlocklist = sqliteTable('therapist_blocklist', {
 	id: text('id').primaryKey(),
-	eId: text('e_id').notNull().unique(),
+	eId: text('e_id').unique(), // optional - for tk database entries
+	phone: text('phone'), // optional - for blocking by phone number
 	therapistName: text('therapist_name'),
 	reason: text('reason').notNull(), // ai_rejected, privacy_concern, hostile, other
 	details: text('details'),

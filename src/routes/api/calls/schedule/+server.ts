@@ -10,6 +10,7 @@ import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 import { eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { enforceRateLimits, getClientId, LIMITS } from '$lib/server/ratelimit';
+import { isAdmin } from '$lib/server/roles';
 
 interface ScheduleCallBody {
 	therapistId: string;
@@ -55,12 +56,13 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 	}
 
 	// handle debug mode - skip tier checks, override phone with debug test phone
-	// SECURITY: debug mode requires isAdmin
+	// SECURITY: debug mode requires admin role
+	const canDebug = isAdmin(locals.user.role);
 	const isDebugTherapist = body.therapistId === DEBUG_THERAPIST_ID;
-	const isDebugMode = body.isDebug && body.debugTestPhone && locals.user.isAdmin === true;
+	const isDebugMode = body.isDebug && body.debugTestPhone && canDebug;
 
 	// reject debug attempts from non-admins
-	if ((body.isDebug || isDebugTherapist) && !locals.user.isAdmin) {
+	if ((body.isDebug || isDebugTherapist) && !canDebug) {
 		error(403, 'Debug mode requires admin access');
 	}
 
@@ -84,13 +86,12 @@ export const POST: RequestHandler = async ({ locals, platform, request }) => {
 			db,
 			locals.user.id,
 			body.eId,
+			'', // phone check happens in scheduleCall after fetching details
 			locals.user.pledgeTier
 		);
 
 		if (!preflight.canProceed) {
 			switch (preflight.reason) {
-				case 'tier_required':
-					error(402, 'Premium tier required for automated calls');
 				case 'no_credits':
 					error(402, 'No call credits remaining');
 				case 'therapist_blocked':

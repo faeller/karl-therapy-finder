@@ -10,7 +10,7 @@ declare global {
 				pledgeTier: string | null;
 				pledgeAmountCents: number | null;
 				syncEnabled: boolean | null;
-				isAdmin: boolean | null;
+				role: string | null;
 			} | null;
 			session: {
 				id: string;

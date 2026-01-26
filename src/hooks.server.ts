@@ -4,6 +4,7 @@ import { validateSessionToken, sessionCookieName } from '$lib/server/auth';
 import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
 import { env } from '$env/dynamic/private';
+import { isAdmin } from '$lib/server/roles';
 
 // http basic auth for /debug (checked after session validation)
 function checkDebugBasicAuth(request: Request): boolean {
@@ -38,15 +39,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.locals.user = null;
 	}
 
-	// debug page access: require isAdmin AND http basic auth (dev mode always allowed)
-	if (event.url.pathname.startsWith('/debug') && !import.meta.env.DEV) {
-		const isAdmin = event.locals.user?.isAdmin === true;
+	// debug + admin page access: require admin AND http basic auth (dev mode always allowed)
+	const isProtectedPath = event.url.pathname.startsWith('/debug') || event.url.pathname.startsWith('/admin');
+	if (isProtectedPath && !import.meta.env.DEV) {
+		const userIsAdmin = isAdmin(event.locals.user?.role);
 		const hasBasicAuth = checkDebugBasicAuth(event.request);
 
-		if (!isAdmin || !hasBasicAuth) {
+		if (!userIsAdmin || !hasBasicAuth) {
 			return new Response('Unauthorized', {
 				status: 401,
-				headers: { 'WWW-Authenticate': 'Basic realm="KARL Debug"' }
+				headers: { 'WWW-Authenticate': 'Basic realm="KARL Admin"' }
 			});
 		}
 	}

@@ -10,6 +10,7 @@ import { calculateNextCallSlot } from '$lib/server/aiService';
 import { getCredits } from '$lib/server/creditService';
 import { DEBUG_THERAPIST_ID } from '$lib/stores/debug';
 import { enforceRateLimits, getClientId, LIMITS } from '$lib/server/ratelimit';
+import { isAdmin } from '$lib/server/roles';
 
 // helper to map call records consistently - returns all available fields
 function mapCall(c: typeof table.scheduledCalls.$inferSelect) {
@@ -62,16 +63,16 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 	const eId = url.searchParams.get('eId');
 	const wantsDebug = url.searchParams.get('isDebug') === 'true';
 
-	// SECURITY: debug features require isAdmin
-	const isAdmin = locals.user.isAdmin === true;
-	const isDebug = wantsDebug && isAdmin;
+	// SECURITY: debug features require admin role
+	const canDebug = isAdmin(locals.user.role);
+	const isDebug = wantsDebug && canDebug;
 
 	if (!eId) {
 		error(400, 'Missing eId parameter');
 	}
 
 	// reject debug attempts from non-admins
-	if ((wantsDebug || eId === DEBUG_THERAPIST_ID) && !isAdmin) {
+	if ((wantsDebug || eId === DEBUG_THERAPIST_ID) && !canDebug) {
 		error(403, 'Debug mode requires admin access');
 	}
 
@@ -245,6 +246,7 @@ export const GET: RequestHandler = async ({ locals, platform, url, request }) =>
 			db,
 			locals.user.id,
 			eId,
+			details.phone || '',
 			locals.user.pledgeTier
 		);
 

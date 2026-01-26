@@ -1,7 +1,7 @@
 // call service - orchestrates the auto-call system
 // handles scheduling, execution tracking, retries, and blocklist management
 import { nanoid } from 'nanoid';
-import { eq, and, or, desc } from 'drizzle-orm';
+import { eq, and, or, desc, not } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getDb } from './db';
 import * as table from './db/schema';
@@ -33,32 +33,36 @@ export interface PreflightResult {
 	canProceed: boolean;
 	reason?: string;
 	creditsRemaining?: number;
+	projectedSeconds?: number;
 }
 
 export async function checkCanScheduleCall(
 	db: ReturnType<typeof getDb>,
 	userId: string,
 	eId: string,
+	phone: string,
 	userPledgeTier: string | null
 ): Promise<PreflightResult> {
-	// check tier - any paying tier can schedule calls
-	const allowedTiers = ['tropfen', 'quelle', 'fluss', 'welle', 'ozean'];
-	if (!userPledgeTier || !allowedTiers.includes(userPledgeTier)) {
-		return { canProceed: false, reason: 'tier_required' };
-	}
-
 	// check credits with projected liability (need enough for pending + new call)
 	const creditCheck = await checkCredits(db, userId, DEFAULT_PROJECTED_SECONDS);
 	if (!creditCheck.canSchedule) {
 		return { canProceed: false, reason: 'no_credits', creditsRemaining: creditCheck.available, projectedSeconds: creditCheck.projected };
 	}
 
-	// check blocklist
-	const [blocked] = await db
+	// check blocklist by eId or phone
+	const blockedByEId = eId ? await db
 		.select()
 		.from(table.therapistBlocklist)
 		.where(eq(table.therapistBlocklist.eId, eId))
-		.limit(1);
+		.limit(1) : [];
+
+	const blockedByPhone = phone ? await db
+		.select()
+		.from(table.therapistBlocklist)
+		.where(eq(table.therapistBlocklist.phone, phone))
+		.limit(1) : [];
+
+	const blocked = blockedByEId[0] || blockedByPhone[0];
 
 	if (blocked) {
 		// check if non-permanent block has expired
@@ -255,6 +259,21 @@ export async function scheduleCall(
 
 	if (!details.phone) {
 		throw new Error('Therapist phone number not found');
+	}
+
+	// check if phone is blocklisted
+	const [phoneBlocked] = await db
+		.select()
+		.from(table.therapistBlocklist)
+		.where(eq(table.therapistBlocklist.phone, details.phone))
+		.limit(1);
+
+	if (phoneBlocked) {
+		if (!phoneBlocked.permanent && phoneBlocked.expiresAt && phoneBlocked.expiresAt < new Date()) {
+			await db.delete(table.therapistBlocklist).where(eq(table.therapistBlocklist.id, phoneBlocked.id));
+		} else {
+			throw new Error('This phone number is blocked');
+		}
 	}
 
 	// calculate optimal call slot
@@ -501,7 +520,7 @@ export async function handleCallWebhook(
 	if (!call && conversationId) {
 		try {
 			console.log('[webhook] fetching conversation details from API:', conversationId);
-			const convDetails = await getConversation(conversationId);
+			const convDetails = await getConversation(conversationId) as any;
 
 			// try karl_call_id from dynamic_variables
 			const apiKarlCallId = convDetails?.conversation_initiation_client_data?.dynamic_variables?.karl_call_id;
@@ -706,13 +725,21 @@ export async function handleCallWebhook(
 	// handle different outcomes (pass durationSeconds directly since call object is stale)
 	await handleCallOutcome(db, call, outcome, analysis, analysis?.notes || null, durationSeconds);
 
+	// check if practice explicitly asked not to be called again
+	const practiceBlockedUs = dataResults.practice_blocked_us?.value;
+	if (practiceBlockedUs === 'yes' && call.eId) {
+		console.log('[webhook] practice explicitly blocked us, adding to permanent blocklist');
+		await addToBlocklist(db, call.eId, call.therapistName!, 'practice_blocked_us', true, call.userId);
+	}
+
 	return call.id;
 }
 
 function mapElevenLabsOutcome(callSuccessful: string | undefined, outcomeReason: string | null | undefined): CallOutcome {
 	if (callSuccessful === 'success') return 'success';
-	if (outcomeReason === 'denied talking to ai') return 'rejected_ai';
-	if (outcomeReason === 'no availability') return 'no_availability';
+	if (outcomeReason === 'denied_ai') return 'rejected_ai';
+	if (outcomeReason === 'privacy_concern') return 'rejected_privacy';
+	if (outcomeReason === 'no_capacity') return 'no_availability';
 	if (callSuccessful === 'failure') return 'unclear';
 	return 'unclear';
 }
@@ -782,20 +809,20 @@ async function handleCallOutcome(
 			break;
 
 		case 'rejected_ai':
-			// soft blocklist
-			await addToBlocklist(db, call.eId!, call.therapistName!, 'ai_rejected', false, call.userId);
+			// soft blocklist (35 days)
+			await addToBlocklist(db, call.eId!, call.therapistName!, 'ai_rejected', false, call.userId, 35);
 			break;
 
 		case 'rejected_privacy':
-			// permanent blocklist + log incident
-			await addToBlocklist(db, call.eId!, call.therapistName!, 'privacy_concern', true, call.userId);
+			// soft blocklist (20 days) + log incident for manual review
+			await addToBlocklist(db, call.eId!, call.therapistName!, 'privacy_concern', false, call.userId, 20);
 			await db.insert(table.privacyIncidents).values({
 				id: nanoid(),
 				callId: call.id,
 				therapistEId: call.eId,
 				severity: 'medium',
 				transcriptExcerpt: analysis?.notes || null,
-				actionTaken: 'permanent_blocklist',
+				actionTaken: 'soft_blocklist_20days',
 				createdAt: now
 			});
 			break;
@@ -866,8 +893,8 @@ async function scheduleRetry(
 	const existingHistory = call.attemptHistory ? JSON.parse(call.attemptHistory) : [];
 	const attemptHistory = [...existingHistory, currentAttempt];
 
-	// update call for retry
-	await db
+	// update call for retry (only if not cancelled by user)
+	const result = await db
 		.update(table.scheduledCalls)
 		.set({
 			scheduledAt,
@@ -881,7 +908,19 @@ async function scheduleRetry(
 			attemptHistory: JSON.stringify(attemptHistory),
 			updatedAt: now
 		})
-		.where(eq(table.scheduledCalls.id, call.id));
+		.where(
+			and(
+				eq(table.scheduledCalls.id, call.id),
+				not(eq(table.scheduledCalls.status, 'cancelled'))
+			)
+		)
+		.returning();
+
+	// if update didn't affect any rows, call was cancelled - abort retry
+	if (result.length === 0) {
+		console.log('[scheduleRetry] call was cancelled, aborting retry');
+		return;
+	}
 
 	// trigger elevenlabs call
 	try {
@@ -906,11 +945,24 @@ async function scheduleRetry(
 			callName: `karl_retry_${call.id}_${newAttempt}`
 		});
 
-		// update batch id
-		await db
+		// update batch id (only if call still scheduled - user might have cancelled)
+		const batchUpdateResult = await db
 			.update(table.scheduledCalls)
 			.set({ elevenlabsConvId: result.batchId, updatedAt: new Date() })
-			.where(eq(table.scheduledCalls.id, call.id));
+			.where(
+				and(
+					eq(table.scheduledCalls.id, call.id),
+					eq(table.scheduledCalls.status, 'scheduled')
+				)
+			)
+			.returning();
+
+		// if update failed, call was cancelled - cancel the batch we just created
+		if (batchUpdateResult.length === 0) {
+			console.log('[scheduleRetry] call was cancelled during retry setup, cancelling new batch');
+			await cancelBatchCall(result.batchId);
+			return;
+		}
 
 		console.log('[scheduleRetry] retry scheduled, attempt:', newAttempt, 'batchId:', result.batchId);
 	} catch (e) {
@@ -934,10 +986,11 @@ async function addToBlocklist(
 	therapistName: string,
 	reason: string,
 	permanent: boolean,
-	userId: string
+	userId: string,
+	daysToExpire: number = 90
 ): Promise<void> {
 	const now = new Date();
-	const expiresAt = permanent ? null : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+	const expiresAt = permanent ? null : new Date(now.getTime() + daysToExpire * 24 * 60 * 60 * 1000);
 
 	await db
 		.insert(table.therapistBlocklist)
@@ -1014,7 +1067,10 @@ export async function cancelCall(
 			and(
 				eq(table.scheduledCalls.id, callId),
 				eq(table.scheduledCalls.userId, userId),
-				eq(table.scheduledCalls.status, 'scheduled')
+				or(
+					eq(table.scheduledCalls.status, 'scheduled'),
+					eq(table.scheduledCalls.status, 'frozen')
+				)
 			)
 		)
 		.limit(1);

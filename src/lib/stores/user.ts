@@ -9,6 +9,7 @@ export interface User {
 	pledgeTier: string | null;
 	pledgeAmountCents: number | null;
 	syncEnabled: boolean | null;
+	role: string | null;
 }
 
 function createUserStore() {
