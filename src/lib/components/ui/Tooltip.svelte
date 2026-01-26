@@ -36,6 +36,7 @@
 <span
 	class="tooltip-wrapper"
 	onclick={() => showTooltip = !showTooltip}
+	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTooltip = !showTooltip; }}}
 	title={text}
 	role="button"
 	tabindex="0"
@@ -45,15 +46,17 @@
 
 <!-- modal rendered but portaled to body via $effect -->
 {#if mounted}
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		bind:this={modalElement}
 		class="tooltip-overlay"
 		class:visible={showTooltip}
 		onclick={() => showTooltip = false}
+		onkeydown={(e) => { if (e.key === 'Escape') showTooltip = false; }}
+		role="button"
+		tabindex="-1"
+		aria-label="Close tooltip"
 	>
-		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="tooltip-modal" onclick={(e) => e.stopPropagation()}>
+		<div class="tooltip-modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
 			<button class="close-btn" onclick={() => showTooltip = false} aria-label="Close">
 				<X size={16} />
 			</button>

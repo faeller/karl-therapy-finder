@@ -223,8 +223,4 @@
 		background-color: var(--color-pencil);
 		opacity: 0.6;
 	}
-
-	.help-icon {
-		opacity: 0.4;
-	}
 </style>

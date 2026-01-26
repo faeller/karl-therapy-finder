@@ -30,7 +30,7 @@
 		gap: 0.25rem;
 	}
 
-	.help-icon {
+	.reserved-info :global(.lucide) {
 		opacity: 0.4;
 	}
 </style>
