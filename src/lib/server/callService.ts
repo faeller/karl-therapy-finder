@@ -380,6 +380,16 @@ export async function scheduleDebugCall(
 	const callId = nanoid();
 
 	// store call params for retries
+	// include default opening hours for debug calls so frozen calls can be rescheduled
+	const debugOpeningHours = {
+		regular: [
+			{ day: 1, from: '09:00', to: '17:00' }, // mon
+			{ day: 2, from: '09:00', to: '17:00' }, // tue
+			{ day: 3, from: '09:00', to: '17:00' }, // wed
+			{ day: 4, from: '09:00', to: '17:00' }, // thu
+			{ day: 5, from: '09:00', to: '17:00' }  // fri
+		]
+	};
 	const callMetadata = JSON.stringify({
 		patientName: params.patientName,
 		patientInsurance: params.patientInsurance,
@@ -387,7 +397,8 @@ export async function scheduleDebugCall(
 		callbackPhone: params.callbackPhone,
 		patientEmail: params.patientEmail,
 		urgency: params.urgency,
-		isDebug: true
+		isDebug: true,
+		openingHours: debugOpeningHours
 	});
 
 	// atomically check credits and create call record
