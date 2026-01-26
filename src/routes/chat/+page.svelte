@@ -20,7 +20,7 @@
 	import UserMenu from '$lib/components/ui/UserMenu.svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import GithubIcon from '$lib/components/ui/GithubIcon.svelte';
-	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper, Pencil, Smartphone } from 'lucide-svelte';
+	import { ClipboardList, RotateCcw, Sun, Moon, Undo2, HelpCircle, Menu, X, FileCheck, ExternalLink, PartyPopper, Pencil, Palette, Leaf } from 'lucide-svelte';
 	import FoundTherapistButton from '$lib/components/ui/FoundTherapistButton.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
 	import { track } from '$lib/utils/analytics';
@@ -127,6 +127,24 @@
 
 	// account deleted toast
 	let showDeletedToast = $state(false);
+
+	// theme change toast
+	let themeToastMessage = $state('');
+	let themeToastTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	const styleNames: Record<string, string> = {
+		modern: 'Modern',
+		apfel: 'Apfel',
+		handdrawn: 'Handdrawn'
+	};
+
+	function handleToggleStyle() {
+		theme.toggleStyle();
+		// $style is already updated after toggleStyle()
+		themeToastMessage = `Theme: ${styleNames[$style]}`;
+		if (themeToastTimeout) clearTimeout(themeToastTimeout);
+		themeToastTimeout = setTimeout(() => themeToastMessage = '', 3000);
+	}
 
 	onMount(() => {
 		chat.start();
@@ -409,21 +427,25 @@
 			<div class="flex items-center justify-between gap-2">
 				<a href="/" class="flex items-center gap-2 min-w-0">
 					<KarlAvatar size="sm" />
-					<h1 class="text-lg font-bold truncate hidden min-[360px]:block" style="font-family: var(--font-brand)">{m.app_name()}</h1>
+					<h1 class="brand-title">{m.app_name()}</h1>
+					<span class="beta-badge">beta</span>
 				</a>
 				<div class="flex items-center gap-3 sm:gap-4 shrink-0">
 					<!-- desktop icons -->
-					<div class="hidden sm:flex items-center gap-4">
+					<div class="hidden min-[610px]:flex items-center gap-3">
 						<LangToggle />
+						<span class="nav-separator"></span>
 						<button
-							onclick={() => theme.toggleStyle()}
+							onclick={handleToggleStyle}
 							class="text-pencil/50 hover:text-blue-pen"
 							title="Toggle theme style"
 						>
-							{#if $style === 'handdrawn'}
-								<Smartphone size={18} strokeWidth={2.5} />
-							{:else}
+							{#if $style === 'modern'}
+								<Leaf size={18} strokeWidth={2.5} />
+							{:else if $style === 'apfel'}
 								<Pencil size={18} strokeWidth={2.5} />
+							{:else}
+								<Palette size={18} strokeWidth={2.5} />
 							{/if}
 						</button>
 						<button
@@ -437,6 +459,7 @@
 								<Moon size={18} strokeWidth={2.5} />
 							{/if}
 						</button>
+						<span class="nav-separator"></span>
 						{#if canUndo}
 							<button
 								onclick={handleUndo}
@@ -453,39 +476,41 @@
 						>
 							<RotateCcw size={18} strokeWidth={2.5} />
 						</button>
+						<span class="nav-separator"></span>
+						<a
+							href="https://www.patreon.com/karlhelps"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-pencil/50 hover:text-red-marker"
+							title={m.support_patreon()}
+						>
+							<PatreonIcon size={16} />
+						</a>
+						<a
+							href="https://github.com/faeller/karl-therapy-finder"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-pencil/50 hover:text-pencil"
+							title="GitHub"
+						>
+							<GithubIcon size={16} />
+						</a>
+						<span class="nav-separator"></span>
 					</div>
-					<a
-						href="https://www.patreon.com/karlhelps"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="hidden min-[225px]:block text-pencil/50 hover:text-red-marker"
-						title={m.support_patreon()}
-					>
-						<PatreonIcon size={16} />
-					</a>
-					<a
-						href="https://github.com/faeller/karl-therapy-finder"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="hidden min-[225px]:block text-pencil/50 hover:text-pencil"
-						title="GitHub"
-					>
-						<GithubIcon size={16} />
-					</a>
 					<a href="/contacts" class="flex items-center gap-1 text-pencil/50 hover:text-blue-pen" title={m.contacts_title()}>
 						<ClipboardList size={18} strokeWidth={2.5} />
-						<span class="hidden min-[225px]:inline text-xs">{m.contacts_title()}</span>
+						<span class="hidden min-[195px]:inline text-xs">{m.contacts_title()}</span>
 						{#if $contacts.length > 0}
 							<span class="flex h-4 w-4 items-center justify-center rounded-full bg-red-marker text-[10px] text-white">{$contacts.length}</span>
 						{/if}
 					</a>
-					<div class="hidden min-[225px]:block">
+					<div class="hidden min-[195px]:block">
 						<UserMenu />
 					</div>
 					<!-- mobile hamburger -->
 					<button
 						onclick={() => showMobileMenu = !showMobileMenu}
-						class="sm:hidden text-pencil/50 hover:text-blue-pen"
+						class="min-[610px]:hidden text-pencil/50 hover:text-blue-pen"
 					>
 						{#if showMobileMenu}
 							<X size={20} strokeWidth={2.5} />
@@ -497,17 +522,19 @@
 			</div>
 			<!-- mobile menu dropdown -->
 			{#if showMobileMenu}
-				<div class="sm:hidden flex items-center justify-end gap-4 mt-2 pt-2 border-t border-pencil/20">
+				<div class="min-[610px]:hidden flex items-center justify-end gap-4 mt-2 pt-2 border-t border-pencil/20">
 					<LangToggle />
 					<button
-						onclick={() => theme.toggleStyle()}
+						onclick={handleToggleStyle}
 						class="text-pencil/50 hover:text-blue-pen"
 						title="Toggle theme style"
 					>
-						{#if $style === 'handdrawn'}
-							<Smartphone size={18} strokeWidth={2.5} />
-						{:else}
+						{#if $style === 'modern'}
+							<Leaf size={18} strokeWidth={2.5} />
+						{:else if $style === 'apfel'}
 							<Pencil size={18} strokeWidth={2.5} />
+						{:else}
+							<Palette size={18} strokeWidth={2.5} />
 						{/if}
 					</button>
 					<button
@@ -524,7 +551,7 @@
 					{#if canUndo}
 						<button
 							onclick={() => { handleUndo(); showMobileMenu = false; }}
-							class="min-[225px]:hidden text-pencil/50 hover:text-blue-pen"
+							class="min-[195px]:hidden text-pencil/50 hover:text-blue-pen"
 							title={m.chat_undo()}
 						>
 							<Undo2 size={18} strokeWidth={2.5} />
@@ -537,14 +564,14 @@
 					>
 						<RotateCcw size={18} strokeWidth={2.5} />
 					</button>
-					<div class="min-[225px]:hidden">
+					<div class="min-[195px]:hidden">
 						<UserMenu />
 					</div>
 					<a
 						href="https://www.patreon.com/karlhelps"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="min-[225px]:hidden text-pencil/50 hover:text-red-marker"
+						class="min-[195px]:hidden text-pencil/50 hover:text-red-marker"
 						title={m.support_patreon()}
 					>
 						<PatreonIcon size={16} />
@@ -553,7 +580,7 @@
 						href="https://github.com/faeller/karl-therapy-finder"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="min-[225px]:hidden text-pencil/50 hover:text-pencil"
+						class="min-[195px]:hidden text-pencil/50 hover:text-pencil"
 						title="GitHub"
 					>
 						<GithubIcon size={16} />
@@ -953,13 +980,19 @@
 
 <!-- account deleted toast -->
 {#if showDeletedToast}
-	<div class="deleted-toast">
+	<div class="toast">
 		Dein Account wurde unwiderruflich gelöscht.
 	</div>
 {/if}
 
+{#if themeToastMessage}
+	<div class="toast">
+		{themeToastMessage}
+	</div>
+{/if}
+
 <style>
-	.deleted-toast {
+	.toast {
 		position: fixed;
 		bottom: 2rem;
 		left: 50%;
@@ -1002,6 +1035,46 @@
 		backdrop-filter: none;
 		-webkit-backdrop-filter: none;
 		border-bottom: 2px solid var(--color-pencil);
+	}
+
+	.brand-title {
+		font-family: var(--font-brand);
+		font-size: 1.25rem;
+		font-weight: 700;
+		line-height: 1;
+		display: none;
+	}
+
+	@media (min-width: 360px) {
+		.brand-title {
+			display: block;
+		}
+	}
+
+	.beta-badge {
+		font-size: 0.625rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		background: var(--color-blue-pen);
+		color: white;
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		line-height: 1;
+		display: none;
+	}
+
+	@media (min-width: 280px) {
+		.beta-badge {
+			display: block;
+		}
+	}
+
+	.nav-separator {
+		width: 1px;
+		height: 16px;
+		background: var(--color-pencil);
+		opacity: 0.2;
 	}
 
 	.progress-bar {
