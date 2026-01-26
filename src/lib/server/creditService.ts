@@ -432,6 +432,10 @@ export async function deductSeconds(
 	actualSeconds: number,
 	callId?: string
 ): Promise<{ deducted: number; remaining: number; giftedSeconds: number }> {
+	if (actualSeconds < 0) {
+		throw new Error('actualSeconds must be positive');
+	}
+
 	try {
 		return await withOptimisticLock(db, userId, async (credits) => {
 			if (!credits) {
@@ -603,8 +607,8 @@ export async function unfreezeCallsIfPossible(
 				)
 			});
 
-			// update call record
-			await db
+			// update call record (only if still frozen - user might have cancelled)
+			const updateResult = await db
 				.update(table.scheduledCalls)
 				.set({
 					status: 'scheduled',
@@ -612,10 +616,24 @@ export async function unfreezeCallsIfPossible(
 					elevenlabsConvId: result.batchId,
 					updatedAt: new Date()
 				})
-				.where(eq(table.scheduledCalls.id, call.id));
+				.where(
+					and(
+						eq(table.scheduledCalls.id, call.id),
+						eq(table.scheduledCalls.status, 'frozen')
+					)
+				)
+				.returning();
+
+			// if update failed, call was cancelled - cancel the batch we just created
+			if (updateResult.length === 0) {
+				console.log(`[credits] call ${call.id} was cancelled during unfreeze, cancelling new batch`);
+				await cancelBatchCall(result.batchId);
+				continue;
+			}
 
 			unfrozenCount++;
 			console.log(`[credits] unfroze call ${call.id}, new schedule: ${nextSlot.date.toISOString()}`);
+
 		} catch (e) {
 			console.error(`[credits] failed to unfreeze call ${call.id}:`, e);
 		}
@@ -636,6 +654,11 @@ export async function addCredits(
 	userId: string,
 	seconds: number
 ): Promise<void> {
+	if (seconds === 0) return;
+	if (seconds < 0) {
+		throw new Error('use deductSeconds for removing credits');
+	}
+
 	let available = 0;
 	let isNewRecord = false;
 	try {
