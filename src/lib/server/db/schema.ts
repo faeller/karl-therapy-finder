@@ -143,7 +143,7 @@ export const creditAuditLog = sqliteTable('credit_audit_log', {
 		.references(() => user.id),
 	eventType: text('event_type').notNull(), // allocate, reserve, deduct, refund, freeze, unfreeze
 	seconds: integer('seconds').notNull(), // amount changed (positive or negative)
-	callId: text('call_id').references(() => scheduledCalls.id), // null for allocate/refund events
+	callId: text('call_id').references(() => scheduledCalls.id, { onDelete: 'cascade' }), // null for allocate/refund events
 	metadata: text('metadata'), // json with operation details
 	balanceBefore: integer('balance_before'), // seconds available before this operation
 	balanceAfter: integer('balance_after'), // seconds available after this operation
