@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { chat } from '$lib/stores/chat';
 	import { campaignDraft } from '$lib/stores/campaign';
 	import { contacts } from '$lib/stores/contacts';
@@ -123,8 +125,19 @@
 	// track if initial load is done (to skip auto-scroll on page open)
 	let initialLoadDone = false;
 
+	// account deleted toast
+	let showDeletedToast = $state(false);
+
 	onMount(() => {
 		chat.start();
+		// check for account deleted param
+		if ($page.url.searchParams.get('deleted') === '1') {
+			showDeletedToast = true;
+			// clear the param from URL
+			goto('/chat', { replaceState: true });
+			// auto-hide after 4s
+			setTimeout(() => showDeletedToast = false, 4000);
+		}
 		// restore pending re-search modal
 		if (localStorage.getItem(RESEARCH_PROMPT_KEY)) {
 			showReSearchModal = true;
@@ -441,9 +454,6 @@
 							<RotateCcw size={18} strokeWidth={2.5} />
 						</button>
 					</div>
-					<div class="hidden min-[225px]:block">
-						<UserMenu />
-					</div>
 					<a
 						href="https://www.patreon.com/karlhelps"
 						target="_blank"
@@ -469,6 +479,9 @@
 							<span class="flex h-4 w-4 items-center justify-center rounded-full bg-red-marker text-[10px] text-white">{$contacts.length}</span>
 						{/if}
 					</a>
+					<div class="hidden min-[225px]:block">
+						<UserMenu />
+					</div>
 					<!-- mobile hamburger -->
 					<button
 						onclick={() => showMobileMenu = !showMobileMenu}
@@ -938,7 +951,38 @@
 	</div>
 {/if}
 
+<!-- account deleted toast -->
+{#if showDeletedToast}
+	<div class="deleted-toast">
+		Dein Account wurde unwiderruflich gelöscht.
+	</div>
+{/if}
+
 <style>
+	.deleted-toast {
+		position: fixed;
+		bottom: 2rem;
+		left: 50%;
+		transform: translateX(-50%);
+		background: var(--color-pencil);
+		color: var(--color-paper);
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.5rem;
+		font-size: 0.9375rem;
+		z-index: 9999;
+		animation: toast-in 300ms ease-out;
+	}
+
+	@keyframes toast-in {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(1rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+	}
 	.navbar-glass {
 		background: rgba(242, 242, 247, 0.8);
 		backdrop-filter: blur(20px);
