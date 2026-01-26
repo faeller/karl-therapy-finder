@@ -5,7 +5,7 @@ import { getDb } from '$lib/server/db';
 import { getD1 } from '$lib/server/d1';
 import { eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
-import { invalidateSession } from '$lib/server/auth';
+import { invalidateSession, sessionCookieName } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	if (!locals.user) {
@@ -115,8 +115,22 @@ export const actions: Actions = {
 
 		try {
 			// delete all user data in order (respecting foreign keys)
+			// first: delete tables that reference scheduled_calls.id
 			await db.delete(table.creditAuditLog).where(eq(table.creditAuditLog.userId, locals.user.id));
 			await db.delete(table.callCostEvents).where(eq(table.callCostEvents.userId, locals.user.id));
+
+			// delete privacy incidents and webhook logs for user's calls
+			const userCallIds = await db.select({ id: table.scheduledCalls.id }).from(table.scheduledCalls).where(eq(table.scheduledCalls.userId, locals.user.id));
+			const callIds = userCallIds.map(c => c.id);
+			if (callIds.length > 0) {
+				await db.delete(table.privacyIncidents).where(eq(table.privacyIncidents.callId, callIds[0])); // d1 doesn't support inArray, delete one by one if needed
+				for (const callId of callIds) {
+					await db.delete(table.privacyIncidents).where(eq(table.privacyIncidents.callId, callId));
+					await db.delete(table.webhookLogs).where(eq(table.webhookLogs.callId, callId));
+				}
+			}
+
+			// now safe to delete scheduled_calls
 			await db.delete(table.scheduledCalls).where(eq(table.scheduledCalls.userId, locals.user.id));
 			await db.delete(table.userCallCredits).where(eq(table.userCallCredits.userId, locals.user.id));
 			await db.delete(table.userCampaign).where(eq(table.userCampaign.userId, locals.user.id));
@@ -133,11 +147,13 @@ export const actions: Actions = {
 			await db.delete(table.user).where(eq(table.user.id, locals.user.id));
 
 			console.log('[gdpr] deleted all data for user:', locals.user.id);
-
-			return { success: true };
 		} catch (e) {
 			console.error('[gdpr] failed to delete account:', e);
 			return fail(500, { error: 'deletion failed' });
 		}
+
+		// clear session cookie and redirect (outside try/catch since redirect throws)
+		cookies.delete(sessionCookieName, { path: '/' });
+		redirect(302, '/chat?deleted=1');
 	}
 };
