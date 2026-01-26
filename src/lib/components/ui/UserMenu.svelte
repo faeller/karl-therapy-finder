@@ -77,7 +77,7 @@
 			class="login-btn"
 			title={m.auth_login()}
 		>
-			<User size={18} strokeWidth={2.5} />
+			<User size={14} strokeWidth={2.5} />
 		</a>
 	{/if}
 </div>
@@ -123,19 +123,25 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		border: 1.5px solid var(--color-pencil);
 		color: var(--color-pencil);
 		opacity: 0.5;
-		transition: opacity 150ms;
+		transition: all 100ms;
 	}
 
 	.login-btn:hover {
 		opacity: 1;
 		color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		transform: scale(1.1);
 	}
 
 	.avatar-btn {
-		width: 20px;
-		height: 20px;
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
 		overflow: hidden;
 		border: 1.5px solid var(--color-pencil);

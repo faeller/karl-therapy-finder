@@ -6,6 +6,7 @@
 	import SyncPromptModal from '$lib/components/ui/SyncPromptModal.svelte';
 	import CallCreditsDisplay from '$lib/components/ui/CallCreditsDisplay.svelte';
 	import ReservedTimeInfo from '$lib/components/ui/ReservedTimeInfo.svelte';
+	import FrozenCallInfo from '$lib/components/ui/FrozenCallInfo.svelte';
 	import { ArrowLeft, LogOut, Cloud, CloudOff, ExternalLink, Loader2, Phone, Clock, CheckCircle, XCircle, Snowflake, Calendar, Database } from 'lucide-svelte';
 	import PatreonIcon from '$lib/components/ui/PatreonIcon.svelte';
 	import { wobbly } from '$lib/utils/wobbly';
@@ -235,19 +236,19 @@
 						</h3>
 						<div class="space-y-2">
 							{#each data.pendingCalls as call}
-								<div class="flex items-center justify-between text-sm bg-erased rounded px-3 py-2">
-									<div class="flex items-center gap-2">
+								<div class="pending-call-item">
+									<div class="pending-call-header">
 										{#if call.status === 'frozen'}
-											<Snowflake size={14} class="text-cyan-600" />
+											<Snowflake size={14} class="text-cyan-600 shrink-0" />
 										{:else}
-											<Clock size={14} class="text-blue-pen" />
+											<Clock size={14} class="text-blue-pen shrink-0" />
 										{/if}
-										<span class="font-medium truncate max-w-[140px]">{call.therapistName || 'Unbekannt'}</span>
+										<span class="font-medium">{call.therapistName || 'Unbekannt'}</span>
 									</div>
-									<div class="flex items-center gap-3 text-xs text-pencil/60">
+									<div class="pending-call-meta">
 										<span>{formatDuration(call.projectedSeconds)} res.</span>
 										{#if call.status === 'frozen'}
-											<span class="text-cyan-600">pausiert</span>
+											<FrozenCallInfo />
 										{:else if call.scheduledAt}
 											<span>{formatDateTime(call.scheduledAt)}</span>
 										{/if}
@@ -521,6 +522,45 @@
 	.logout-link:hover {
 		opacity: 1;
 		color: var(--color-red-marker);
+	}
+
+	.pending-call-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.5rem 0.75rem;
+		background-color: var(--color-erased);
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
+	}
+
+	.pending-call-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 500;
+	}
+
+	.pending-call-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.75rem;
+		color: var(--color-pencil);
+		opacity: 0.6;
+		padding-left: 1.375rem;
+	}
+
+	@media (min-width: 400px) {
+		.pending-call-item {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.pending-call-meta {
+			padding-left: 0;
+		}
 	}
 </style>
 

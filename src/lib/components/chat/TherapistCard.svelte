@@ -32,10 +32,13 @@
 	// auto-call modal state
 	let showAutoCallModal = $state(false);
 
-	// check if user can use auto-call (debug mode, debug therapist, or paid tier)
+	// check if user can use auto-call (debug mode, debug therapist, paid tier, or tester+)
 	const isDebugTherapist = $derived(therapist.id === DEBUG_THERAPIST_ID);
+	const isTesterOrAbove = $derived(
+		$user?.role === 'tester' || $user?.role === 'moderator' || $user?.role === 'admin'
+	);
 	const canUseAutoCall = $derived(
-		$debug.enabled || isDebugTherapist || $user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
+		$debug.enabled || isDebugTherapist || isTesterOrAbove || $user?.pledgeTier === 'supporter' || $user?.pledgeTier === 'premium'
 	);
 	const hasPhone = $derived(!!therapist.phone);
 
@@ -343,14 +346,14 @@
 	}
 
 	.action-btn.scheduled {
-		background-color: var(--color-paper);
-		font-size: 0.8rem;
-		color: var(--color-secondary);
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
 	}
 
 	.action-btn.scheduled:hover:not(:disabled) {
-		background-color: var(--color-erased);
-		color: var(--color-pencil);
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
 	}
 
 	.call-buttons {
@@ -469,10 +472,14 @@
 	}
 
 	:global(:root.theme-handdrawn) .action-btn.scheduled {
-		background-color: var(--color-erased);
-		border-style: dashed;
-		opacity: 0.8;
-		color: var(--color-pencil);
+		background-color: var(--color-blue-pen);
+		border-color: var(--color-blue-pen);
+		color: white;
+	}
+
+	:global(:root.theme-handdrawn) .action-btn.scheduled:hover {
+		background-color: var(--color-red-marker);
+		border-color: var(--color-red-marker);
 	}
 
 	:global(:root.theme-handdrawn) .confirm-prompt {
