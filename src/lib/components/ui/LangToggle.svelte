@@ -19,13 +19,17 @@
 		display: flex;
 		align-items: center;
 		font-family: var(--font-body);
-		font-size: 0.875rem;
+		font-size: 0.75rem;
+		line-height: 1;
+		height: 18px;
+		transform: translateY(1px);
 	}
 	.lang-toggle button {
 		color: var(--color-pencil);
 		opacity: 0.4;
 		transition: opacity 150ms;
-		padding: 0.25rem;
+		padding: 0 0.125rem;
+		line-height: 1;
 	}
 	.lang-toggle button:hover {
 		opacity: 0.7;

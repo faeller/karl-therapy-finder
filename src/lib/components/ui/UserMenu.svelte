@@ -123,8 +123,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 24px;
-		height: 24px;
+		width: 26px;
+		height: 26px;
 		border-radius: 50%;
 		border: 1.5px solid var(--color-pencil);
 		color: var(--color-pencil);
@@ -140,8 +140,8 @@
 	}
 
 	.avatar-btn {
-		width: 24px;
-		height: 24px;
+		width: 26px;
+		height: 26px;
 		border-radius: 50%;
 		overflow: hidden;
 		border: 1.5px solid var(--color-pencil);
