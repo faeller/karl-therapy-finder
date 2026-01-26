@@ -1,6 +1,10 @@
 <script lang="ts">
 	import WobblyCard from '$lib/components/ui/WobblyCard.svelte';
 	import { ArrowLeft, AlertTriangle } from 'lucide-svelte';
+	import { onMount } from 'svelte';
+	import { setDefaultStyleIfFirstVisit } from '$lib/stores/theme';
+
+	onMount(() => setDefaultStyleIfFirstVisit('apfel', 'light'));
 </script>
 
 <svelte:head>
@@ -24,7 +28,7 @@
 
 			<div class="practice-box">
 				<h3>Sind Sie eine Praxis?</h3>
-				<p>Sind Sie eine Praxis und KARL hat Sie angerufen? Dann klicken Sie bitte <a href="mailto:karl@mail.online-impressum.de?subject=Praxis%20Anfrage">hier</a>.</p>
+				<p>Sind Sie eine Praxis und KARL hat Sie angerufen? Dann klicken Sie bitte <a href="/dsgvo/practice">hier</a>.</p>
 			</div>
 
 			<h2>Warum diese Seite?</h2>
@@ -99,9 +103,16 @@
 		margin: 1rem 0;
 		border-radius: 4px;
 	}
+	:global(:root.theme-modern) .info-box,
+	:global(:root.theme-apfel) .info-box {
+		border: 1px solid var(--color-card-border);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-hard-sm);
+	}
 	.info-box h3 {
 		margin-top: 0;
 	}
+
 	.wip-box {
 		display: flex;
 		align-items: flex-start;
@@ -113,6 +124,12 @@
 		border-radius: 4px;
 		color: #92400e;
 	}
+	:global(:root.theme-modern) .wip-box,
+	:global(:root.theme-apfel) .wip-box {
+		border-width: 1px;
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-hard-sm);
+	}
 	:global(:root.dark) .wip-box {
 		background-color: #451a03;
 		border-color: #d97706;
@@ -121,6 +138,7 @@
 	.wip-box p {
 		margin: 0;
 	}
+
 	.practice-box {
 		background-color: #e0f2fe;
 		border: 2px solid #0284c7;
@@ -128,6 +146,12 @@
 		margin: 1rem 0;
 		border-radius: 4px;
 		color: #0c4a6e;
+	}
+	:global(:root.theme-modern) .practice-box,
+	:global(:root.theme-apfel) .practice-box {
+		border-width: 1px;
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-hard-sm);
 	}
 	:global(:root.dark) .practice-box {
 		background-color: #082f49;

@@ -19,7 +19,6 @@
 		<div
 			class="modal-content"
 			onclick={(e) => e.stopPropagation()}
-			style:border-radius={wobbly.md}
 			role="dialog"
 			aria-modal="true"
 			tabindex="-1"
@@ -65,11 +64,11 @@
 
 	.modal-content {
 		background-color: var(--color-paper);
-		border: 2px solid var(--color-pencil);
+		border: 1px solid var(--color-card-border);
+		border-radius: 14px;
 		padding: 1.5rem;
 		max-width: 400px;
 		width: 100%;
-		box-shadow: var(--shadow-hard);
 	}
 
 	.modal-title {
@@ -125,5 +124,13 @@
 	.modal-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* handdrawn theme */
+	:global(:root.theme-handdrawn) .modal-content {
+		background-color: var(--color-paper);
+		border: 2px solid var(--color-pencil);
+		border-radius: var(--radius-wobbly);
+		box-shadow: var(--shadow-hard);
 	}
 </style>

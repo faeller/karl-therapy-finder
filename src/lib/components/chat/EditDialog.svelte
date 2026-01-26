@@ -104,7 +104,6 @@
 	<div
 		class="modal-content"
 		onclick={(e) => e.stopPropagation()}
-		style:border-radius={wobbly.md}
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"

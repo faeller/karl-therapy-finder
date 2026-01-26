@@ -527,7 +527,6 @@
 	<div class="modal-backdrop" onclick={handleClose} onkeydown={(e) => e.key === 'Escape' && handleClose()} role="button" tabindex="-1">
 		<div
 			class="modal-content"
-			style:border-radius={wobbly.lg}
 			onclick={(e) => e.stopPropagation()}
 			role="presentation"
 			tabindex="-1"
@@ -597,7 +596,7 @@
 								</div>
 
 								<div class="call-actions">
-									{#if call.status === 'scheduled'}
+									{#if call.status === 'scheduled' || call.status === 'frozen'}
 										<button class="action-link cancel-link" onclick={() => handleCancel(call.id)}>
 											<Trash2 size={14} />
 											{m.autocall_cancel()}
@@ -1015,12 +1014,14 @@
 						{/if}
 
 						<!-- actions -->
-						<div class="timeline-actions">
-							<button class="action-link cancel-link" onclick={() => handleCancel(selectedCall.id)}>
-								<Trash2 size={14} />
-								{m.autocall_cancel()}
-							</button>
-						</div>
+						{#if selectedCall.status === 'scheduled' || selectedCall.status === 'frozen'}
+							<div class="timeline-actions">
+								<button class="action-link cancel-link" onclick={() => handleCancel(selectedCall.id)}>
+									<Trash2 size={14} />
+									{m.autocall_cancel()}
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -1314,13 +1315,20 @@
 	.modal-content {
 		position: relative;
 		background: var(--color-paper);
-		border: 3px solid var(--color-pencil);
-		box-shadow: var(--shadow-hard);
+		border: 1px solid var(--color-card-border);
+		border-radius: 14px;
 		padding: 1.5rem;
 		max-width: 420px;
 		width: 100%;
 		max-height: 90vh;
 		overflow-y: auto;
+	}
+
+	:global(:root.theme-handdrawn) .modal-content {
+		background: var(--color-paper);
+		border: 3px solid var(--color-pencil);
+		border-radius: var(--radius-wobbly);
+		box-shadow: var(--shadow-hard);
 	}
 
 	.close-btn {
@@ -1425,7 +1433,9 @@
 		gap: 0.375rem;
 		padding: 0.75rem;
 		background: var(--color-erased);
+		border: 1px solid var(--color-card-border);
 		border-radius: 0.5rem;
+		box-shadow: var(--shadow-hard-sm);
 	}
 
 	.call-status {
@@ -1447,12 +1457,14 @@
 
 	.call-time {
 		background: var(--color-paper);
+		border: 1px solid var(--color-card-border);
 		padding: 0.125rem 0.5rem;
 		border-radius: 0.25rem;
 	}
 
 	.call-outcome {
 		background: var(--color-paper);
+		border: 1px solid var(--color-card-border);
 		padding: 0.125rem 0.5rem;
 		border-radius: 0.25rem;
 	}

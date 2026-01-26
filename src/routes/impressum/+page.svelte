@@ -130,6 +130,12 @@
 		margin: 1rem 0;
 		border-radius: 4px;
 	}
+	:global(:root.theme-modern) .info-box,
+	:global(:root.theme-apfel) .info-box {
+		border: 1px solid var(--color-card-border);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-hard-sm);
+	}
 	.info-box h2, .info-box h3 {
 		margin-top: 0;
 	}
@@ -144,6 +150,11 @@
 		border-radius: 3px;
 		font-size: 0.7rem;
 		transition: opacity 0.15s;
+	}
+	:global(:root.theme-modern) .contact-link,
+	:global(:root.theme-apfel) .contact-link {
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.625rem;
 	}
 	.contact-link:hover {
 		opacity: 0.85;
